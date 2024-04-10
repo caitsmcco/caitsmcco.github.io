@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Stampede Navigator</title>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Calendar</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autocomplete Search</title>
+    <link rel="stylesheet" type="text/css" href="styles.css">
+
+    <!-- Holtwood One SC Font-->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Holtwood+One+SC&display=swap" rel="stylesheet">
+    <!-- Faustina Font-->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Faustina:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+
+    <script src="https://kit.fontawesome.com/df6965acea.js" crossorigin="anonymous"></script>
+
+  </head>
+  
+    <div class="title" id="title_id">
+      <img src="images/Calgary_Stampede_Logo.svg_-1052676545.png" style="width:140px;height:70px;" id="titlelogo">
+    </div>
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <div class="wrapper side-panel-open">
+      
+      <div class="side-panel2">
+        <body>
+          <h3>My Schedule</h3>
+          <section class="my-day">
+            <header class="custom-header">
+              <button class="arrow-button" onclick="previousDay()">&lt;&lt;</button>
+              <h4 id="currentDateDisplay"></h4>
+              <button class="arrow-button" onclick="nextDay()">&gt;&gt;</button>
+            </header>
+              <div class="calendar">
+                <div class="calendar__hour-grid">
+                  <template id="template-hour">
+                    <div class="calendar__hour">
+                        <p class="label"></p>
+                    </div>
+                  </template>
+                </div>
+                <div class="calendar__events">
+                    <template id="template-event">
+                    <div class="calendar__event">
+                        <p class="label"></p>
+                    </div>
+                    </template>
+                </div>
+              </div>
+          </section>
+          <i class="fa-solid fa-triangle-exclamation" style="color: #FFD43B; font-size: 2em; padding: 2%;"></i>
+          <b>There are events that overlap.</b>
+        </body>
+      </div>
+      <button class="side-panel2-toggle" type="button">
+          <span class="sp2-icon-open">My Schedule</span>
+          <span class="material-icons sp2-icon-open">keyboard_double_arrow_up</span>
+          
+          <span class="material-icons sp2-icon-close">keyboard_double_arrow_down</span>
+      </button>
+
+      <div class="side-panel3">
+        <div class="events-panel">
+          <h3>Events</h3>
+
+          <div class="list-events">
+            <template id="template-list-event">
+              <div id = "list-event" class="event">
+                <button type="button" class="collapsible" id="titleButton" style="font-size: 25px;">Template Title </button>
+                <div class="content">
+                  <p id="templateDescription">Template Description</p>
+                </div>
+                <timeButtons>
+                  <div style="width:33.33%;">
+                    <button type="button" class="activitytime timeButton" id="timeButton1">templateTime1</button>
+                  </div>
+                  <div style="width:33.33%;">
+                    <button type="button" class="activitytime timeButton" id="timeButton2">templateTime2</button>
+                  </div>
+                  <div style="width:33.33%;">
+                    <button type="button" class="activitytime timeButton" id="timeButton3">templateTime3</button>
+                  </div>
+                </timeButtons> 
+                <p></p>
+              </div>
+            </template>
+          </div>
+
+
+      </div>
+      <div class="filter-panel">
+        <div class="search-form-container">
+          <form onsubmit="event.preventDefault();" role="search">
+            <label for="search">Search for stuff</label>
+            <div class="search-input-container">
+              <input id="searchInput" type="search" onkeyup="searchName()" placeholder="Search..." autofocus required />
+              <div class="autocomplete-results" id="autocompleteResults"></div>
+            </div>
+            <!-- <button type="submit">Go</button> -->   
+          </form>
+        </div>
+        
+        <!-- <h3>Filter Events</h3>
+        <div class="search-filter">
+            <input type="text" id="searchInput" placeholder="Search for event...">
+            <button onclick="applyFilter()">Search</button>
+        </div>
+        <h2>Filter for Events</h2> -->
+        
+
+        <h3>Locations</h3>
+        <div class="location-checkboxes checkboxes">
+          <label><input type="checkbox" id="venueACheckbox" onchange="change()" filter="Saddledome">Saddledome</label>
+          <label><input type="checkbox" id="venueBCheckbox" onchange="change()" filter="BMO Centre">BMO Centre</label>
+          <label><input type="checkbox" id="venueCCheckbox" onchange="change()" filter="Big Four Building">Big Four Building</label>
+          <label><input type="checkbox" id="venueDCheckbox" onchange="change()" filter="GMC Stadium">GMC Stadium</label>
+          <label><input type="checkbox" id="venueECheckbox" onchange="change()" filter="Nutrien Western Event Center">Nutrien Western Event Center</label>        </div>
+        <h3>Times</h3>
+        <div class="time-checkboxes checkboxes">
+          <label><input type="checkbox" id="morningCheckbox" onchange="change()" filter="Morning">Morning (7:00-12:00)</label>
+          <label><input type="checkbox" id="afternoonCheckbox" onchange="change()" filter="Afternoon">Afternoon (12:00-17:00)</label>
+          <label><input type="checkbox" id="eveningCheckbox" onchange="change()" filter="Evening">Evening (17:00-23:59)</label>
+        </div>
+        <h3>Event Type</h3>
+        <div class="eventType-checkboxes checkboxes">
+          <label><input type="checkbox" id="familyCheckbox" onchange="change()" filter="Family">Family</label>
+          <label><input type="checkbox" id="childrenCheckbox" onchange="change()" filter="Children">Children</label>
+          <label><input type="checkbox" id="adultCheckbox" onchange="change()" filter="Adult">Adult</label>
+        </div>
+        <div class = "centered-div">
+          <button class = clearButton onclick="clearFilters()">Clear Filters</button>
+        </div>
+        
+      </div>
+      </div>
+      <button class="side-panel3-toggle" type="button">
+          <span class="sp3-icon-open">All Events</span>
+          <span class="material-icons sp3-icon-open">keyboard_double_arrow_up</span>
+          
+          <span class="material-icons sp3-icon-close">keyboard_double_arrow_down</span>
+      </button>
+
+      <div class="main">
+          <head>
+            <title>Neighborhood Discovery</title>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width,initial-scale=1">
+            <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+            <script src="https://ajax.googleapis.com/ajax/libs/handlebars/4.7.7/handlebars.min.js"></script>
+            <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet"/>
+            <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+            <script>
+              const CONFIGURATION = {
+                "capabilities": {"search":false,"distances":true,"directions":true,"contacts":false,"atmospheres":false,"thumbnails":false},
+                "pois": [
+                  {"placeId": "ChIJHXmJcgtwcVMRvRk3l7Ike6g"},
+                  {"placeId": "ChIJAciRdQ9wcVMRePoBESCmetg"},
+                  {"placeId": "ChIJ3YVTFARwcVMRA0E9Ow4NTBI"},
+                  {"placeId": "ChIJ4XAw8wVwcVMRAxrWH1HRnhw"},
+                  {"placeId": "ChIJU6z7BQVwcVMRaHK5O1GPhew"}
+                ],
+                "centerMarker": {"icon":"circle"},
+                "mapRadius": 500,
+                "mapOptions": {"center":{"lat":51.03663719999999,"lng":-114.0538032},"fullscreenControl":true,"mapTypeControl":true,"streetViewControl":false,"zoom":16,"zoomControl":true,"maxZoom":20,"mapId":"d96927f0527a8998"},
+                "mapsApiKey": "AIzaSyDp9c_dJmtP7usaLoIjRNW1Iq8Wi0mlTxQ"
+              };
+
+              function initMap() {
+                new NeighborhoodDiscovery(CONFIGURATION);
+              }
+            </script>
+            <script id="nd-place-results-tmpl" type="text/x-handlebars-template">
+              {{#each places}}
+                <li class="place-result">
+                  <div class="text">
+                    <button class="name">{{name}}</button>
+                    <div class="info">{{type}}</div>
+                  </div>
+                </li>
+              {{/each}}
+            </script>
+            <script id="nd-place-details-tmpl" type="text/x-handlebars-template">
+              <div class="navbar">
+                <button class="back-button">
+                  <img class="icon" src="https://fonts.gstatic.com/s/i/googlematerialicons/arrow_back/v11/24px.svg" alt="back"/>
+                  Back
+                </button>
+              </div>
+              <header>
+                <h2>{{name}}</h2>
+                <div class="info">
+                  <a href="{{url}}" target="_blank">See on Google Maps</a>
+                </div>
+                {{#if type}}
+                  <div class="info">{{type}}</div>
+                {{/if}}
+                {{#if duration}}
+                  <div class="info">
+                    <img src="https://fonts.gstatic.com/s/i/googlematerialicons/directions_car/v11/24px.svg" alt="car travel" class="travel-icon"/>
+                    <span>&nbsp;{{duration.text}}</span>
+                  </div>
+                {{/if}}
+              </header>
+              <div class="section">
+                {{#if address}}
+                  <div class="contact">
+                    <img src="https://fonts.gstatic.com/s/i/googlematerialicons/place/v10/24px.svg" alt="Address" class="icon"/>
+                    <div class="text">
+                      {{address}}
+                    </div>
+                  </div>
+                {{/if}}
+              </div>
+              {{#if photos}}
+                <div class="photos section">
+                  {{#each photos}}
+                    <button class="photo" style="background-image:url(urlLarge)" aria-label="show photo in viewer"></button>
+                  {{/each}}
+                </div>
+              {{/if}}
+              {{#if html_attributions}}
+                <div class="section">
+                  {{#each html_attributions}}
+                    <p class="attribution">{{{this}}}</p>
+                  {{/each}}
+                </div>
+              {{/if}}
+            </script>
+          </head>
+          <body>
+            <div class="neighborhood-discovery">
+              <div class="places-panel panel no-scroll">
+                <div class="results">
+                  <ul class="place-results-list"></ul>
+                </div>
+                <button class="show-more-button sticky">
+                  <span>Show More</span>
+                  <img class="right" src="https://fonts.gstatic.com/s/i/googlematerialicons/expand_more/v11/24px.svg" alt="expand"/>
+                </button>
+              </div>
+              <div class="details-panel panel"></div>
+              <div class="map"></div>
+              <div class="photo-modal">
+                <img alt="place photo"/>
+                <div>
+                  <button class="back-button">
+                    <img class="icon" src="https://fonts.gstatic.com/s/i/googlematerialicons/arrow_back/v11/24px.svg" alt="back"/>
+                  </button>
+                  <div class="photo-text">
+                    <div class="photo-place"></div>
+                    <div class="photo-attrs">Photo by <span></span></div>
+                  </div>
+                </div>
+              </div>
+              <svg class="marker-pin" xmlns="http://www.w3.org/2000/svg" width="26" height="38" fill="none">
+                <path d="M13 0C5.817 0 0 5.93 0 13.267c0 7.862 5.59 10.81 9.555 17.624C12.09 35.248 11.342 38 13 38c1.723 0 .975-2.817 3.445-7.043C20.085 24.503 26 21.162 26 13.267 26 5.93 20.183 0 13 0Z"/>
+              </svg>
+            </div>
+            <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDp9c_dJmtP7usaLoIjRNW1Iq8Wi0mlTxQ&callback=initMap&libraries=places,geometry&solution_channel=GMP_QB_neighborhooddiscovery_v2_cBC" async defer></script>
+          </body>
+
+      </div>
+
+
+      <script>
+        'use strict';
+
+          /** Hides a DOM element and optionally focuses on focusEl. */
+          function hideElement(el, focusEl) {
+            el.style.display = 'none';
+            if (focusEl) focusEl.focus();
+          }
+
+          /** Shows a DOM element that has been hidden and optionally focuses on focusEl. */
+          function showElement(el, focusEl) {
+            el.style.display = 'block';
+            if (focusEl) focusEl.focus();
+          }
+
+          /** Determines if a DOM element contains content that cannot be scrolled into view. */
+          function hasHiddenContent(el) {
+            const noscroll = window.getComputedStyle(el).overflowY.includes('hidden');
+            return noscroll && el.scrollHeight > el.clientHeight;
+          }
+
+          /** Format a Place Type string by capitalizing and replacing underscores with spaces. */
+          function formatPlaceType(str) {
+            const capitalized = str.charAt(0).toUpperCase() + str.slice(1);
+            return capitalized.replace(/_/g, ' ');
+          }
+
+          /** Number of POIs to show on widget load. */
+          const ND_NUM_PLACES_INITIAL = 5;
+
+          /** Number of additional POIs to show when 'Show More' button is clicked. */
+          const ND_NUM_PLACES_SHOW_MORE = 5;
+
+          /** Maximum number of place photos to show on the details panel. */
+          const ND_NUM_PLACE_PHOTOS_MAX = 6;
+
+          /** Minimum zoom level at which the default map POI pins will be shown. */
+          const ND_DEFAULT_POI_MIN_ZOOM = 18;
+
+          /** Mapping of Place Types to Material Icons used to render custom map markers. */
+          const ND_MARKER_ICONS_BY_TYPE = {
+            // Full list of icons can be found at https://fonts.google.com/icons
+            '_default': 'circle',
+            'stadium': 'sports_handball',
+            'arena': 'sports_handball',
+            'event_venue': 'emoji_people',
+          };
+
+          /**
+           * Defines an instance of the Neighborhood Discovery widget, to be
+           * instantiated when the Maps library is loaded.
+           */
+          function NeighborhoodDiscovery(configuration) {
+            const widget = this;
+            const widgetEl = document.querySelector('.neighborhood-discovery');
+
+            widget.center = configuration.mapOptions.center;
+            widget.places = configuration.pois || [];
+
+            // Initialize core functionalities -------------------------------------
+
+            initializeMap();
+            initializePlaceDetails();
+            initializeSidePanel();
+
+            // Initialize additional capabilities ----------------------------------
+
+            initializeDistanceMatrix();
+            initializeDirections();
+
+            // Initializer function definitions ------------------------------------
+
+            /** Initializes the interactive map and adds place markers. */
+            function initializeMap() {
+              const mapOptions = configuration.mapOptions;
+              widget.mapBounds = new google.maps.Circle(
+                {center: widget.center, radius: configuration.mapRadius}).getBounds();
+              mapOptions.restriction = {latLngBounds: widget.mapBounds};
+              mapOptions.mapTypeControlOptions = {position: google.maps.ControlPosition.TOP_RIGHT};
+              widget.map = new google.maps.Map(widgetEl.querySelector('.map'), mapOptions);
+              widget.map.fitBounds(widget.mapBounds, /* padding= */ 0);
+              widget.map.addListener('click', (e) => {
+                // Check if user clicks on a POI pin from the base map.
+                if (e.placeId) {
+                  e.stop();
+                  widget.selectPlaceById(e.placeId);
+                }
+              });
+              widget.map.addListener('zoom_changed', () => {
+                // Customize map styling to show/hide default POI pins or text based on zoom level.
+                const hideDefaultPoiPins = widget.map.getZoom() < ND_DEFAULT_POI_MIN_ZOOM;
+                widget.map.setOptions({
+                  styles: [{
+                    featureType: 'poi',
+                    elementType: hideDefaultPoiPins ? 'labels' : 'labels.text',
+                    stylers: [{visibility: 'off'}],
+                  }],
+                });
+              });
+
+              const markerPath = widgetEl.querySelector('.marker-pin path').getAttribute('d');
+              const drawMarker = function(title, position, fillColor, strokeColor, labelText) {
+                return new google.maps.Marker({
+                  title: title,
+                  position: position,
+                  map: widget.map,
+                  icon: {
+                    path: markerPath,
+                    fillColor: fillColor,
+                    fillOpacity: 1,
+                    strokeColor: strokeColor,
+                    anchor: new google.maps.Point(13, 35),
+                    labelOrigin: new google.maps.Point(13, 13),
+                  },
+                  label: {
+                    text: title,
+                    color: 'black',
+                    fontSize: '12px',
+                    fontFamily: 'faustina',
+                  },
+                });
+              };
+
+              // Add marker at the center location (if specified).
+              if (configuration.centerMarker && configuration.centerMarker.icon) {
+                drawMarker('Home', widget.center,
+                          '#1A73E8', '#185ABC', configuration.centerMarker.icon);
+              }
+
+              // Add marker for the specified Place object.
+              widget.addPlaceMarker = function(place) {
+                place.marker = drawMarker(place.name, place.coords, '#EA4335', '#C5221F', place.icon);
+                place.marker.addListener('click', () => void widget.selectPlaceById(place.placeId));
+              };
+
+              // Fit map to bounds that contain all markers of the specified Place objects.
+              widget.updateBounds = function(places) {
+                const bounds = new google.maps.LatLngBounds();
+                bounds.extend(widget.center);
+                for (let place of places) {
+                  bounds.extend(place.marker.getPosition());
+                }
+                widget.map.fitBounds(bounds, /* padding= */ 100);
+              };
+
+              // Marker used to highlight a place from Autocomplete search.
+              widget.selectedPlaceMarker = new google.maps.Marker({title: 'Point of Interest'});
+            }
+
+            /** Initializes Place Details service for the widget. */
+            function initializePlaceDetails() {
+              const detailsService = new google.maps.places.PlacesService(widget.map);
+              const placeIdsToDetails = new Map();  // Create object to hold Place results.
+
+              for (let place of widget.places) {
+                placeIdsToDetails.set(place.placeId, place);
+                place.fetchedFields = new Set(['place_id']);
+              }
+
+              widget.fetchPlaceDetails = function(placeId, fields, callback) {
+                if (!placeId || !fields) return;
+
+                // Check for field existence in Place object.
+                let place = placeIdsToDetails.get(placeId);
+                if (!place) {
+                  place = {placeId: placeId, fetchedFields: new Set(['place_id'])};
+                  placeIdsToDetails.set(placeId, place);
+                }
+                const missingFields = fields.filter((field) => !place.fetchedFields.has(field));
+                if (missingFields.length === 0) {
+                  callback(place);
+                  return;
+                }
+
+                const request = {placeId: placeId, fields: missingFields};
+                let retryCount = 0;
+                const processResult = function(result, status) {
+                  if (status !== google.maps.places.PlacesServiceStatus.OK) {
+                    // If query limit has been reached, wait before making another call;
+                    // Increase wait time of each successive retry with exponential backoff
+                    // and terminate after five failed attempts.
+                    if (status === google.maps.places.PlacesServiceStatus.OVER_QUERY_LIMIT &&
+                        retryCount < 5) {
+                      const delay = (Math.pow(2, retryCount) + Math.random()) * 500;
+                      setTimeout(() => void detailsService.getDetails(request, processResult), delay);
+                      retryCount++;
+                    }
+                    return;
+                  }
+
+                  // Basic details.
+                  if (result.name) place.name = result.name;
+                  if (result.geometry) place.coords = result.geometry.location;
+                  if (result.formatted_address) place.address = result.formatted_address;
+                  if (result.photos) {
+                    place.photos = result.photos.map((photo) => ({
+                      urlSmall: photo.getUrl({maxWidth: 200, maxHeight: 200}),
+                      urlLarge: photo.getUrl({maxWidth: 1200, maxHeight: 1200}),
+                      attrs: photo.html_attributions,
+                    })).slice(0, ND_NUM_PLACE_PHOTOS_MAX);
+                  }
+                  if (result.types) {
+                    place.type = formatPlaceType(result.types[0]);
+                    place.icon = ND_MARKER_ICONS_BY_TYPE['_default'];
+                    for (let type of result.types) {
+                      if (type in ND_MARKER_ICONS_BY_TYPE) {
+                        place.type = formatPlaceType(type);
+                        place.icon = ND_MARKER_ICONS_BY_TYPE[type];
+                        break;
+                      }
+                    }
+                  }
+                  if (result.url) place.url = result.url;
+
+                  for (let field of missingFields) {
+                    place.fetchedFields.add(field);
+                  }
+                  callback(place);
+                };
+                detailsService.getDetails(request, processResult);
+              };
+            }
+
+            /** Initializes the side panel that holds curated POI results. */
+            function initializeSidePanel() {
+              const placesPanelEl = widgetEl.querySelector('.places-panel');
+              const detailsPanelEl = widgetEl.querySelector('.details-panel');
+              const placeResultsEl = widgetEl.querySelector('.place-results-list');
+              const showMoreButtonEl = widgetEl.querySelector('.show-more-button');
+              const photoModalEl = widgetEl.querySelector('.photo-modal');
+              const detailsTemplate = Handlebars.compile(
+                  document.getElementById('nd-place-details-tmpl').innerHTML);
+              const resultsTemplate = Handlebars.compile(
+                  document.getElementById('nd-place-results-tmpl').innerHTML);
+
+              // Show specified POI photo in a modal.
+              const showPhotoModal = function(photo, placeName) {
+                const prevFocusEl = document.activeElement;
+                const imgEl = photoModalEl.querySelector('img');
+                imgEl.src = photo.urlLarge;
+                const backButtonEl = photoModalEl.querySelector('.back-button');
+                backButtonEl.addEventListener('click', () => {
+                  hideElement(photoModalEl, prevFocusEl);
+                  imgEl.src = '';
+                });
+                photoModalEl.querySelector('.photo-place').innerHTML = placeName;
+                photoModalEl.querySelector('.photo-attrs span').innerHTML = photo.attrs;
+                const attributionEl = photoModalEl.querySelector('.photo-attrs a');
+                if (attributionEl) attributionEl.setAttribute('target', '_blank');
+                photoModalEl.addEventListener('click', (e) => {
+                  if (e.target === photoModalEl) {
+                    hideElement(photoModalEl, prevFocusEl);
+                    imgEl.src = '';
+                  }
+                });
+                showElement(photoModalEl, backButtonEl);
+              };
+
+              // Select a place by id and show details.
+              let selectedPlaceId;
+              widget.selectPlaceById = function(placeId, panToMarker) {
+                if (selectedPlaceId === placeId) return;
+                selectedPlaceId = placeId;
+                const prevFocusEl = document.activeElement;
+
+                const showDetailsPanel = function(place) {
+                  detailsPanelEl.innerHTML = detailsTemplate(place);
+                  const backButtonEl = detailsPanelEl.querySelector('.back-button');
+                  backButtonEl.addEventListener('click', () => {
+                    hideElement(detailsPanelEl, prevFocusEl);
+                    selectedPlaceId = undefined;
+                    widget.updateDirections();
+                    widget.selectedPlaceMarker.setMap(null);
+                  });
+                  detailsPanelEl.querySelectorAll('.photo').forEach((photoEl, i) => {
+                    photoEl.addEventListener('click', () => {
+                      showPhotoModal(place.photos[i], place.name);
+                    });
+                  });
+                  showElement(detailsPanelEl, backButtonEl);
+                  detailsPanelEl.scrollTop = 0;
+                };
+
+                const processResult = function(place) {
+                  if (place.marker) {
+                    widget.selectedPlaceMarker.setMap(null);
+                  } else {
+                    widget.selectedPlaceMarker.setPosition(place.coords);
+                    widget.selectedPlaceMarker.setMap(widget.map);
+                  }
+                  if (panToMarker) {
+                    widget.map.panTo(place.coords);
+                  }
+                  showDetailsPanel(place);
+                  widget.fetchDuration(place, showDetailsPanel);
+                  widget.updateDirections(place);
+                };
+
+                widget.fetchPlaceDetails(placeId, [
+                  'name', 'types', 'geometry.location', 'formatted_address', 'photo', 'url',
+                ], processResult);
+              };
+
+              // Render the specified place objects and append them to the POI list.
+              const renderPlaceResults = function(places, startIndex) {
+                placeResultsEl.insertAdjacentHTML('beforeend', resultsTemplate({places: places}));
+                placeResultsEl.querySelectorAll('.place-result').forEach((resultEl, i) => {
+                  const place = places[i - startIndex];
+                  if (!place) return;
+                  // Clicking anywhere on the item selects the place.
+                  // Additionally, create a button element to make this behavior
+                  // accessible under tab navigation.
+                  resultEl.addEventListener('click', () => {
+                    widget.selectPlaceById(place.placeId, /* panToMarker= */ true);
+                  });
+                  resultEl.querySelector('.name').addEventListener('click', (e) => {
+                    widget.selectPlaceById(place.placeId, /* panToMarker= */ true);
+                    e.stopPropagation();
+                  });
+                  widget.addPlaceMarker(place);
+                });
+              };
+
+              // Index of next Place object to show in the POI list.
+              let nextPlaceIndex = 0;
+
+              // Fetch and show basic info for the next N places.
+              const showNextPlaces = function(n) {
+                const nextPlaces = widget.places.slice(nextPlaceIndex, nextPlaceIndex + n);
+                if (nextPlaces.length < 1) {
+                  hideElement(showMoreButtonEl);
+                  return;
+                }
+                showMoreButtonEl.disabled = true;
+                // Keep track of the number of Places calls that have not finished.
+                let count = nextPlaces.length;
+                for (let place of nextPlaces) {
+                  const processResult = function(place) {
+                    count--;
+                    if (count > 0) return;
+                    renderPlaceResults(nextPlaces, nextPlaceIndex);
+                    nextPlaceIndex += n;
+                    widget.updateBounds(widget.places.slice(0, nextPlaceIndex));
+                    const hasMorePlacesToShow = nextPlaceIndex < widget.places.length;
+                    if (hasMorePlacesToShow || hasHiddenContent(placesPanelEl)) {
+                      showElement(showMoreButtonEl);
+                      showMoreButtonEl.disabled = false;
+                    } else {
+                      hideElement(showMoreButtonEl);
+                    }
+                  };
+                  widget.fetchPlaceDetails(place.placeId, [
+                    'name', 'types', 'geometry.location',
+                  ], processResult);
+                }
+              };
+              showNextPlaces(ND_NUM_PLACES_INITIAL);
+
+              showMoreButtonEl.addEventListener('click', () => {
+                placesPanelEl.classList.remove('no-scroll');
+                showMoreButtonEl.classList.remove('sticky');
+                showNextPlaces(ND_NUM_PLACES_SHOW_MORE);
+              });
+            }
+
+            /** Initializes Distance Matrix service for the widget. */
+            function initializeDistanceMatrix() {
+              const distanceMatrixService = new google.maps.DistanceMatrixService();
+
+              // Annotate travel times from the centered location to the specified place.
+              widget.fetchDuration = function(place, callback) {
+                if (!widget.center || !place || !place.coords || place.duration) return;
+                const request = {
+                  origins: [widget.center],
+                  destinations: [place.coords],
+                  travelMode: google.maps.TravelMode.WALKING,
+                };
+                distanceMatrixService.getDistanceMatrix(request, function(result, status) {
+                  if (status === google.maps.DistanceMatrixStatus.OK) {
+                    const trip = result.rows[0].elements[0];
+                    if (trip.status === google.maps.DistanceMatrixElementStatus.OK) {
+                      place.duration = trip.duration;
+                      callback(place);
+                    }
+                  }
+                });
+              };
+            }
+
+            /** Initializes Directions service for the widget. */
+            function initializeDirections() {
+              const directionsService = new google.maps.DirectionsService();
+              const directionsRenderer = new google.maps.DirectionsRenderer({
+                suppressMarkers: true,
+                preserveViewport: true,
+              });
+
+              // Update directions from the centered location to specified place.
+              widget.updateDirections = function(place) {
+                if (!widget.center || !place || !place.coords) {
+                  directionsRenderer.setMap(null);
+                  return;
+                }
+                // Use existing results if available.
+                if (place.directions) {
+                  directionsRenderer.setMap(widget.map);
+                  directionsRenderer.setDirections(place.directions);
+                  return;
+                }
+                const request = {
+                  origin: widget.center,
+                  destination: place.coords,
+                  travelMode: google.maps.TravelMode.WALKING,
+                };
+                directionsService.route(request, function(result, status) {
+                  if (status === google.maps.DirectionsStatus.OK) {
+                    place.directions = result;
+                    directionsRenderer.setMap(widget.map);
+                    directionsRenderer.setDirections(result);
+                  }
+                });
+              };
+            }
+          }
+      </script>
+
+
+      
+      </div>
+    </div>
+  </body>
+</html>
+
+<script>
+
+  // JavaScript for dynamic date navigation
+  const currentDateDisplay = document.getElementById('currentDateDisplay');
+
+// Function to display the current date in the <h4> element
+function displayDate(date) {
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    currentDateDisplay.textContent = date.toLocaleDateString('en-US', options);
+}
+
+// Function to navigate to the previous day
+function previousDay() {
+    currentDate.setDate(currentDate.getDate() - 1);
+    displayDate(currentDate);
+}
+
+// Function to navigate to the next day
+function nextDay() {
+    currentDate.setDate(currentDate.getDate() + 1);
+    displayDate(currentDate);
+}
+
+// Initialize with the current date
+const currentDate = new Date();
+displayDate(currentDate);
+window.onscroll = function() {scrollFunction()};
+
+function scrollFunction() {
+  if (document.body.scrollTop > 15 || document.documentElement.scrollTop > 15) {
+    document.getElementById("titlelogo").style = "width:100px;height:50px;";
+  } else {
+    document.getElementById("titlelogo").style = "width:140px;height:70px;";
+  }
+} 
+
+function clearFilters() {
+  // Unselect checkboxes in the location section
+  document.getElementById("venueACheckbox").checked = false;
+  document.getElementById("venueBCheckbox").checked = false;
+  document.getElementById("venueCCheckbox").checked = false;
+  document.getElementById("venueDCheckbox").checked = false;
+  document.getElementById("venueECheckbox").checked = false;
+
+  // Unselect checkboxes in the time section
+  document.getElementById("morningCheckbox").checked = false;
+  document.getElementById("afternoonCheckbox").checked = false;
+  document.getElementById("eveningCheckbox").checked = false;
+
+  // Unselect checkboxes in the event type section
+  document.getElementById("familyCheckbox").checked = false;
+  document.getElementById("childrenCheckbox").checked = false;
+  document.getElementById("adultCheckbox").checked = false;
+
+  var rElems = document.querySelectorAll(".list-events div.event");
+  for (var i = 0; i < rElems.length; i++) {
+    rElems[i].style.display = "block";
+  }
+
+}
+
+//!!!Search by name start
+function searchName() {
+  // Declare variables
+  var input, filter, ul, li, a, i, txtValue;
+  input = document.getElementById('searchInput');
+  filter = input.value.toUpperCase();
+  var rElems = document.querySelectorAll(".list-events div.event");
+
+  // Loop through all list items, and hide those who don't match the search query
+  for (i = 0; i < rElems.length; i++) {
+    var el = rElems[i];
+    txtValue = availEvents[parseInt(el.id.substring(6,el.id.length))].title || availEvents[parseInt(el.id.substring(6,el.id.length))].title;
+    if (txtValue.toUpperCase().indexOf(filter) > -1) {
+      el.style.display = "";
+    } else {
+      el.style.display = "none";
+    }
+  }
+}
+
+
+//!!!Filters JS start
+function change(){
+  var venueFilters = document.querySelectorAll(".location-checkboxes input[type='checkbox']");
+  var timeFilters = document.querySelectorAll(".time-checkboxes input[type='checkbox']");
+  var typeFilters = document.querySelectorAll(".eventType-checkboxes input[type='checkbox']");
+  var filters = {
+    venues: getClassOfCheckedCheckboxes(venueFilters),
+    times: getClassOfCheckedCheckboxes(timeFilters),
+    types: getClassOfCheckedCheckboxes(typeFilters)
+  }
+  console.log(filters);
+  filterResults(filters);
+  }
+
+  function getClassOfCheckedCheckboxes(checkboxes) {
+  var classes = [];
+
+  if (checkboxes && checkboxes.length > 0) {
+    for (var i = 0; i < checkboxes.length; i++) {
+      var cb = checkboxes[i];
+
+      if (cb.checked) {
+        classes.push(cb.getAttribute("filter"));
+      }
+    }
+  }
+
+  return classes;
+}
+
+function filterResults(filters) {
+  var rElems = document.querySelectorAll(".list-events div.event");
+  var hiddenElems = [];
+
+  if (!rElems || rElems.length <= 0) {
+    return;
+  }
+
+  for (var i = 0; i < rElems.length; i++) {
+    var el = rElems[i];
+
+    if (filters.venues.length > 0) {
+      var isHidden = true;
+
+      for (var j = 0; j < filters.venues.length; j++) {
+        var filter = filters.venues[j];
+
+        /*
+        console.log(el.id)
+        console.log(el.id.substring(6,el.id.length))
+        console.log(parseInt(el.id.substring(6,el.id.length)))
+        console.log(availEvents[0])
+        console.log(availEvents[0].location)
+        
+        */
+        console.log(availEvents[parseInt(el.id.substring(6,el.id.length))].location)
+        console.log(filter)
+
+        if (availEvents[parseInt(el.id.substring(6,el.id.length))].location == filter) {
+          isHidden = false;
+          break;
+        }
+      }
+
+      if (isHidden) {
+        hiddenElems.push(el);
+      }
+    }
+
+    if (filters.types.length > 0) {
+      var isHidden = true;
+
+      for (var j = 0; j < filters.types.length; j++) {
+        var filter = filters.types[j];
+
+        if (availEvents[parseInt(el.id.substring(6,el.id.length))].type == filter) {
+          isHidden = false;
+          break;
+        }
+      }
+
+      if (isHidden) {
+        hiddenElems.push(el);
+      }
+    }
+
+    if (filters.times.length > 0) {
+      var isHidden = true;
+
+      for (var j = 0; j < filters.times.length; j++) {
+        var filter = filters.times[j];
+
+        if ((filter == "Morning" && (availEvents[parseInt(el.id.substring(6,el.id.length))].availableTimes[0].startHour < 12 || availEvents[parseInt(el.id.substring(6,el.id.length))].availableTimes[1].startHour < 12 || availEvents[parseInt(el.id.substring(6,el.id.length))].availableTimes[2].startHour < 12)) ||
+            (filter == "Afternoon" && ((availEvents[parseInt(el.id.substring(6,el.id.length))].availableTimes[0].startHour >= 12 && availEvents[parseInt(el.id.substring(6,el.id.length))].availableTimes[0].startHour < 17) || (availEvents[parseInt(el.id.substring(6,el.id.length))].availableTimes[1].startHour >= 12 && availEvents[parseInt(el.id.substring(6,el.id.length))].availableTimes[1].startHour < 17) || (availEvents[parseInt(el.id.substring(6,el.id.length))].availableTimes[2].startHour >= 12 && availEvents[parseInt(el.id.substring(6,el.id.length))].availableTimes[2].startHour < 17))) ||
+            (filter == "Evening" && (availEvents[parseInt(el.id.substring(6,el.id.length))].availableTimes[0].startHour >= 17 || availEvents[parseInt(el.id.substring(6,el.id.length))].availableTimes[1].startHour >= 17 || availEvents[parseInt(el.id.substring(6,el.id.length))].availableTimes[2].startHour >= 17))){
+          isHidden = false;
+          break;
+        }
+      }
+
+      if (isHidden) {
+        hiddenElems.push(el);
+      }
+    }
+
+  }
+  for (var i = 0; i < rElems.length; i++) {
+    rElems[i].style.display = "block";
+  }
+
+  if (hiddenElems.length <= 0) {
+    return;
+  }
+
+  for (var i = 0; i < hiddenElems.length; i++) {
+    hiddenElems[i].style.display = "none";
+  }
+}
+
+//document.getElementById("event_0").style.display = "none";
+
+  function applyFilter() {
+    var searchValue = document.getElementById("searchInput").value.toLowerCase();
+    var filterOption = document.getElementById("filterOptions").value.toLowerCase();
+
+    // Implement your filtering logic here for the side-panel
+    // For example, you can get elements by class and hide/show them based on filter criteria
+    // var elements = document.querySelectorAll('.side-panel .your-elements-selector');
+    // elements.forEach(element => {
+    //     // Implement your logic to hide/show elements based on the filter criteria
+    // });
+
+    // Placeholder alert
+    alert("Filter applied to side-panel: Search - " + searchValue + ", Filter - " + filterOption);
+  }
+
+  function filterSelection() {
+    var locationsChecked = document.getElementById("locationsCheckbox").checked;
+    var timesChecked = document.getElementById("timesCheckbox").checked;
+    var eventTypesChecked = document.getElementById("eventTypesCheckbox").checked;
+
+    var x, i;
+    x = document.querySelectorAll('.container .filterDiv');
+
+    for (i = 0; i < x.length; i++) {
+        var categories = x[i].classList;
+        var showElement =
+            (locationsChecked && categories.contains('locations')) ||
+            (timesChecked && categories.contains('times')) ||
+            (eventTypesChecked && categories.contains('eventTypes'));
+
+        x[i].style.display = showElement ? 'block' : 'none';
+    }
+  }
+
+  // Add event listeners to the checkboxes
+  //document.getElementById("locationsCheckbox").addEventListener("change", filterSelection);
+  //document.getElementById("timesCheckbox").addEventListener("change", filterSelection);
+  //document.getElementById("eventTypesCheckbox").addEventListener("change", filterSelection);
+
+  // Trigger the initial filtering
+  //filterSelection();
+
+//!!!Side panel JS start
+  // document.querySelector(".side-panel-toggle").addEventListener("click", () => {
+  // document.querySelector(".wrapper").classList.toggle("side-panel-open");
+  // });
+  document.querySelector(".wrapper").classList.toggle("side-panel2-open")
+  document.querySelector(".side-panel2-toggle").addEventListener("click", () => {
+  document.querySelector(".wrapper").classList.toggle("side-panel2-open");
+  });
+
+  document.querySelector(".wrapper").classList.toggle("side-panel3-open")
+  document.querySelector(".side-panel3-toggle").addEventListener("click", () => {
+  document.querySelector(".wrapper").classList.toggle("side-panel3-open");
+  });
+
+
+//!!!Events JS
+const availEventTemplate = document.querySelector('#template-list-event');
+  const listEvents = document.querySelector('.list-events');
+
+  const availEvents = [
+    {
+      eventID: 0,
+      title: 'Dog Bowl',
+      description: 'At the BMO center, an elite troupe of highly-trained pupper athletes who are paws-down the most lovable performers around. From agility poles and dock-diving, to frisbee and freestyle dancing, this action-packed show is sure to impress children of all ages.',
+      availableTimes: [{day: 20, startHour: 9}, {day: 20, startHour: 12.5}, {day: 20, startHour: 15.5}],
+      duration: 1,
+      location: 'BMO Center',
+      type: 'Children',
+    },
+    {
+      eventID: 1,
+      title: 'Motor Bikes',
+      description: 'Located across from the Saddledome, watch these motocross athletes at the Monster Energy Compound reach new heights as they showcase their skills and perform gravity-defying stunts. Fun for the whole family.',
+      availableTimes: [{day: 20, startHour: 11.5}, {day: 20, startHour: 13}, {day: 20, startHour: 15.5}],
+      duration: 2,
+      location: 'Saddledome',
+      type: 'Family',
+    },
+    {
+      eventID: 2,
+      title: 'Chuck Wagon',
+      description: 'Fun for the whole family, watch the thrill of horse drawn carrages race to see who is the fastest.',
+      availableTimes: [{day: 20, startHour: 10.5}, {day: 20, startHour: 13}, {day: 20, startHour: 16.5}],
+      duration: 3,
+      location: 'GMC Stadium',
+      type: 'Family',
+    },
+    {
+      eventID: 3,
+      title: 'T-Pain Concert',
+      description: 'For adults only, check T-Pain hip hop in the Big Four Building.',
+      availableTimes: [{day: 20, startHour: 14.5}, {day: 20, startHour: 17}, {day: 20, startHour: 21.5}],
+      duration: 2.5,
+      location: 'Big Four Building',
+      type: 'Adult',
+    },
+  ];
+
+  availEvents.forEach((availEvent) => {
+    const availEventNode = availEventTemplate.content.cloneNode(true);
+    
+    availEventNode.querySelector('#list-event').id = "event_" + availEvent.eventID;
+    availEventNode.querySelector('#titleButton').innerHTML = availEvent.title + '<i class="fa-solid fa-angle-down"></i>';
+    availEventNode.querySelector('#templateDescription').textContent = availEvent.description;
+    availEventNode.querySelector('#timeButton1').textContent = convertNumToTime(availEvent.availableTimes[0].startHour);
+    availEventNode.querySelector('#timeButton1').id = availEvent.eventID;
+    availEventNode.querySelector('#timeButton2').textContent = convertNumToTime(availEvent.availableTimes[1].startHour);
+    availEventNode.querySelector('#timeButton2').id = availEvent.eventID;
+    availEventNode.querySelector('#timeButton3').textContent = convertNumToTime(availEvent.availableTimes[2].startHour);
+    availEventNode.querySelector('#timeButton3').id = availEvent.eventID;
+
+    listEvents.appendChild(availEventNode);
+  });
+
+  var coll = document.getElementsByClassName("collapsible");
+  var i;
+
+  for (i = 0; i < coll.length; i++) {
+  coll[i].addEventListener("click", function() {
+    this.classList.toggle("active");
+    var content = this.nextElementSibling;
+    if (content.style.display === "block") {
+    content.style.display = "none";
+    } else {
+    content.style.display = "block";
+    }
+  });
+  } 
+    
+  
+  function convertNumToTime(number) {
+    // Check sign of given number
+    var sign = (number >= 0) ? 1 : -1;
+
+    // Set positive value of number of sign negative
+    number = number * sign;
+
+    // Separate the int from the decimal part
+    var hour = Math.floor(number);
+    var decpart = number - hour;
+
+    var min = 1 / 60;
+    // Round to nearest minute
+    decpart = min * Math.round(decpart / min);
+
+    var minute = Math.floor(decpart * 60) + '';
+
+    // Add padding if need
+    if (minute.length < 2) {
+    minute = '0' + minute; 
+    }
+
+    // Add Sign in final result
+    sign = sign == 1 ? '' : '-';
+
+    // Return concated hours and minutes
+    return sign + hour + ':' + minute;
+}
+
+//!!!Schedule JS
+  const startHour = 7;
+  const endHour = 24;
+  const resolution = 2;
+  const currentHour = 12;
+  const currentMinute = 25;
+  
+  const hourTemplate = document.querySelector(
+    '#template-hour');
+  const hourGrid = document.querySelector(
+    '.calendar__hour-grid');
+  for (let i = startHour; i <= endHour; i++) {
+    const hourNode = hourTemplate.content
+      .firstElementChild.cloneNode(true);
+    hourGrid.appendChild(hourNode);
+  
+    hourNode.querySelector('.label')
+      .innerText = `${i}`.padStart(2, '0');
+  
+    if (currentHour === i) {
+      hourNode.classList.add('current');
+      hourNode.style.setProperty(
+        '--current-minute', currentMinute
+      );
+    }
+  }
+  
+  const events = [
+    {
+      start: 9,
+      end: 11,
+      title: 'Dog Bowl',
+      past: true,
+    },
+    {
+      start: 10.5,
+      end: 11.5,
+      title: 'Chuck Wagon',
+      past: true,
+    },
+    {
+      start: 14,
+      end: 15,
+      title: 'Motor Bikes',
+      past:false,
+    },
+  ];  
+  const eventTemplate = document
+    .querySelector('#template-event'); 
+  const calendarEvents = document
+    .querySelector('.calendar__events');
+  const calendar = document
+    .querySelector('.calendar');
+  
+  calendar.style.setProperty(
+    '--start-hour', startHour);
+  calendar.style.setProperty(
+    '--end-hour', endHour);
+  calendar.style.setProperty(
+    '--resolution', resolution);
+  
+  events.forEach((event) => {
+    const eventNode = eventTemplate.content
+      .firstElementChild.cloneNode(true);
+    eventNode.id = 'schedule_' + event.title + event.start;
+    calendarEvents.appendChild(eventNode);
+  
+    eventNode.querySelector('.label')
+      .innerText = event.title;
+    eventNode.style.setProperty(
+      '--start', event.start);
+    eventNode.style.setProperty(
+      '--end', event.end);
+    if (event.past) {
+      eventNode.classList.add('past');
+    }
+  });
+
+  
+
+  var collTime = document.getElementsByClassName("timeButton");
+  for (var j = 0; j < collTime.length; j++){
+    collTime[j].addEventListener("click", function(){
+      this.classList.toggle("active");
+      var exists = false;
+      var indexToRemove = null;
+      //console.log("exists: " + exists);
+      for (i = 0; i < events.length; i++){
+        //console.log("i: " + i);
+        //console.log(events[i]);
+        if(events[i].title == availEvents[parseInt(this.id)].title && events[i].start == parseFloat(this.textContent)){
+          //console.log("title: " + events[i].title);
+          //console.log("start: " + events[i].start);
+          exists = true;
+          indexToRemove = i;
+        }
+      }
+      if (exists){
+        //console.log("indexToRemove: " + indexToRemove);
+        calendarEvents.removeChild(document.getElementById("schedule_" + events[indexToRemove].title + events[indexToRemove].start));
+        events.splice(indexToRemove, 1);
+        //console.log("REMOVED");
+      }
+      else{
+        //console.log("ADDING");
+        if(parseFloat(this.textContent) + availEvents[parseInt(this.id)].duration <= currentHour+(currentMinute/60)){
+          var pastEvent = true;
+        }
+        else{
+          pastEvent = false;
+        }
+        event = {
+        start: parseFloat(this.textContent),
+        end: parseFloat(this.textContent) + availEvents[parseInt(this.id)].duration,
+        title: availEvents[parseInt(this.id)].title,
+        past: pastEvent,
+        }
+        events.push(event);
+
+        const eventNode = eventTemplate.content
+        .firstElementChild.cloneNode(true);
+        eventNode.id = 'schedule_' + event.title + event.start;
+        calendarEvents.appendChild(eventNode);
+    
+        eventNode.querySelector('.label').innerText = event.title;
+        eventNode.style.setProperty('--start', event.start);
+        eventNode.style.setProperty('--end', event.end);
+        if (event.past) {
+        eventNode.classList.add('past');
+        }
+      }
+    });
+  }
+
+  // Array to keep track of selected event start times and durations
+let selectedEvents = [];
+
+// Function to handle time button clicks
+function handleTimeButtonClick(event) {
+    const clickedButton = event.target;
+
+    // Extract event details from the clicked button
+    const eventId = parseInt(clickedButton.id); // Assuming button id corresponds to event ID
+    const eventTitle = availEvents[eventId].title;
+    const eventStartTime = parseFloat(clickedButton.textContent);
+    const eventDuration = availEvents[eventId].duration;
+
+    // Check if the event is already selected (clicked again)
+    const isAlreadySelected = selectedEvents.some(event => event.id === eventId);
+
+    if (!isAlreadySelected) {
+        // Add the selected event to the array
+        const selectedEvent = {
+            id: eventId,
+            start: eventStartTime,
+            end: eventStartTime + eventDuration
+        };
+        selectedEvents.push(selectedEvent);
+
+        // Check for conflicts with existing selected events
+        const conflict = checkForConflicts(selectedEvents);
+
+        if (conflict) {
+            // Display a pop-up indicating a schedule conflict
+            alert(`Schedule conflict detected! Adding "${eventTitle}" at ${eventStartTime} causes overlap.`);
+            // Remove the last added event from the array
+            selectedEvents.pop();
+        } else {
+            // No conflict, proceed with adding the event to the schedule
+            // Add your logic here to add the event to the schedule or perform other actions
+            // For example:
+            // addToSchedule(eventId, eventStartTime);
+            // updateUI();
+        }
+    }
+}
+
+// Function to check for conflicts among selected events
+function checkForConflicts(events) {
+    // Iterate over selected events and check for overlaps
+    for (let i = 0; i < events.length; i++) {
+        for (let j = i + 1; j < events.length; j++) {
+            if (
+                events[i].start < events[j].end &&
+                events[j].start < events[i].end
+            ) {
+                // Conflict detected
+                return true;
+            }
+        }
+    }
+    // No conflicts found
+    return false;
+}
+
+// Add event listeners to all time buttons
+const timeButtons = document.querySelectorAll('.timeButton');
+timeButtons.forEach(button => {
+    button.addEventListener('click', handleTimeButtonClick);
+});
+
+//Schedule JS End
+
+const suggestions = [
+  "Dog Bowl",
+  "Motor Bikes",
+  "Chuck Wagon",
+  "T-Pain Concert"
+];
+
+const searchInput = document.getElementById('searchInput');
+const autocompleteResults = document.getElementById('autocompleteResults');
+
+function displayAutocompleteResults() {
+  const searchTerm = searchInput.value.toLowerCase();
+  const filteredSuggestions = suggestions.filter(suggestion =>
+    suggestion.toLowerCase().startsWith(searchTerm)
+  );
+
+  // Clear previous results
+  autocompleteResults.innerHTML = '';
+
+  // Display filtered suggestions
+  if (searchTerm && filteredSuggestions.length > 0) {
+    autocompleteResults.style.display = 'block';
+
+    filteredSuggestions.forEach(suggestion => {
+      const autocompleteItem = document.createElement('div');
+      autocompleteItem.textContent = suggestion;
+      autocompleteItem.classList.add('autocomplete-item');
+
+      autocompleteItem.addEventListener('click', () => {
+        searchInput.value = suggestion;
+        autocompleteResults.style.display = 'none'; // Hide suggestions after selection
+      });
+
+      autocompleteResults.appendChild(autocompleteItem);
+    });
+  } else {
+    autocompleteResults.style.display = 'none';
+  }
+}
+
+// Event listener for input changes
+searchInput.addEventListener('input', displayAutocompleteResults);
+
+// Event listener to hide autocomplete results on outside click
+document.addEventListener('click', event => {
+  if (!autocompleteResults.contains(event.target) && event.target !== searchInput) {
+    autocompleteResults.style.display = 'none';
+  }
+});
+
+// Prevent form submission (optional)
+const form = document.querySelector('form');
+form.addEventListener('submit', event => {
+  event.preventDefault();
+  // Perform search or other action here
+});
+
+</script>
