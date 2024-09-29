@@ -1,0 +1,125 @@
+@font-face {
+    font-family: HowdyLemon;
+    src: url('../assets/fonts/HowdyLemon.ttf');
+}
+
+@font-face {
+  font-family: CarvingSoft;
+  src: url('../assets/fonts/CarvingSoft.otf');
+}
+
+* {
+  font-family: CarvingSoft;
+  box-sizing: border-box;
+}
+
+.main-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: auto;
+  background-color: #ffe7cf;
+}
+
+.row {
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: center;
+    align-self: center;
+    align-content: center;
+    align-items: center;
+  }
+
+  .column {
+    display: flex;
+    flex-flow: column nowrap;
+    align-items: center;
+    flex: 20%;
+  }
+
+  header {
+    background-color:#c96e30;
+    text-align: center;
+    border-top-right-radius: 8px;
+    border-top-left-radius: 8px;
+    padding: 2px;
+    font-size: 25px;
+    color: white;
+  }
+
+  h4 {
+    font-size: 20px;
+    text-align: center;
+    margin-top: -30px;  
+    margin-bottom: 8px;
+  }
+
+  footer {
+    background-color: #c96e30;
+    padding: 10px;
+    border-bottom-right-radius: 8px;
+    border-bottom-left-radius: 8px;
+    text-align: center;
+    color: white;
+  }
+
+  button {
+    background-color: #d9437a00; 
+    border: none;
+    color: black;
+    margin: 10px;
+    min-width: 190px;
+    min-height: 100px;
+    padding: 12px;
+    z-index: 3;
+    text-align: center;
+    border-radius: 16%;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 24px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+  }
+
+  .as1button {
+    background-color: #d9437a00; 
+    border: none;
+    color: rgb(206, 122, 194);
+    margin: 10px;
+    min-width: 190px;
+    min-height: 50px;
+    padding: 12px;
+    z-index: 3;
+    text-align: center;
+    border-radius: 16%;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 24px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+  }
+  
+  .as1button:hover {
+    cursor: grab;
+    color: #ff87b9;
+    opacity: 0.9; 
+  }
+
+  button:hover span {
+    display:none
+  }
+
+  button:hover {
+    cursor: grab;
+    color: #ffb587;
+    opacity: 0.9; 
+  }
+
+  button:active {
+    box-shadow: 0 2px 4px rgba(41, 26, 26, 0.1);
+    transform: translateY(4px);
+  }
+
+  button:disabled {
+    color: #696969;
+  };

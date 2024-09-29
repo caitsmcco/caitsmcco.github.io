@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang=""en>
+    <head>
+    <title>581: Human Computer Interaction II</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="main_style.css">
+    </head>
+    <body>
+        <header>
+            <h2>CPSC 581</h2>
+            <h1>Human Computer Interaction II</h1>
+            <h3>Caitlin McConnery</h3>
+            <h4>UCID: 30118518</h4>
+        </header>
+
+        <div class="main-container">
+            <div class="row" style="margin-bottom: 10px;">
+                <button id="as1" onClick="displayA(as1,as1block);">
+                    assignment 1
+                </button>
+                <button id="as2" onClick="displayA(as2,as2block);">
+                    assignment 2
+                </button>
+                <button id="as3"  onClick="displayA(as3,as2block);">
+                    assignment 3
+                </button>
+                <button id="as4" onClick="displayA(as4,as2block);">
+                    assignment 4
+                </button>
+            </div>
+            
+            <div id="as1block" style="display:none;">
+                <header id="has1" style="background-color:#ff9bbf;display: block; font-family: HowdyLemon !important;" >
+                    <h1>A Tale of Two Buttons</h1>
+                    <h4 style="font-family: CarvingSoft;">Kaylee Nasser, Caitlin McConnery, and Abdullah Ishtiaq</h4>
+                </header>
+                <div id="mas1" class="main-container" style="background-color:#ffeff5; display: block;">
+                    <div class="row">
+                        <button class="as1button" onClick="as1Set('as1dis')">Description</button>
+                        <button class="as1button" onClick="as1Set('as1con')">Concepts</button>
+                        <button class="as1button" onClick="as1Set('as1ref')">Refined Sketches</button>
+                        <button class="as1button" onClick="as1Set('as1final')">Final Product</button>
+                        <button class="as1button" onClick="window.open('https://github.com/kayleenasser/CPSC-581-Project-1')">Source Code</button>
+                    </div>
+                    <div class="row">
+                        <img src="../assets/as1img/title.png" height="100px">
+                    </div>
+
+
+                    <div id=as1dis class="column" style="margin: 20px; margin-top: 0px; display:inline-block;">
+                        <h2>Description</h2>
+                        Kaylee Nasser, lover of trivia, deserved to have a platform where she could share her interests and facts. This application allowed us to create that.
+                        <br>
+                        Kaylee's Love Guesser has two buttons.
+                        <h3>Swap Tool Button </h3>
+                        This is the "swap tools" button, which will equip a tool onto the users cursor:
+                        <div class="row" style="margin: 10px;"><img src="../assets/as1img/tool-inflate.png" height="60px"></div>
+                        <div class="row">
+                            There are three avalible tools:
+                        </div>
+                        <div class="row">
+                            <img src="../assets/as1img/inflate.gif" height="60px"> When the user clicks the heart with the pump equipped, the heart will inflate - implying more love.
+                        </div>
+                        <div class="row">
+                            <img src="../assets/as1img/deflate.gif" height="40px"> When the user clicks the heart with the hand, the heart will have air squished out of it.
+                        </div>
+                        <div class="row">
+                            <img src="../assets/as1img/check.png" height="40px"> Lastly, when the heart is clicked with the check mark, Kaylee will judge the user's guess and provide her opinion.
+                        </div>
+                        Whether it's ceiling fans, snakes, nuts or wet socks, Kaylee always has something interesting to say.
+                        <h3>Heart Balloon Button</h3>
+                        The heart button will respond to whichever tool is selected, as described above. Once the user has checked their answer they will be equipped with a new tool:
+                        <div class="row">
+                            <img src="../assets/as1img/next.png" height = "40px"> This tool allows the user to go to the next item when they press on the heart.
+                        </div>
+                    </div>
+
+                    <div id="as1con" class="column" style="margin: 20px; display:none;">
+                        <h2>Concept Sketches</h2>
+                        In our brainstorming phase, we had a lot of ideas. <br>
+                        Kaylee is a climber, an artist, a reptile enthusiest, and so much more... <br>
+                        Many of my ideas revolved around the ways that Kaylee acts, and had a focus on the user controlling Kaylee or having Kaylee react to the button presses.<br>
+                        <div class="row" style="margin:20px;">
+                            <img src="../assets/as1img/origional1-3.png" width="400px" >
+                            <img src="../assets/as1img/origional4-10.png" width="400px" >
+                        </div>
+
+                        I decided to clean up my favourite three to present to my group: 
+                        <br> - A pinball machine themed around Kaylee
+                        <br> - A love meter, where different items were tested against her
+                        <br> - A little game where she would scamper in the woods and bring you back something interesting with a fact about it. 
+                        <div class="row" style="margin:20px;">
+                            <img src="../assets/as1img/bestideas.png" height="300px">
+                        </div>
+                        
+                        The Love Meter idea was pretty well recieved and had a lot of simmilar aspects to the other members ideas.<br>
+                        Kaylees love for trivia had the chance to really shine through with this approach - but we weren't sure on the direction yet.
+                        <div class="row" style="margin: 20px;">
+                            <img src="../assets/as1img/combinedsketch.png" height="300px">
+                            <img src="../assets/as1img/10x10.png" height="300px">
+                        </div>
+                        After trying to combine ideas and recieving critiques we came to the conclution that our design wasn't very interactive, and technically had three buttons...<br>
+                        So we had a good start but had to go back to the drawing board for our button designs.
+                    </div>
+
+                    <div id="as1ref" class="column" style="margin: 20px; margin-top: 0px; display:none;">
+                        <h2>Refinements</h2>
+                        After the concepts we knew we had to refine the button ideas. Some of my ideas were:
+                        <div class="row" style="margin-top: 20px;">
+                            <img src="../assets/as1img/buttonalts.png" height="300px">
+                        </div>
+                        <span style="white-space: pre-line">
+                            - A thermometer that could be heated and cooled by the user while Kaylee was cooking. The temperature would equate to Kaylee's affection.
+                            <br> This idea didn't solve the third button problem, and didn't really make sense.
+                            <br> - A projector that would project the image on a screen. The user would slip a red or green piece of plastic over the image for hate or like.
+                            <br> This idea really leaned into Kaylees love for trivia and would have framed her as a host.
+                            <br> It would have required more buttons to go through all of the potential actions, and would have really reshaped the whole concept.
+                            <br> - Patting Jazzy (Kaylee's cat) to increase affection and pulling her tail to decrease it.
+                            <br> We didn't want to be mean to Jazzy...<br>
+                        </span>
+                        We decided that adding a balloon to inflate would move us in the direction we wanted. 
+                        <br>In this design the buttons were no longer just buttons, they interacted with each other in a whimsical way that added more user agency.
+                        <br>Kaylee put together our final refined sketch:
+                        <div class="row" style="margin:20px;">
+                            <img src="../assets/as1img/refinedsketch.png" height="400px">
+                        </div>
+                        <p>
+                        For an added touch we decided to hand draw all of the assets, to allow Kaylees artistic personality to really have a spot light as well.
+                        </p>
+                    </div>
+
+                    <div id="as1final" class="column" style="margin: 20px; margin-top: 0px; display:none;">
+                        <a href="https://kayleenasser.github.io/CPSC-581-Project-1/">Try it out!</a><br>
+                        Our final product is an application that really encapsulates all of who Kaylee is. The user gets the opportunity to get to know her in the same way we were able to.<br>
+                        Most importantly, it gave Kaylee the chance to yap about some of their favourite things. 
+                        <br>The following video is a demo of the final product.
+                        <div class="column">
+                            <video width="700px" controls>
+                                <source src="../assets/as1img/as1demo.mp4" type="video/mp4">
+                            </video>
+                            <a href="https://youtu.be/0aa9bhhS6EQ">Watch on Youtube</a>
+                        </div>
+                        This project provided a lot of challanges for our group. Having to limit ourselves to only two buttons really constrained how we could achieve the result we wanted.
+                        <br>The whole group did a realy good job brainstorming solutions, and the critiques helped a lot.
+                        <br>Kaylee did a great job making assets, providing all the data we needed, and did a great job styling the final product.
+                        <br> Abdullah added a lot of features to really engage the user. He did a wonderful job adding sounds and making the text catch the users eye.
+                        <br> I was mostly focused on creating assets and implementing the ability to equip tools to the users cursor.
+                        <br> We made a great team and were able to utilize our skillsets fully, helping each other along the way!
+                        <br> Along with all of the custom art, the background music was created by Kaylee's partner. It ensured that part of Kaylees heart was in all of it.
+                    </div>
+
+                    <footer id="fas1" style="background-color:#ff9bbf; display: block;margin-bottom: 30px;">
+                        <div></div>
+                    </footer>
+                </div>
+            </div>
+
+            <div id="as2block" style="display:none;">
+                <h1>nothing here yet...</h1>
+            </div>
+        </div>
+        <footer>
+            <div></div>
+        </footer>
+
+        <script src="script.js"></script>
+    </body>
+</html>
