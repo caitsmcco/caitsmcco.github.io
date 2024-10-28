@@ -22,10 +22,10 @@
                 <button id="as2" onClick="displayA(as2,as2block);">
                     assignment 2
                 </button>
-                <button id="as3"  onClick="displayA(as3,as2block);">
+                <button id="as3"  onClick="displayA(as3,as4block);">
                     assignment 3
                 </button>
-                <button id="as4" onClick="displayA(as4,as2block);">
+                <button id="as4" onClick="displayA(as4,as4block);">
                     assignment 4
                 </button>
             </div>
@@ -157,6 +157,124 @@
             </div>
 
             <div id="as2block" style="display:none;">
+                <header id="has2" style="background-color:#50a154;display: block; font-family: HowdyLemon !important;" >
+                    <h1>Sensor Unlock</h1>
+                    <h4 style="font-family: CarvingSoft;">Caitlin McConnery, Emily Tan, and Carlene Kalin</h4>
+                </header>
+                <div id="mas2" class="main-container" style="background-color:#f4ffef; display: block;">
+                    <div class="row">
+                        <button class="as1button" onClick="as2Set('as2dis')">Description</button>
+                        <button class="as1button" onClick="as2Set('as2con')">Concepts</button>
+                        <button class="as1button" onClick="as2Set('as2ref')">Refined Sketches</button>
+                        <button class="as1button" onClick="as2Set('as2final')">Final Product</button>
+                        <button class="as1button" onClick="window.open('https://glitch.com/edit/#!/green-thumb-unlock?path=script.js%3A202%3A21')">Source Code</button>
+                    </div>
+                    <div class="row">
+                        <img src="../assets/as1img/title.png" height="100px">
+                    </div>
+                    <div id="as2dis" class="column" style="margin: 20px; margin-top: 0px; display:inline-block;">
+                        <h2>Discription</h2>
+                        For this assignment we were tasked with creating a new way to unlock a phone using
+                        the avalible sensors. While my group had many ideas, we agreed that using the device's
+                        position would be easily replicable for a user. Emily came up with a water logged idea,
+                        where the screen was filled with water and the user had to pour out a certain amount 
+                        before it could be unlocked. This was the base idea of our project.
+
+                        This project was made with html, js, and css through Glitch. Glitch allowed us to colaborate
+                        in real time and test on our phones without having to push any code. As myself, Emily, and Carlene 
+                        all use iphones, the website requires an iphone for sensor permission grants and use.
+
+                    </div>
+                    <div id="as2con" class="column" style="margin: 20px; display:none;">
+                        <h2>Concept Sketches</h2>
+                        During the concept phase I tried my best to conceptualize unlock features for many sensors.
+                        My ideas for camera unlocks included striking a pose or using a physical keychain. The physical
+                        keychain would work simmilarly to face id, but could be given to a friend if they needed to borrow
+                        your phone. This idea intrigued me, but if the user left the key somewhere else they would have no 
+                        access to their phone.
+
+                        I explored motion and accelorometer unlocks next. Things like yoga routines and dance moves
+                        seemed tedious and too over the top for an unlock. The full arm rotation unlock would
+                        use the rotations diameter to confirm the users height, but would not work if the user
+                        had a growth spurt. 
+                        
+                        The point to location unlock also interested me, where the user would set a home location and
+                        the user would point the phone in the cardinal direction of that location, with the help of
+                        the gps. Issues would arrive if you were at the set location, or if the user was disorriented.
+
+                        I think my favorite idea was the heartbeat confirmation, where the users phone would measure
+                        the users heart rate, which would have to match the timing and bpm of a smart watch that the 
+                        user was wearing. I think this would have been very hard to implement, and the secondary device
+                        would add more constraint to the whole project.
+
+                        It was Emily that came up with a water logged idea, where the user would have to empty a screen
+                        of water to get into their phone. We all 
+                    </div>
+                    <div id="as2ref" class="column" style="margin: 20px; margin-top: 0px; display:none;">
+                        <h2>Refinements</h2>
+                        Refinement of the water logged idea exposed some questions.
+    
+                        Will the amount poured be clear to the user? What would be the acceptible range?
+    
+                            We felt that the tilted water level would be hard for the user to accuritly read,
+                            so we were quite sure adding a range of acceptable levels (between 45 and 55 rather 
+                            than only accepting 50) would be required. 
+                            We discussed adding a percentage to the water level to make the amount poured 
+                            very clear to the user, but I felt as if this would simplify the unlocking 
+                            sequence a lot and reduce the security. 
+    
+                        Why water? If the phone is water logged, how would it make sense for the phone to unlock
+                        after pouring out 50%?
+    
+                            For this we discussed the motivation of the user. Origionally we had a drinking idea, but 
+                            the pouring motion felt more simmilar to 
+                            watering a plant, and thought that this could be a good way for the user to recieve
+                            feedback on their login attempt. Some further ideas came from this:
+                            -  The remaining water could be poured onto a plant, and if the plant thrived it 
+                                would unlock the phone. 
+                            -  A plant would be displayed on screen and would grow as the user poured water on it.
+                                The height of the plant would be comparable to the background, and would unlock when 
+                                confirmed at the right height.
+                            -  A plant would be displayed on screen and a hydration meter would fill to provide 
+                                feedback to the user.
+    
+                            We agreed that we were moving in the right direction, but felt that one pour - with no
+                            other conditions - did not feel secure. With our plant expansion we discussed having to
+                            water two plants, or water one specific plant. This is where the greenhouse idea came in.
+    
+                        How would the user initialize the unlocking process?
+    
+                            Initially, we planned to have a scooping motion to initialize the unlock - this would fill the phone 
+                            with water. Our directional change disrupted this idea as the phone displayed a plant, rather than 
+                            the water that would water the plant. Because of this, we decided that clicking a plant to water would
+                            initiallize the unlock, which would ensure that a tilted phone would not 
+    
+                        How would the user check get feedback?
+                            We felt that the user should get feedback when they returned their phone to a vertical position.
+                            A green key to unlock the greenhouse door was discussed, but we agreed the phone unlocking was 
+                            feedback enough that they succeeded - and would proide the authenticated user a quicker login process.
+
+                            As for failed login attempts, we made sure that failed attempts would be tracked. A dead plant on the 
+                            screen would indicate to the user that someone had attempted to get into their phone. These dead plants 
+                            could still be watered, but would give a visual represention of fails. Along with this, the user only 
+                            has three attempts to successfully unlock their phone. The failure counts are communicated
+                            to the user with the background, which grows colder and eventually snows in the user. In this 
+                            implementation the user is only "snowed in" for a few seconds, then the attempt counter is reset 
+                            and the user can reattempt their unlock.
+    
+                    </div>
+                    <div id="as2final" class="column" style="margin: 20px; margin-top: 0px; display:none;">
+                        After our refinements and implementation we created the "Green Thumb Unlock"!
+                        <a href="https://green-thumb-unlock.glitch.me/">Try it out!</a><br>
+                    </div>
+                </div>
+                <footer id="fas2" style="background-color:#50a154; display: block;margin-bottom: 30px;">
+                    <div></div>
+                </footer>
+                
+            </div>
+
+            <div id="as4block" style="display:none;">
                 <h1>nothing here yet...</h1>
             </div>
         </div>
