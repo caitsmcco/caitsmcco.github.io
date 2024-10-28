@@ -18,8 +18,10 @@
   flex-direction: column;
   align-items: center;
   margin: auto;
-  background-color: #ffe7cf;
+  background-color: #fff4e9;
 }
+
+
 
 .row {
     display: flex;
@@ -35,11 +37,12 @@
     flex-flow: column wrap;
     align-items: center;
     flex: 20%;
-    max-width: 75%;
+    margin: 20px;
+    margin-top: 0px;
   }
 
   header {
-    background-color:#c96e30;
+    background-color:#702d00;
     text-align: center;
     border-top-right-radius: 8px;
     border-top-left-radius: 8px;
@@ -56,7 +59,7 @@
   }
 
   footer {
-    background-color: #c96e30;
+    background-color: #702d00;
     padding: 10px;
     border-bottom-right-radius: 8px;
     border-bottom-left-radius: 8px;
@@ -82,9 +85,33 @@
     transition: all 0.2s ease;
   }
 
-  #b2 {
-    background-color: aquamarine;
+  .as2button {
+    background-color: #d9437a00; 
+    border: none;
+    color: #4d6f3d;
+    margin: 10px;
+    min-width: 190px;
+    min-height: 50px;
+    padding: 12px;
+    z-index: 3;
+    text-align: center;
+    border-radius: 16%;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 24px;
+    font-weight: bold;
+    transition: all 0.2s ease;
   }
+
+  .as2button:hover {
+    cursor: grab;
+    color: #2e372a;
+    opacity: 0.9; 
+  }
+
+  .as2button:disabled {
+    color: #696969;
+  };
 
   .as1button {
     background-color: #d9437a00; 
