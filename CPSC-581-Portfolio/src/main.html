@@ -23,7 +23,7 @@
                     assignment 2
                 </button>
                 <button id="as3"  onClick="displayA(as3,as3block);">
-                    assignment 3
+                    individual 
                 </button>
                 <button id="as4" onClick="displayA(as4,as4block);">
                     assignment 4
@@ -333,12 +333,13 @@
                     </div>
 
                     <div id=as3dis class="column" style="display:inline-block;">
+                        <h2>Description</h2>
                         Mornings can be tough. After rolling out of bed, snoozing the alarm and 
                         walking over the kitchen, it can be easy to be intimidated by what to eat for breakfast.
                         Some days, it might feel easier to skip it all together... NOT ANYMORE!<br>
 
                         I am happy to introduce to you "Breakfast Now"! Throw your procrastination aside with this
-                        helpful tool that will ignite your fight or flight with the help of proximic technology.
+                        helpful tool that will ignite your fight or flight with the help of proximity technology.
                         Your breakfast buddy will detect you <br>
                         - walking past the kitchen<br>
                         - procrastinating on your phone<br>
@@ -346,25 +347,43 @@
                         It is more than happy to alert you when any of these events have occurred - so keep on track!
                         When you aren't looking directly at the screen, or you are looking at the screen from a distance 
                         "Breakfast Now" will act as a clock, with the date and time. When you approach, it can give you 
-                        quick and easy breakfast reccomendation to destroy your choice paralisis! Better get cooking quick! (its watching)....
+                        quick and easy breakfast recommendation to destroy your choice paralysis! Better get cooking quick! (its watching)....
+                       
+                        <h2>Implementation</h2>
+                        This was created using HTML, JS, and CSS in Glitch. It was remixed off of 
+                        <a href=https://glitch.com/edit/#!/581-cube-proxemic?path=README.md%3A1%3A0>581 cube proxemic</a> 
+                        and <a href=https://glitch.com/edit/#!/581-basic-distance?path=README.md%3A1%3A0>581 basic distance path</a>.
+                        The implementation used fixed markers as proxemic input through the device camera. It is intended to be viewed 
+                        on a medium screen (laptop/tablet). 
+                        <h3>Proxemic Types</h3>
+                        <img src="../assets/as3img/prox.png" width="100%">  
+
+                        The program uses identity as (using fixed id's) it can tell "food" from a person. It uses orientation to detect if 
+                        the user has turned away from the device. The location of the device is also important, you would want to access
+                        this application specifically in a kitchen, where you can easily face the device while making food. Time is taken into 
+                        consideration when the device is identifying movements, as if the user walks away to quickly grab something, we do not
+                        want to trigger the alert state immediately. 
+                        <div class="row"><img src="../assets/as3img/id05.png" width="200px" style="padding: 10px;"><img src="../assets/as3img/id30.png" width="200px" style="padding: 10px;"><img src="../assets/as3img/id30.png" width="200px" style="padding: 10px;"></div>
+
+                        
                     </div>
 
                     <div id="as3con" class="column" style="display:none;">
                         <div class="row">
                             <div>
-                                I had a very anvantagious plan for this project, and oh boy was it neccessary to reduce the scope.
+                                I had a very advantageous plan for this project, and oh boy was it necessary to reduce the scope.
                         
                                 In my initial plan, I wanted the device to keep track of <br>
                                 - multiple household members and their location in the home <br>
-                                - groceries, and all current items in the fridge for meal reccomendations<br>
+                                - groceries, and all current items in the fridge for meal recommendations<br>
                                 - how many dirty dishes there were<br>
-                                - fully create an animate TWO freindly companions<br>
+                                - fully create an animate TWO friendly companions<br>
                                 - use multiple devices that would communicate<br>
                             </div>
                         
                         <img src="../assets/as3img/initial.png" width="600px" ></div>
                         <div class="row">
-                        The feedback I recieved from peers went along the lines of "you're insane, what do you mean you wanna do all that?!?!?"
+                        The feedback I received from peers went along the lines of "you're insane, what do you mean you wanna do all that?!?!?"
                         So I headed back to the drawing board. Initially, I really wanted to focus on the dishes. A device that would know how
                         many dishes you had, reassure you that they really wouldn't take that long, and put on a nice timer and some music.
                         This idea was still heavily centered around the idea of a friendly companion. This still would have required A LOT of 
@@ -372,10 +391,10 @@
                         was not enough time or resources to make it a reality. (but i was still hooked on little companions, I love little guys, it was my downfall)
                         <img src="../assets/as3img/middle.png" width="600px" >
                         </div>
-                        As time passed and I drove this thought train through my daily routine, I had an idea of a tamogatchi rip off, where taking 
+                        As time passed and I drove this thought train through my daily routine, I had an idea of a Tamagotchi rip off, where taking 
                         care of your kitchen would take care of your friend. But, at this point I decided to scrap the animated companion idea completely...
 
-                        Rest in peice my little time wasters...<br>
+                        Rest in piece my little time wasters...<br>
                         <div class="row"><img src="../assets/as3img/bop.gif" height="100px"> 
                         <img src="../assets/as3img/munch.gif" height="100px"> 
                         <img src="../assets/as3img/squg.gif" height="100px"> </div>
@@ -383,8 +402,8 @@
                         So then what? What was I really trying to do??
                         
                         Without the warm, comforting light of a friend, I turned to inspire the user through music - after all there is nothing better than 
-                        waking up to calm music. I am a massive fan of the Zelda soundtrack (and am praying that the nintendo gods do not smite me for
-                        using it in this small, unpublished, project). I finalized my main, general design for the mainscreen, displayed in the center of
+                        waking up to calm music. I am a massive fan of the Zelda soundtrack (and am praying that the Nintendo gods do not smite me for
+                        using it in this small, unpublished, project). I finalized my main, general design for the main screen, displayed in the center of
                         the below image.
                         <div class="row"><img src="../assets/as3img/basic.png" height="200px" ><img src="../assets/as3img/wow.png" height="200px" ><img src="../assets/as3img/ideafinal.png" height="200px"> </div>
                         I decided that I wanted to focus on meal encouragement, as conversations with friends revealed that I wasn't the only 
@@ -400,7 +419,7 @@
                             
                             <img src="../assets/as3img/sb2.png" height="200px">  
                         </div>
-                        <div class="column">3. The user approaches the device, and recieves a breakfast reccomendation.
+                        <div class="column">3. The user approaches the device, and receives a breakfast recommendation.
                             
                             <img src="../assets/as3img/sb3.png" height="200px">  
                         </div>
@@ -412,11 +431,11 @@
                             
                             <img src="../assets/as3img/sb5.png" height="200px">  
                         </div>
-                        <div class="column">6. The user returns to the device, and it once again reccomends some breakfast.
+                        <div class="column">6. The user returns to the device, and it once again recommends some breakfast.
                             
                             <img src="../assets/as3img/sb3.png" height="200px">  
                         </div>
-                        <div class="column">7. The user doesnt want eggs, after pressing the randomize button, the device gives another suggestion.
+                        <div class="column">7. The user doesn't want eggs, after pressing the randomize button, the device gives another suggestion.
                             
                             <img src="../assets/as3img/sb7.png" height="200px">  
                         </div>
@@ -439,15 +458,17 @@
                         At first, I wasn't sure if this was the project I wanted it to be. I had a lot
                         of ambitions and had to thin out a lot of ideas. When I recorded this demo video,
                         I came to realize this was exactly what I set out to make. The soothing music 
-                        brough me calmness, the flashing screen and agressive music drew me back into the kitchen,
-                        and the success screen hit me with an unexpectidly large boost of dopamine. I enjoy the 
+                        brough me calmness, the flashing screen and aggressive music drew me back into the kitchen,
+                        and the success screen hit me with an unexpectedly large boost of dopamine. I enjoy the 
                         simplicity of the whole project, 
-                        and feel that most of the reductions actually benifited the project. The initial sketches were 
+                        and feel that most of the reductions actually benefited the project. The initial sketches were 
                         very busy and overwhelming to look at. <br>
                         I do think I could have done a lot more, given more time and resources, but I am quite
                         proud of what I have made for this project. I would for sure change the music to something in the public domain.
-                        At the point of writing this and recording the demo, I think I will try increasing some of the font sizes, 
-                        as they were quite small on this monitor. 
+                        If given more time I think I would have made it more of a smart fridge rather than a smart clock/meal planner. 
+                        Keeping track of every ingredient and linking it to a database of recipes is something I think could be acheived with AI
+                        data. I wanted to keep the on-screen instructions minimal, and disabled the ingredients and step-by-step as most breakfast 
+                        recipes are quite easy and interchangeable.
                     </div>
 
                     <footer id="fas3" style="background-color:rgb(66,69,88); display: block;margin-bottom: 30px;">
