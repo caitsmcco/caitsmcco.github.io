@@ -56,6 +56,7 @@ function displayA(asbutton, asblock){
     asbutton.setAttribute("disabled","disabled");
     as1block.style.display = "none";
     as2block.style.display = "none";
+    as3block.style.display = "none";
     as4block.style.display = "none";
     asblock.style.display = "block";
 }
