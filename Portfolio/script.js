@@ -52,6 +52,3 @@ async function loadInfo(obj,type){
     var html = await ref.text();
     document.getElementById('s_body').insertAdjacentHTML("beforeend", html);
 };
-
-
-text = r"
