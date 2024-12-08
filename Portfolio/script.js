@@ -66,5 +66,5 @@ async function loadInfo(type){
     console.log(filename);
     var ref = await fetch(filename);
     var html = await ref.text();
-    element.insertAdjacentHTML("beforeend", html);
+    document.getElementById('s_body').insertAdjacentHTML("beforeend", html);
 };
