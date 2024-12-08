@@ -31,6 +31,7 @@ const data = {
 };
 
 var thisItem = data[1];
+var selected = 1;
 
 function loadContent(obj)   {
     var top = document.getElementById("selected");
@@ -39,6 +40,7 @@ function loadContent(obj)   {
     var title = document.getElementById('s_title');
     var author = document.getElementById('s_author');
     thisItem = data[obj];
+    selected = obj;
     var selectedItem = data[obj];
     title.innerHTML = selectedItem["title"];
     author.innerHTML = selectedItem["author"];
