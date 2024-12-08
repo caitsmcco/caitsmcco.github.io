@@ -1,0 +1,35 @@
+<div id=as3dis class="column" style="display:inline-block;">
+    <h2>Description</h2>
+    Mornings can be tough. After rolling out of bed, snoozing the alarm and 
+    walking over the kitchen, it can be easy to be intimidated by what to eat for breakfast.
+    Some days, it might feel easier to skip it all together... NOT ANYMORE!<br>
+
+    I am happy to introduce to you "Breakfast Now"! Throw your procrastination aside with this
+    helpful tool that will ignite your fight or flight with the help of proximity technology.
+    Your breakfast buddy will detect you <br>
+    - walking past the kitchen<br>
+    - procrastinating on your phone<br>
+    - and leaving the kitchen without food!<br>
+    It is more than happy to alert you when any of these events have occurred - so keep on track!
+    When you aren't looking directly at the screen, or you are looking at the screen from a distance 
+    "Breakfast Now" will act as a clock, with the date and time. When you approach, it can give you 
+    quick and easy breakfast recommendation to destroy your choice paralysis! Better get cooking quick! (its watching)....
+   
+    <h2>Implementation</h2>
+    This was created using HTML, JS, and CSS in Glitch. It was remixed off of 
+    <a href=https://glitch.com/edit/#!/581-cube-proxemic?path=README.md%3A1%3A0>581 cube proxemic</a> 
+    and <a href=https://glitch.com/edit/#!/581-basic-distance?path=README.md%3A1%3A0>581 basic distance path</a>.
+    The implementation used fixed markers as proxemic input through the device camera. It is intended to be viewed 
+    on a medium screen (laptop/tablet). 
+    <h3>Proxemic Types</h3>
+    <img src="assets/as3img/prox.png" width="100%">  
+
+    The program uses identity as (using fixed id's) it can tell "food" (id 05) from a person (id 12). It uses orientation to detect if 
+    the user has turned away from the device. The location of the device is also important, you would want to access
+    this application specifically in a kitchen, where you can easily face the device while making food. Time is taken into 
+    consideration when the device is identifying movements, as if the user walks away to quickly grab something, we do not
+    want to trigger the alert state immediately. 
+    <div class="row"><img src="assets/as3img/id05.png" width="200px" style="padding: 10px;"><img src="assets/as3img/id30.png" width="200px" style="padding: 10px;"><img src="assets/as3img/id30.png" width="200px" style="padding: 10px;"></div>
+
+    
+</div>

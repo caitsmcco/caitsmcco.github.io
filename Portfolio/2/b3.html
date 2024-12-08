@@ -1,0 +1,71 @@
+<div id="as2ref" class="column" >
+    <h2>Refinements</h2>
+    
+    <div class="column"><img src="assets/as2img/refined1.png" width="30%"><br>Refinement of the water logged idea exposed some questions.</div>
+    <h3>Will the amount poured be clear to the user? What would be the acceptable range?</h3>
+
+        We felt that the tilted water level would be hard for the user to accurately read,
+        so we were quite sure adding a range of acceptable levels (between 45 and 55 rather 
+        than only accepting 50) would be required. 
+        We discussed adding a percentage to the water level to make the amount poured 
+        very clear to the user, but I felt as if this would simplify the unlocking 
+        sequence a lot and reduce the security. 
+
+    <h3>Why water? If the phone is water logged, how would it make sense for the phone to unlock
+    after pouring out 50%?</h3>
+
+        For this we discussed the motivation of the user. Originally we had a drinking idea, but 
+        the pouring motion felt more similar to 
+        watering a plant, and thought that this could be a good way for the user to receive
+        feedback on their login attempt. 
+        
+        <div class="column"><img src="assets/as2img/rotoscoping.jpg" width="30%"></div>
+
+        
+        Some further ideas came from this:
+        <br>-  The remaining water could be poured onto a plant, and if the plant thrived it 
+            would unlock the phone. 
+        <br>-  A plant would be displayed on screen and would grow as the user poured water on it.
+            The height of the plant would be comparable to the background, and would unlock when 
+            confirmed at the right height.
+        <br>-  A plant would be displayed on screen and a hydration meter would fill to provide 
+            feedback to the user.
+
+        <br>We agreed that we were moving in the right direction, but felt that one pour - with no
+        other conditions - did not feel secure. With our plant expansion we discussed having to
+        water two plants, or water one specific plant. This is where the greenhouse idea came in.
+
+    <h3>How would the user initialize the unlocking process?</h3>
+
+        Initially, we planned to have a scooping motion to initialize the unlock - this would fill the phone 
+        with water. Our directional change disrupted this idea as the phone displayed a plant, rather than 
+        the water that would water the plant. Because of this, we decided that clicking a plant to water would
+        initiallize the unlock, which would ensure that a tilted phone would not constantly being attempting to unlock.
+
+        <div class="row"><img src="assets/as2img/refined2.jpg" width="50%"></div>
+
+    <h3> How would the user check get feedback?</h3>
+        We felt that the user should get feedback when they returned their phone to a vertical position.
+        A green key to unlock the greenhouse door was discussed, but we agreed the phone unlocking was 
+        feedback enough that they succeeded - and would proide the authenticated user a quicker login process.
+        <div class = "row" style="padding:30px">
+            <img src="assets/as2img/alive.png" height="100px">
+            <img src="assets/as2img/normal.png" height="100px">
+            <img src="assets/as2img/success.png" height="100px">
+            <img src="assets/as2img/watercan.png" height="100px">
+        </div>
+        As for failed login attempts, we made sure that failed attempts would be tracked. A dead plant on the 
+        screen would indicate to the user that someone had attempted to get into their phone. These dead plants 
+        could still be watered, but would give a visual represention of fails. Along with this, the user only 
+        has three attempts to successfully unlock their phone. The failure counts are communicated
+        to the user with the background, which grows colder and eventually snows in the user. In this 
+        implementation the user is only "snowed in" for a few seconds, then the attempt counter is reset 
+        and the user can reattempt their unlock.
+        <div class = "row" style="padding:30px">
+            <img src="assets/as2img/background1.png" height="300px">
+            <img src="assets/as2img/background2.png" height="300px">
+            <img src="assets/as2img/background3.png" height="300px">
+            <img src="assets/as2img/failed.png" height="300px">
+        </div>
+
+</div>
