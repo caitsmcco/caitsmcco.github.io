@@ -51,6 +51,7 @@ function loadContent(obj)   {
 };
 
 async function loadInfo(type){
+    
     if (type == "b5"){
         window.open(thisItem["code"])
         return;
@@ -59,12 +60,18 @@ async function loadInfo(type){
     for (var i = 0; i < buttons.length; i++){
         buttons[i].style.backgroundColor = "#00000000";
     }
+    if (selected == 5){
+        document.getElementById.style.display = "none";
+        return;
+    } else {
+        document.getElementById.style.display = "flex";
+    }
     document.getElementById(type).style.backgroundColor = "rgb(254, 255, 236, 0.4)";
     element = document.getElementById("s_body");
-    element.innerHTML = "";
     filename = selected + "/" + type + ".html";
     console.log(filename);
     var ref = await fetch(filename);
     var html = await ref.text();
+    element.innerHTML = "";
     document.getElementById('s_body').insertAdjacentHTML("beforeend", html);
 };
