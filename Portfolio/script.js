@@ -61,10 +61,10 @@ async function loadInfo(type){
         buttons[i].style.backgroundColor = "#00000000";
     }
     if (selected == 5){
-        document.getElementById(s_options).style.display = "none";
+        document.getElementById("s_options").style.display = "none";
         return;
     } else {
-        document.getElementById(s_options).style.display = "flex";
+        document.getElementById("s_options").style.display = "flex";
     }
     document.getElementById(type).style.backgroundColor = "rgb(254, 255, 236, 0.4)";
     element = document.getElementById("s_body");
