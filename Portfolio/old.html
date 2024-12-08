@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Caitlin McConery</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta charset="utf-8" />
+        <link rel="stylesheet" href="style.css">
+        <script src="script.js"></script>
+    </head>
+    <body>
+        <div id="page-container">
+            <div id="content-wrap" style="padding:10px">
+                <div id="navbar" style="display:flex">
+                    <div id = "select" class="button-box"style="height:60px;width:40%;background-color: #702d00;">
+                        <button style="border-radius: 10px 0px 0px 0px;background-color:#6a4353"  onclick="loadContent('1')">Two Buttons</button>
+                        <button onclick="loadContent('2')" style="background-color:#67535b">Sensor Unlock</button>
+                        <button onclick="loadContent('3')" style="background-color:#636363">Proximity</button>
+                        <button onclick="loadContent('4')" style="background-color:#60736b">Arduino</button>
+                        <button style="border-radius: 0px 10px 0px 0px;background-color:#5c8273" onclick="loadContent('5')">ketchbook</button>
+                    </div>
+                </div>
+                
+                <div id="selected" style="display:flex;min-height:80px;">
+                    <div id="s_head" style="min-height:60px;width:40%;background-color:#702d00;">
+                        <div id="s_title" style="padding-left:20px"><h1>581: Human Computer Interaction II</h1></div>
+                        <div id="s_author" style="padding-left:20px"><h3>Caitlin McConnery</h3></div>
+                        
+                    </div>
+                    <div id="s_options" class="button-box" style="min-height:60px;width:60%;background-color: rgb(20, 21, 43);">
+                        <button>disc</button>
+                        <button>concept</button>
+                        <button>revision</button>
+                        <button>final</button>
+                        <button style="border-radius: 0px 10px 0px 0px">code</button>
+                    </div>
+                </div>
+                <div id="s_content" style="padding:30px;flex-flow:column;display:flex;min-height:70vh;background-color: rgb(27, 130, 95); border-radius: 0px 0px 10px 10px;">
+                    <div id="s_header" style="height:20%">
+                        header
+                    </div>
+                    <div id="s_body">
+                        content
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </body>
+</html>

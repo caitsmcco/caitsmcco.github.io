@@ -9,37 +9,37 @@
     </head>
     <body>
         <div id="page-container">
-            <div id="content-wrap" style="padding:10px">
-                <div id="navbar" style="display:flex">
-                    <div id = "select" class="button-box"style="height:60px;width:40%;background-color: #702d00;">
-                        <button style="border-radius: 10px 0px 0px 0px;background-color:#6a4353"  onclick="loadContent('1')">Two Buttons</button>
-                        <button onclick="loadContent('2')" style="background-color:#67535b">Sensor Unlock</button>
-                        <button onclick="loadContent('3')" style="background-color:#636363">Proximity</button>
-                        <button onclick="loadContent('4')" style="background-color:#60736b">Arduino</button>
-                        <button style="border-radius: 0px 10px 0px 0px;background-color:#5c8273" onclick="loadContent('5')">ketchbook</button>
-                    </div>
-                </div>
+            <div id="content-wrap" style="padding:0px">
                 
-                <div id="selected" style="display:flex;min-height:80px;">
-                    <div id="s_head" style="min-height:60px;width:40%;background-color:#702d00;">
-                        <div id="s_title" style="padding-left:20px"><h1>581: Human Computer Interaction II</h1></div>
-                        <div id="s_author" style="padding-left:20px"><h3>Caitlin McConnery</h3></div>
-                        
+                <div style="padding:20px;text-align: right;">
+                    <div style="font-size:xx-large;">581: Human Computer Interaction II</div>
+                    <div style="font-size: larger;">Caitlin McConnery (30118518)</div>                </div>
+                <div id="selected" style="background-color:#95b8d1;display:flex;min-height:80px;">
+                    <div id="s_head" style="padding:10px;min-height:60px;width:40%;align-items: center; background-color:rgb(254, 255, 236, 0.2);">
+                        <div id="s_title" style="padding-left:10px;color:#000000;text-shadow:none;font-size: x-large;">Kaylee's Love Guesser</div>
+                        <div id="s_author" style="padding-left:10px;color:#000000;text-shadow:none;font-size: large;">Group 15</div>
                     </div>
-                    <div id="s_options" class="button-box" style="min-height:60px;width:60%;background-color: rgb(20, 21, 43);">
-                        <button>disc</button>
-                        <button>concept</button>
-                        <button>revision</button>
-                        <button>final</button>
-                        <button style="border-radius: 0px 10px 0px 0px">code</button>
+                    <div id = "select" class="button-box"style="min-height:60px;width:60%;background-color: #702d00;">
+                        <button style="background-color:#95b8d1;font-size: larger;"  onclick="loadContent('1')">Two Buttons</button>
+                        <button onclick="loadContent('2')" style="background-color:#b8e0d4;font-size: larger; ">Sensor Unlock</button>
+                        <button onclick="loadContent('3')" style="background-color:#d6eadf;font-size: larger;">Proximity</button>
+                        <button onclick="loadContent('4')" style="background-color:#eac4d5;font-size: larger;">Arduino</button>
+                        <button style="background-color:#f5e2ea;font-size: larger;" onclick="loadContent('5')">Sketchbook</button>
                     </div>
                 </div>
-                <div id="s_content" style="padding:30px;flex-flow:column;display:flex;min-height:70vh;background-color: rgb(27, 130, 95); border-radius: 0px 0px 10px 10px;">
-                    <div id="s_header" style="height:20%">
-                        header
+                <div id="navbar" style="display:flex;padding:10px;padding-bottom: 0px;background-color: #95b8d1;">
+                    
+                    <div id="s_options" class="button-box" style="min-height:60px;width:100%">
+                        <button id="b1"onclick="loadInfo('b1')"style="background-color:rgb(254, 255, 236, 0.4);font-size: large;">Description</button>
+                        <button id="b2"onclick="loadInfo('b2')"style="font-size: large;">Concepts</button>
+                        <button id="b3"onclick="loadInfo('b3')"style="font-size: large;">Revision</button>
+                        <button id="b4"onclick="loadInfo('b4')"style="font-size: large;">Final Product</button>
+                        <button id="b5"onclick="loadInfo('b5')"style="font-size: large;">Code</button>
                     </div>
-                    <div id="s_body">
-                        content
+                </div>
+                <div id="s_content" style="padding:10px;padding-top:0px;flex-flow:column;display:flex;min-height:90%;background-color: #95b8d1; border-radius: 0px 0px 10px 10px;">
+                    <div id="s_body" style="padding:20px;font-size:large;min-height:80vh;background-color: rgb(254, 255, 236, 0.4); color: black;">
+                        
                     </div>
                 </div>
             </div>
