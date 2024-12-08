@@ -59,6 +59,7 @@ async function loadInfo(type){
     }
     document.getElementById(type).style.backgroundColor = "rgb(254, 255, 236, 0.4)";
     element = document.getElementById("s_body");
+    element.innerHTML = "";
     filename = selected + "/" + type + ".html";
     fetch(filename).then(res => {
         element.innerHTML = res; 
