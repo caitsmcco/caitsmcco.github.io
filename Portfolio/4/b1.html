@@ -1,27 +1,22 @@
 <div id="ab1" class="column" style="align-items: center;">
     <h2>Description</h2>
-    Kaylee Nasser, lover of trivia, deserved to have a platform where she could share her interests and facts. This application allowed us to create that.
-    <br>
-    Kaylee's Love Guesser has two buttons.
-    <h3>Swap Tool Button </h3>
-    This is the "swap tools" button, which will equip a tool onto the users cursor:
-    <div class="row" style="margin: 10px;"><img src="assets/as1img/tool-inflate.png" height="60px"></div>
-    <div class="row">
-        There are three available tools:
-    </div>
-    <div class="row">
-        <img src="assets/as1img/inflate.gif" height="60px"> When the user clicks the heart with the pump equipped, the heart will inflate - implying more love.
-    </div>
-    <div class="row">
-        <img src="assets/as1img/deflate.gif" height="40px"> When the user clicks the heart with the hand, the heart will have air squished out of it.
-    </div>
-    <div class="row">
-        <img src="assets/as1img/check.png" height="40px"> Lastly, when the heart is clicked with the check mark, Kaylee will judge the user's guess and provide her opinion.
-    </div>
-    Whether it's ceiling fans, snakes, nuts or wet socks, Kaylee always has something interesting to say.
-    <h3>Heart Balloon Button</h3>
-    The heart button will respond to whichever tool is selected, as described above. Once the user has checked their answer they will be equipped with a new tool:
-    <div class="row">
-        <img src="assets/as1img/next.png" height = "40px"> This tool allows the user to go to the next item when they press on the heart.
-    </div>
+    Tired of pesky snack stealers? Have a shared space where your treats 
+    are not safe? Jack is here to protect you! This arduino powered "snack in the box"
+    will fend off theives with an arduino powered jump scare when the incorrect
+    combonation is recieved. What is the right combination? None other than 581! The numeric
+    identifier for this lovely class. 
+
+    <h2>Implementation</h2>
+    Our Arduino used an IR sensor and remote, and two servos. The remote allowed us to
+    give the user a multi-character input. The first servo operated as a latch to hold 
+    the door in a locked posiiton. If the arduino recieved the correct input sequence this
+    servo would rotate, allowing the door to pop open and reward the user with a snack. 
+    After an interval of time, the servo would attempt to relatch the door. Idealy, I think 
+    it would have been best to replace this timed mechanism with a light sensor, and I will 
+    touch on this more later. The second servo would trigger when the arduino recieved an
+    incorrect input sequence, and triggered the abrupt launch of a scary joker to tell them off
+    before slowly sculking back into it's hiding spot. There was a lot of itteration on this part
+    of the project...
+
+    <img src="assets/as4img/generaldiagram.png" width="100px">
 </div>
