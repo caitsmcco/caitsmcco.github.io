@@ -61,9 +61,9 @@ async function loadInfo(type){
         buttons[i].style.backgroundColor = "#00000000";
     }
     if (selected == 3 || selected == 4){
-        document.getElementById("b3").innerHTML = "Story Board"
+        document.getElementById("b3").innerHTML = "Story Board";
     } else {
-        document.getElementById("b3").innerHTML = "Revision"
+        document.getElementById("b3").innerHTML = "Revision";
     }
     if (selected == 5){
         document.getElementById("s_options").style.display = "none";
