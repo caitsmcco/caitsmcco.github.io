@@ -9,4 +9,4 @@ go to https://caitsmcco.github.io/main.html
 ## FALL 2024
 ### Portfolio
 go to https://caitsmcco.github.io/CPSC-581-Portfolio/src/main.html
-https://caitsmcco.github.io/Portfolio/src/main.html
+https://caitsmcco.github.io/Portfolio/main.html
