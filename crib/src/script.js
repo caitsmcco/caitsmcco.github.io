@@ -32,6 +32,8 @@ let play = {
 
 const cardOrder1=['d1'
     ,'d2'
+    ,'d3'
+    ,'d4'
     ,'cc'
     ,'p1a'
     ,'p1b'
@@ -47,12 +49,12 @@ const cardOrder1=['d1'
     ,'p6b'
     ,'p7a'
     ,'p7b'
-    ,'d3'
-    ,'d4'
 ];
 const cardOrder2=[
     'd1'
     ,'d2'
+    ,'d3'
+    ,'d4'
     ,'cc'
     ,'p1b'
     ,'p1a'
@@ -68,8 +70,6 @@ const cardOrder2=[
     ,'p6a'
     ,'p7b'
     ,'p7a'
-    ,'d3'
-    ,'d4'
 ];
 
 let games = []
@@ -166,6 +166,8 @@ function resetPlay(){
     else {
        next = ['d1'
             ,'d2'
+            ,'d3'
+            ,'d4'
             ,'cc'
             ,'p1a'
             ,'p1b'
@@ -181,10 +183,10 @@ function resetPlay(){
             ,'p6b'
             ,'p7a'
             ,'p7b'
-            ,'d3'
-            ,'d4'
         ];
     }
+    runningTotal = 0;
+    document.getElementById('runningTotal').innerHTML = 0;
 };
 
 function endGame(){
@@ -203,10 +205,15 @@ function enterName(){
     document.getElementById("playeraName").innerHTML = game.pNamea;
     document.getElementById("playerbName").innerHTML = game.pNameb;
 }
-
+let runningTotal = 0
 let next = cardOrder1;
 function addCard(card){
     id = next.shift();
+    if (!('d1d2d3d4cc'.includes(id))){
+        num = cardElem.name;
+        runningTotal = runningTotal + Number(num);
+        document.getElementById('runningTotal').innerHTML = runningTotal;
+    }
     cardElem = document.getElementById(card);
     element = document.getElementById(id);
     element.style['text-shadow'] = '0 0 0 #ffffff00, 0 0 0 #ffffff00, 0 0 0 #fffFFf00, 0 0 0 #ffffff00';;
@@ -247,6 +254,11 @@ function removeCard(id){
     document.getElementById(card).disabled=false;
     play[id]='XX';
     document.getElementById(next[1]).style['text-shadow'] = '0 0 0 #ffffff00, 0 0 0 #ffffff00, 0 0 0 #fffFFf00, 0 0 0 #ffffff00';
+    if (!('d1d2d3d4cc'.includes(id))){
+        num = cardElem.name;
+        runningTotal = runningTotal - Number(num);
+        document.getElementById('runningTotal').innerHTML = runningTotal;
+    }
 }
 
 function download(){

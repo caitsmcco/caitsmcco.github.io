@@ -9,4 +9,8 @@ go to https://caitsmcco.github.io/main.html
 ## FALL 2024
 ### Portfolio
 go to https://caitsmcco.github.io/CPSC-581-Portfolio/src/main.html
+
 https://caitsmcco.github.io/Portfolio/main.html
+
+## CPSC 582: Data Visualization II
+go to https://caitsmcco.github.io/crib/src/tracker.html
