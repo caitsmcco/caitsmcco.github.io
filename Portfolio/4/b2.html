@@ -1,17 +1,18 @@
 <div id="as1con" class="column">
+    <h2>Process</h2>
     The prompt for this project was to solve an everyday problem.
     As a part of my brainstorming I took note of all of the tasks, forgotten chores,
-    and inconviences as I went through my day. 
+    and inconveniences as I went through my day. 
 
     <img src="assets/as4img/concepts1.png" width="40%" style="padding:20px">
 
     The first notable idea I had was a smart toothbrush holder. This tool would
     recognize when the user had picked up their toothbrush, and dispense toothpaste
     when it sensed the brush was in the correct location. After the toothpaste was 
-    despensed, a timer would flip over to ensure the user brushed their teeth for 
+    dispensed, a timer would flip over to ensure the user brushed their teeth for 
     the correct amount of time.
 
-    <img src="assets/as4img/toothpaste.png" width="40%" style="padding:20px">
+    <img src="assets/as4img/toothpaste.png" height="200px" style="padding:20px">
 
     My second idea was a medication reminder, that later evolved into an pet insulin
     tracker. The general idea of this was a device that would play a sound to alert
@@ -21,19 +22,19 @@
     a low quantity, the device would turn on another light to remind the user to get a refill.
 
     <div class="row">
-        <img src="assets/as4img/insulinreminder.png" width="40%" style="padding:20px">
-        <img src="assets/as4img/pillreminder.png" width="40%" style="padding:20px">
+        <img src="assets/as4img/insulinreminder.png" height="200px" style="padding:20px">
+        <img src="assets/as4img/pillreminder.png" height="200px" style="padding:20px">
     </div>
 
     My final notable idea was a phone storage lock box, which would charge your device 
-    and keep it out of reach to avoid unneccisary pick ups and screen time. This idea 
+    and keep it out of reach to avoid unnecessary pick ups and screen time. This idea 
     was pretty basic and didn't inspire much.
 
-    <img src="assets/as4img/phonebox.png" width="40%" style="padding:20px">
+    <img src="assets/as4img/phonebox.png" height="200px" style="padding:20px">
 
     Jack and Hera had other ideas of reminders and other locked boxes. Jack's main problem 
     he had come up with was his roommates stealing his snacks. We all agreed that 
-    this everyday problem could resonate with most people, and gave us room for expantion 
+    this everyday problem could resonate with most people, and gave us room for expansion 
     if we wanted to add more complexity. 
 
     <img src="assets/as4img/concepts2.png" width="40%" style="padding:20px">
@@ -44,29 +45,51 @@
     would be LEDs. This idea lacked creativity, so we kept brainstorming.
 
     The idea of a punishment for wrong inputs came up and we discussed having a mouse trap, 
-    fly swatter, or a rotten food despensor, but Hera threw out the idea of a jack-in-the-box
+    fly swatter, or a rotten food dispenser, but Hera threw out the idea of a jack-in-the-box
     which inspired us the most.
+    <div class="row">
+        <div class="column" style="padding-top: 20px;padding-bottom: 20px;">
+            <video width="300px" controls>
+                <source src="assets/as4img/door-proto1.mp4" type="video/mp4">
+            </video>
+        </div>
+        <div class="column" style="padding-top: 20px;padding-bottom: 20px;">
+            <video width="300px" controls>
+                <source src="assets/as4img/jack-proto1.mp4" type="video/mp4">
+            </video>
+        </div>
 
+    </div>
     We initially planned to use a spring for our joker, and our first prototype used 
-    pipecleaners to achieve this. 
+    pipe cleaners to achieve this. 
     
-    We did worry about the arduino's capacity to compress the spring,
+    We did worry about the Arduino's capacity to compress the spring,
     and thought using a stringed puppet with the help of gravity could achieve the same effect.
     I thought that a spinning component - like the fan - would have the capacity to reel in 
     the puppet, so this is the direction we headed.
 
+    <img src="assets\as4img\conceptpuppet.png" width="40%" style="padding:20px">
+
     We split the workload at this point. Jack wrote the code for the IR sensor, Hera wrote the 
     initial structure of the code, and I got to work designing the box and puppet. 
 
+    <img src="assets\as4img\puppet-proto.jpg" height="200px" style="padding:20px">
+
+
     Our next meeting was close to the deadline and filled with doubts.
-    The puppet was made but it was heavy, and the fan would hault completely when met with any resistance.
+    The puppet was made but it was heavy, and the fan would halt completely when met with any resistance.
     We attempted a quick fix of switching the roles of our servo - which would have latched the door - and 
     the fan - which would have pulled the strings. This almost worked - but the end positioning of the fan was too
-    inconsistant to successfully lock and unlock the door.
-    With our limited knowledge of arduinos none of us were sure how we could add another motor, such as the stepper,
+    inconsistent to successfully lock and unlock the door.
+    With our limited knowledge of Arduino's none of us were sure how we could add another motor, such as the stepper,
     and worried that even if we could add it in time, that it would also be unable to lift the puppet.
     We did more testing with the servo we had already implemented and decided our most achievable route would be 
     to add another servo, which we sourced through Jane. 
+
+    <div class="row">
+        <img src="assets/as4img/outside-open.jpg" width="20%" style="padding-top:20px;padding-bottom:20px">
+        <img src="assets\as4img\outside-popped.jpg" width="20%" style="padding-top:20px;padding-bottom:20px">
+    </div>
 
     We had a solution, but our list of problems expanded. We had trouble securing our components. I was mainly 
     using tape to secure everything together as I worried that hot glue would ruin the parts, but the servo would

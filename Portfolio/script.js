@@ -60,8 +60,19 @@ async function loadInfo(type){
     for (var i = 0; i < buttons.length; i++){
         buttons[i].style.backgroundColor = "#00000000";
     }
+    if (selected == 3 || selected == 4){
+        document.getElementById("b3").innerHTML = "Story Board";
+    } else {
+        document.getElementById("b3").innerHTML = "Revision";
+    }
     if (selected == 5){
         document.getElementById("s_options").style.display = "none";
+        filename = "sketchbook.html"
+        console.log(filename);
+        var ref = await fetch(filename);
+        var html = await ref.text();
+        element.innerHTML = "";
+        document.getElementById('s_body').insertAdjacentHTML("beforeend", html);
         return;
     } else {
         document.getElementById("s_options").style.display = "flex";
