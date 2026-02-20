@@ -1,5 +1,7 @@
 let mode = 'peggedPoints'
 let round = 1
+let runningTotal = 0
+
 let play = {
     cc:'XX'
     ,d1:'XX'
@@ -102,12 +104,14 @@ function add(player,amount){
     id = mode + player;
     play[id] = play[id] + amount;
     document.getElementById(id).innerHTML = play[id];
-    if (play['EORScore' + player] == 119 && amount != 1){
+    if (play['EORScore' + player] == 120 && amount != 1){
         return;
     }
-    play['EORScore' + player] = play['EORScore' + player] + amount;
-    id = 'point' + player;
-    document.getElementById(id).innerHTML = play['EORScore' + player];
+    if (play.EORScorea < 121 && play.EORScoreb < 121){
+        play['EORScore' + player] = play['EORScore' + player] + amount;
+        id = 'point' + player;
+        document.getElementById(id).innerHTML = play['EORScore' + player];
+    }
 }
 
 function zero(player){
@@ -125,8 +129,8 @@ function newRound(){
     const thisPlayB = [game.pNameb,game.gameDate,round,play.d3,play.d4,play.cc,play.p1b,play.p2b,play.p3b,play.p4b,play.p5b,play.p6b,play.p7b,play.peggedPointsb,play.handPointsb,play.cribPointsb,play.EORScoreb];
     rounds.push(thisPlayB);
     round ++;
-    console.log(rounds)
-    resetPlay()
+    console.log(rounds);
+    resetPlay();
 };
 
 function resetPlay(){
@@ -146,6 +150,12 @@ function resetPlay(){
     for (i in buttons){
         buttons[i].disabled = true;
         buttons[i].innerHTML = buttons[i].id;
+    }
+    buttons = document.getElementsByClassName('next_button');
+    console.log(buttons);
+    for (i in buttons){
+        buttons[i].disabled = true;
+        buttons[i].innerHTML = buttons[i].name;
     }
     buttons = document.getElementsByName('pointlable');
     for (i in buttons){
@@ -205,61 +215,64 @@ function enterName(){
     document.getElementById("playeraName").innerHTML = game.pNamea;
     document.getElementById("playerbName").innerHTML = game.pNameb;
 }
-let runningTotal = 0
+
+const nextCard =  'rgb(238, 205, 152)'
+const otherCard = '#ac322a'
 let next = cardOrder1;
 function addCard(card){
     id = next.shift();
+    cardElem = document.getElementById(card);
     if (!('d1d2d3d4cc'.includes(id))){
         num = cardElem.name;
         runningTotal = runningTotal + Number(num);
         document.getElementById('runningTotal').innerHTML = runningTotal;
     }
-    cardElem = document.getElementById(card);
     element = document.getElementById(id);
-    element.style['text-shadow'] = '0 0 0 #ffffff00, 0 0 0 #ffffff00, 0 0 0 #fffFFf00, 0 0 0 #ffffff00';;
+    element.style['border-color'] = otherCard;
     element.alt = card;
     element.innerHTML = cardElem.innerHTML;
     element.disabled = false;
     cardElem.disabled = true;
     play[id] = card;
-    document.getElementById(next[0]).style['text-shadow'] = '-1px -1px 0 #ffffff, 1px -1px 0 #ffffff, -1px 1px 0 #ffffff, 1px 1px 0 #ffffff';
+    document.getElementById(next[0]).style['border-color'] = nextCard;
 }
 
 function addGo(){
     id = next.shift();
     play[id] = 'GO';
     element = document.getElementById(id);
-    element.style['text-shadow'] = '0 0 0 #ffffff00, 0 0 0 #ffffff00, 0 0 0 #fffFFf00, 0 0 0 #ffffff00';;
+    element.style['border-color'] = otherCard;
     element.alt = 'GO';
     element.innerHTML = '-';
     element.disabled = false;
-    document.getElementById(next[0]).style['text-shadow'] = '-1px -1px 0 #ffffff, 1px -1px 0 #ffffff, -1px 1px 0 #ffffff, 1px 1px 0 #ffffff';
+    document.getElementById(next[0]).style['border-color'] = nextCard;
 }
-
-function endPlay(){
-    while (next[0] != 'd3'){
-        addGo();
-    }
-}
-
 function removeCard(id){
     element = document.getElementById(id);
     card = element.alt;
     cardElem = document.getElementById(card);
-    element.style['text-shadow'] = '-1px -1px 0 #ffffff, 1px -1px 0 #ffffff, -1px 1px 0 #ffffff, 1px 1px 0 #ffffff';
+    element.style['border-color'] = nextCard;
     next.unshift(id);
     element.alt = id;
     element.innerHTML = id;
     element.disabled = true;
     document.getElementById(card).disabled=false;
     play[id]='XX';
-    document.getElementById(next[1]).style['text-shadow'] = '0 0 0 #ffffff00, 0 0 0 #ffffff00, 0 0 0 #fffFFf00, 0 0 0 #ffffff00';
+    document.getElementById(next[1]).style['border-color'] = otherCard;
     if (!('d1d2d3d4cc'.includes(id))){
         num = cardElem.name;
         runningTotal = runningTotal - Number(num);
         document.getElementById('runningTotal').innerHTML = runningTotal;
     }
 }
+
+function endPlay(){
+    addGo();
+    addGo();
+    runningTotal = 0;
+    document.getElementById('runningTotal').innerHTML = 0;
+}
+
 
 function download(){
     let blobdtMIME = new Blob([rounds], { type: "text/plain" })

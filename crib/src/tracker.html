@@ -88,18 +88,18 @@
             </div>-->
             <div class="grid-item centerrow" id="main">
                 <div id="nameEntry" style="padding-top: 10px;padding-bottom: 10px; background-color: antiquewhite;">
-                    <input type="text" id="pNamea" placeholder="Player name" style="text-align: right;"> vs <input type="text" id="pNameb" placeholder="Player name"><br><br>
+                    <input type="text" id="pNamea" placeholder="Player name" style="text-align: right; border-color: transparent;width:30%;" > vs <input type="text" id="pNameb" style="border-color: transparent; width:30%;" placeholder="Player name"><br><br>
                     <button onclick="enterName();">New Game</button>
                 </div>
                 <div id="roundCards" style="padding-top: 10px;padding-bottom: 10px; background-color: antiquewhite; display: none;">
-                    <div>
-                        Crib: 
-                        <button name="played" class='next_button' id="d1" disabled="true" onclick="removeCard('d1');">d1</button>
-                        <button name="played" id="d2" disabled="true" onclick="removeCard('d2');">d2</button>
-                        <button name="played" id='d3' disabled="true" onclick="removeCard('d3');">d3</button>
-                        <button name="played" id='d4' disabled="true" onclick="removeCard('d4');">d4</button><br>
-                        Cut card:
-                        <button name="played" id="cc" disabled="true" onclick="removeCard('cc');">CC</button><br>
+                    <div style="padding: 10px;">
+                        <button name="C" class='next_button' id="d1" style='border-color: rgb(238, 205, 152);width: 20%;' disabled="true" onclick="removeCard('d1');">C</button>
+                        <button name="R" class='next_button' id="d2" disabled="true" onclick="removeCard('d2');"style="width: 20%;">R</button>
+                        <button name="I" class='next_button' id='d3' disabled="true" onclick="removeCard('d3');"style="width: 20%;">I</button>
+                        <button name="B" class='next_button' id='d4' disabled="true" onclick="removeCard('d4');"style="width: 20%;">B</button><br>
+                    </div>
+                    <div style="padding-bottom: 10px;">
+                        <button name="Cut Card" class='next_button' id="cc" disabled="true" onclick="removeCard('cc');" style="width: 80%;">Cut Card</button><br>
                     </div>
                     <div>
                         <button name="played" disabled="true" class="button_play" onclick="removeCard('p1a');" id="p1a">p1a</button>
@@ -117,11 +117,11 @@
                         <button name="played" disabled="true" class="button_play" onclick="removeCard('p7a');" id="p7a">p7a</button>
                         <button name="played" disabled="true" class="button_play" onclick="removeCard('p7b');" id="p7b">p7b</button><br>
                     </div>
-                    <div style="padding: 5px;">
-                    <button style="min-width: 20%;height: 35px;" onclick="addGo();" id="GO">GO</button>
-                    <button style="min-width: 20%;height: 35px;" onclick="endPlay();" id="End Play">End Play</button><br>
-                    <label id="runningTotal">0</label>
-                </div>
+                    <div style="padding: 10px;">
+                        <button style="min-width: 40%;height: 35px;" onclick="addGo();" id="GO">GO</button>
+                        <button style="min-width: 40%;height: 35px;" onclick="endPlay();" id="End Play">End Play</button><br>
+                    </div>
+                    <div id="runningTotal" style="padding-top: 10px;padding-bottom: 10px; width: 100%;background-color: rgb(245, 248, 218);">0</div>
                 </div>
             </div> 
             <div class="grid-item bottomrow" id = "bottomrow">
@@ -188,6 +188,6 @@
                 <button onclick="newRound()">New Round</button>
             </div>
         </div>
-        <button onclick="download();"></button>
+        <button style='width:90px;height: 50px;'onclick="download();"></button>
     </body>
 </html>

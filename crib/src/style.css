@@ -52,7 +52,33 @@ body {
 }
 
 .next_button {
-    text-shadow: -1px -1px 0 #ffffff, 1px -1px 0 #ffffff, -1px 1px 0 #ffffff, 1px 1px 0 #ffffff;;
+    background-color: rgb(238, 205, 152);
+    color: black;
+    border-radius: 3px;
+    border-color: #ac322a;
+}
+
+.next_button:disabled {
+    background-color: #ac322a;
+    color: white;
+    border-radius: 3px;
+    border-color: #ac322a;
+}
+
+
+.button_play {
+    background-color: rgb(238, 205, 152);
+    color: black;
+    border-radius: 3px;
+    border-color: #ac322a;
+    width: 39%;
+}
+
+.button_play:disabled {
+    background-color: #ac322a;
+    color: white;
+    border-radius: 3px;
+    border-color: #ac322a;
 }
 
 .add_button_b {
@@ -100,12 +126,4 @@ body {
     padding: 8px;
     min-width: 7%;
     min-height: 40px;
-}
-
-.button_play {
-    padding-left: 25px;
-    padding-right: 25px;
-    border-radius: 10px 10px 0px 0px;
-    width: 20%;
-    border-color: #cd14147e;
 }
