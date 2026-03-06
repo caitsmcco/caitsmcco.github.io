@@ -237,12 +237,12 @@ function addCard(card){
     document.getElementById(next[0]).style['border-color'] = nextCard;
 }
 
-function addGo(){
+function addGo(msg){
     id = next.shift();
-    play[id] = 'GO';
+    play[id] = msg;
     element = document.getElementById(id);
     element.style['border-color'] = otherCard;
-    element.alt = 'GO';
+    element.alt = msg;
     element.innerHTML = '-';
     element.disabled = false;
     document.getElementById(next[0]).style['border-color'] = nextCard;
@@ -267,8 +267,8 @@ function removeCard(id){
 }
 
 function endPlay(){
-    addGo();
-    addGo();
+    addGo('-');
+    addGo('-');
     runningTotal = 0;
     document.getElementById('runningTotal').innerHTML = 0;
 }
