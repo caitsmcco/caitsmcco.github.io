@@ -14,7 +14,7 @@ var svg = d3.select("#heatmap")
         "translate(" + margin.left + "," + margin.top + ")");
 
 //Read the data
-d3.csv("data/crib/roundWinnerLoser.csv", function(data) {
+d3.csv("../../data/crib/roundWinnerLoser.csv", function(data) {
 
   // Labels of row and columns -> unique identifier of the column called 'group' and 'variable'
   var myGroups = d3.map(data, function(d){return d.round;}).keys()
