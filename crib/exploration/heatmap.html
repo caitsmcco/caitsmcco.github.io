@@ -57,7 +57,7 @@ d3.csv("data/roundWinnerLoser.csv", function(data) {
   // Build color scale
   const hueScale = d3.scaleOrdinal()
   .domain(["Caitlin","Sarah","James","Colban","Darren"])
-  .range(["#59CD90", "#F79D84", "#3FA7D6","#FAC05E","#EE6352"]);
+  .range(["#59CD90", "#DF77EB", "#3FA7D6","#FAC05E","#EE6352"]);
 
   const vibrancyScale = d3.scaleLinear()
   .domain([0, d3.max(data, d => d.diff)])
@@ -68,7 +68,7 @@ d3.csv("data/roundWinnerLoser.csv", function(data) {
     const t = vibrancyScale(value);
 
     // interpolate from white → base color
-    return d3.interpolateRgb("#ffffff", baseColor)(t);
+    return d3.interpolateRgb("#f0f0f0", baseColor)(t);
   }
 
   // create a tooltip
