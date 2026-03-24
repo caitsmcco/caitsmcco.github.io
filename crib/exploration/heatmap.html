@@ -15,7 +15,7 @@
 // set the dimensions and margins of the graph
 var margin = {top: 80, right: 25, bottom: 30, left: 40},
   width = 450 - margin.left - margin.right,
-  height = 450 - margin.top - margin.bottom;
+  height = 600 - margin.top - margin.bottom;
 
 // append the svg object to the body of the page
 var svg = d3.select("#my_dataviz")
@@ -56,12 +56,12 @@ d3.csv("data/roundWinnerLoser.csv", function(data) {
 
   // Build color scale
   const hueScale = d3.scaleOrdinal()
-  .domain(data.map(d=>d.winner))
+  .domain(["Caitlin","Sarah","James","Colban","Darren"])
   .range(["#59CD90", "#F79D84", "#3FA7D6","#FAC05E","#EE6352"]);
 
   const vibrancyScale = d3.scaleLinear()
   .domain([0, d3.max(data, d => d.diff)])
-  .range([0, 7]);
+  .range([0,1]);
 
   function colorScale(category, value) {
     const baseColor = hueScale(category);
@@ -130,7 +130,7 @@ svg.append("text")
         .attr("y", -50)
         .attr("text-anchor", "left")
         .style("font-size", "22px")
-        .text("A d3.js heatmap");
+        .text("Winners and Losers");
 
 // Add subtitle to graph
 svg.append("text")
