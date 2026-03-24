@@ -44,7 +44,7 @@ d3.csv("data/roundWinnerLoser.csv", function(data) {
   // Build color scale
   const hueScale = d3.scaleOrdinal()
   .domain(["Caitlin","Sarah","James","Colban","Darren"])
-  .range(["#009E73", "#CC79A7", "#3FA7D6","#FAC05E","#EE6352"]);
+  .range(["#59CD90", "#F57AE5", "#3FA7D6","#FAC05E","#EE6352"]);
 
   const vibrancyScale = d3.scaleLinear()
   .domain([0, d3.max(data, d => d.diff)])
@@ -58,62 +58,7 @@ d3.csv("data/roundWinnerLoser.csv", function(data) {
     return d3.interpolateRgb("#f0f0f0", baseColor)(t);
   }
 
-  // create textures to overlay
-  const defs = svg.append("defs")
-
-defs.append("pattern")
-  .attr("id", "pattern-Caitlin")
-  .attr("patternUnits", "userSpaceOnUse")
-  .attr("width", 6)
-  .attr("height", 6)
-  .append("path")
-  .attr("d", "M0,0 L0,6")
-  .attr("stroke", "#000")
-  .attr("stroke-width", 1);
-
-defs.append("pattern")
-  .attr("id", "pattern-Sarah")
-  .attr("patternUnits", "userSpaceOnUse")
-  .attr("width", 6)
-  .attr("height", 6)
-  .append("path")
-  .attr("d", "M0,6 L6,0")
-  .attr("stroke", "#000")
-  .attr("stroke-width", 1);
-
-const p3 = defs.append("pattern")
-  .attr("id", "pattern-James")
-  .attr("patternUnits", "userSpaceOnUse")
-  .attr("width", 8)
-  .attr("height", 8);
-
-   p3.append("circle")
-  .attr("cx", 4)
-  .attr("cy", 4)
-  .attr("r", 1.5)
-  .attr("fill", "#000");
-
-  const p4 = defs.append("pattern")
-  .attr("id", "pattern-Colban")
-  .attr("patternUnits", "userSpaceOnUse")
-  .attr("width", 6)
-  .attr("height", 6);
-
-  p4.append("path")
-  .attr("d", "M0,0 L6,6 M6,0 L0,6")
-  .attr("stroke", "#000")
-  .attr("stroke-width", 1);
-
-defs.append("pattern")
-  .attr("id", "pattern-Darren")
-  .attr("patternUnits", "userSpaceOnUse")
-  .attr("width", 6)
-  .attr("height", 6)
-  .append("path")
-  .attr("d", "M0,0 L6,0")
-  .attr("stroke", "#000")
-  .attr("stroke-width", 1);
-
+  
   // create a tooltip
   var tooltip = d3.select("#heatmap")
     .append("div")
@@ -158,7 +103,7 @@ defs.append("pattern")
       .attr("ry", 4)
       .attr("width", x.bandwidth() )
       .attr("height", y.bandwidth() )
-      .style("fill", `url(#pattern-${d.winner})`)
+      .style("fill", function(d) { return colorScale(d.winner,d.diff)} )
       .style("stroke-width", 4)
       .style("stroke", "none")
       .style("opacity", 0.8)
@@ -183,4 +128,4 @@ svg.append("text")
         .style("font-size", "14px")
         .style("fill", "grey")
         .style("max-width", 400)
-        .text("wow,so cool");
+        .text("A short description of the take-away message of this chart.");
