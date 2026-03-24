@@ -1,0 +1,19 @@
+body {
+  font-family: sans-serif;
+  margin: 20px;
+}
+
+nav a {
+  text-decoration: none;
+  color: #0077cc;
+  margin-right: 10px;
+}
+
+nav a:hover {
+  text-decoration: underline;
+}
+
+svg {
+  border: 1px solid #ccc;
+  margin-top: 20px;
+}
