@@ -59,13 +59,60 @@ d3.csv("data/roundWinnerLoser.csv", function(data) {
   }
 
   // create textures to overlay
-  const texturesMap = {
-    "Caitlin": textures.lines().orientation("vertical").stroke("#000000"),
-    "Sarah": textures.lines().orientation("diagonal").stroke("#000000"),
-    "James": textures.circles().radius(2).fill("#000000"),
-    "Colban": textures.paths().d("crosses").stroke("#000000"),
-    "Darren": textures.paths().d("waves").stroke("#000000")
-    }
+  const defs = svg.append("defs");
+
+defs.append("pattern")
+  .attr("id", "pattern-Caitlin")
+  .attr("patternUnits", "userSpaceOnUse")
+  .attr("width", 6)
+  .attr("height", 6)
+  .append("path")
+  .attr("d", "M0,0 L0,6")
+  .attr("stroke", "#000")
+  .attr("stroke-width", 1);
+
+defs.append("pattern")
+  .attr("id", "pattern-Sarah")
+  .attr("patternUnits", "userSpaceOnUse")
+  .attr("width", 6)
+  .attr("height", 6)
+  .append("path")
+  .attr("d", "M0,6 L6,0")
+  .attr("stroke", "#000")
+  .attr("stroke-width", 1);
+
+const p3 = defs.append("pattern")
+  .attr("id", "pattern-James")
+  .attr("patternUnits", "userSpaceOnUse")
+  .attr("width", 8)
+  .attr("height", 8);
+
+   p3.append("circle")
+  .attr("cx", 4)
+  .attr("cy", 4)
+  .attr("r", 1.5)
+  .attr("fill", "#000");
+
+  const p4 = defs.append("pattern")
+  .attr("id", "pattern-Colban")
+  .attr("patternUnits", "userSpaceOnUse")
+  .attr("width", 6)
+  .attr("height", 6);
+
+  p4.append("path")
+  .attr("d", "M0,0 L6,6 M6,0 L0,6")
+  .attr("stroke", "#000")
+  .attr("stroke-width", 1);
+
+defs.append("pattern")
+  .attr("id", "pattern-Darren")
+  .attr("patternUnits", "userSpaceOnUse")
+  .attr("width", 6)
+  .attr("height", 6)
+  .append("path")
+  .attr("d", "M0,0 L6,0")
+  .attr("stroke", "#000")
+  .attr("stroke-width", 1);
 
   // create a tooltip
   var tooltip = d3.select("#heatmap")
@@ -112,10 +159,14 @@ d3.csv("data/roundWinnerLoser.csv", function(data) {
       .attr("width", x.bandwidth() )
       .attr("height", y.bandwidth() )
       .style("fill", function(d) { return colorScale(d.winner,d.diff)} )
-      .attr("fill", d => texturesMap[d.winner].url()) // texture overlay
       .style("stroke-width", 4)
       .style("stroke", "none")
       .style("opacity", 0.8)
+    .append("rect")
+        .attr("width", x.bandwidth())
+        .attr("height", y.bandwidth())
+        .attr("fill", `url(#pattern-${d.winner})`)
+        .attr("opacity", 0.6)
     .on("mouseover", mouseover)
     .on("mousemove", mousemove)
     .on("mouseleave", mouseleave)
