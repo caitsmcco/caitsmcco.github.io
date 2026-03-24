@@ -80,7 +80,7 @@ d3.csv("data/roundWinnerLoser.csv", function(data) {
   }
   var mousemove = function(d) {
     tooltip
-      .html("The exact value of<br>this cell is: " + d.value)
+      .html("The exact value of<br>this cell is: " + d.diff)
       .style("left", (d3.mouse(this)[0]+70) + "px")
       .style("top", (d3.mouse(this)[1]) + "px")
   }
