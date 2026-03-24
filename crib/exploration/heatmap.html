@@ -56,12 +56,12 @@ d3.csv("data/roundWinnerLoser.csv", function(data) {
 
   // Build color scale
   const hueScale = d3.scaleOrdinal()
-  .domain(["Caitlin", "Sarah", "James","Colban","Darren"])
-  .range(["green", "pink", "blue","yellow","orange"]);
+  .domain(data.map(d=>d.winner))
+  .range(["#59CD90", "#F79D84", "#3FA7D6","#FAC05E","#EE6352"]);
 
   const vibrancyScale = d3.scaleLinear()
   .domain([0, d3.max(data, d => d.diff)])
-  .range([0, 5]);
+  .range([0, 7]);
 
   function colorScale(category, value) {
     const baseColor = hueScale(category);
