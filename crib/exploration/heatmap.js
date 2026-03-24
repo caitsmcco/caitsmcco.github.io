@@ -60,11 +60,11 @@ d3.csv("data/roundWinnerLoser.csv", function(data) {
 
   // create textures to overlay
   const texturesMap = {
-    p1: textures.lines().orientation("vertical").stroke("#009E73"),
-    p2: textures.lines().orientation("diagonal").stroke("#E69F00"),
-    p3: textures.circles().radius(2).fill("#56B4E9"),
-    p4: textures.paths().d("crosses").stroke("#CC79A7"),
-    p5: textures.paths().d("waves").stroke("#D55E00")
+    "Caitlin": textures.lines().orientation("vertical").stroke("#000000"),
+    "Sarah": textures.lines().orientation("diagonal").stroke("#000000"),
+    "James": textures.circles().radius(2).fill("#000000"),
+    "Colban": textures.paths().d("crosses").stroke("#000000"),
+    "Darren": textures.paths().d("waves").stroke("#000000")
     }
 
   // create a tooltip
