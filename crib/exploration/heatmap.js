@@ -59,7 +59,7 @@ d3.csv("data/roundWinnerLoser.csv", function(data) {
   }
 
   // create textures to overlay
-  const defs = svg.append("defs");
+  const defs = svg.append("defs")
 
 defs.append("pattern")
   .attr("id", "pattern-Caitlin")
@@ -162,11 +162,7 @@ defs.append("pattern")
       .style("stroke-width", 4)
       .style("stroke", "none")
       .style("opacity", 0.8)
-    .append("rect")
-        .attr("width", x.bandwidth())
-        .attr("height", y.bandwidth())
-        .attr("fill", `url(#pattern-${d.winner})`)
-        .attr("opacity", 0.6)
+      .attr("fill", `url(#pattern-${d.winner})`)
     .on("mouseover", mouseover)
     .on("mousemove", mousemove)
     .on("mouseleave", mouseleave)
