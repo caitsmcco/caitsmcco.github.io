@@ -30,8 +30,8 @@ var svg = d3.select("#my_dataviz")
 d3.csv("data/roundWinnerLoser.csv", function(data) {
 
   // Labels of row and columns -> unique identifier of the column called 'group' and 'variable'
-  var myGroups = d3.map(data, function(d){return d.game;}).keys()
-  var myVars = d3.map(data, function(d){return d.round;}).keys()
+  var myGroups = d3.map(data, function(d){return d.round;}).keys()
+  var myVars = d3.map(data, function(d){return d.game;}).keys()
 
   // Build X scales and axis:
   var x = d3.scaleBand()
@@ -55,9 +55,21 @@ d3.csv("data/roundWinnerLoser.csv", function(data) {
     .select(".domain").remove()
 
   // Build color scale
-  var myColor = d3.scaleSequential()
-    .interpolator(d3.interpolateInferno)
-    .domain([1,100])
+  const hueScale = d3.scaleOrdinal()
+  .domain(["Caitlin", "Sarah", "James","Colban","Darren"])
+  .range(["green", "pink", "blue","yellow","orange"]);
+
+  const vibrancyScale = d3.scaleLinear()
+  .domain([0, d3.max(data, d => d.diff)])
+  .range([0, 5]);
+
+  function colorScale(category, value) {
+    const baseColor = hueScale(category);
+    const t = vibrancyScale(value);
+
+    // interpolate from white → base color
+    return d3.interpolateRgb("#ffffff", baseColor)(t);
+  }
 
   // create a tooltip
   var tooltip = d3.select("#my_dataviz")
@@ -94,16 +106,16 @@ d3.csv("data/roundWinnerLoser.csv", function(data) {
 
   // add the squares
   svg.selectAll()
-    .data(data, function(d) {return d.game+':'+d.round;})
+    .data(data, function(d) {return d.round+':'+d.game;})
     .enter()
     .append("rect")
-      .attr("x", function(d) { return x(d.game) })
-      .attr("y", function(d) { return y(d.round) })
+      .attr("x", function(d) { return x(d.round) })
+      .attr("y", function(d) { return y(d.game) })
       .attr("rx", 4)
       .attr("ry", 4)
       .attr("width", x.bandwidth() )
       .attr("height", y.bandwidth() )
-      .style("fill", function(d) { return myColor(d.diff)} )
+      .style("fill", function(d) { return colorScale(d.winner,d.diff)} )
       .style("stroke-width", 4)
       .style("stroke", "none")
       .style("opacity", 0.8)
