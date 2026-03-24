@@ -70,18 +70,23 @@ userInterest = {
     }
 }
 
-games=[[]]
+games={}
 
-def getGameStats(thisRound):
-    difference = int(thisRound[0][16]) - int(thisRound[1][16])
+def getGameStats(thisRound,game):
+    p1 = int(thisRound[0][16])
+    p2 = int(thisRound[1][16])
+    difference = p1 - p2
     if difference <= 0:
-        games[game].append([game,thisRound[0][2],thisRound[1][0],thisRound[0][0],difference])
+        games[game]["rounds"].append([game,thisRound[0][2],thisRound[1][0],thisRound[0][0],difference*-1])
+        winner = thisRound[1][0]
     else:
-        games[game].append([game,thisRound[0][2],thisRound[0][0],thisRound[1][0],difference])
+        games[game]["rounds"].append([game,thisRound[0][2],thisRound[0][0],thisRound[1][0],difference])
+        winner = thisRound[0][0]
+    if p1 == 121 or p2==121:
+        games[game]["winner"] = winner
+        games[game]["numRounds"] = thisRound[0][2]
 
-with open('C:/Users/cmcco/Documents/github-repos/caitsmcco.github.io/crib/data.csv', newline='') as csvfile:
-
-    spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
+def gameStats(spamreader):
     i = 0
     date = 0
     game = -1
@@ -93,16 +98,34 @@ with open('C:/Users/cmcco/Documents/github-repos/caitsmcco.github.io/crib/data.c
                 i = 1
             else:
                 round.append(row)
-                getGameStats(round)
+                getGameStats(round,game)
                 round = []
                 i=0
         else:
             date = row[1]
             game = game + 1
-            games.append([])
+            games[game] = {"date":row[1],"numRounds":0,"winner":"","rounds":[]}
             round = [row]
             i = 1
     print(games)
+
+getGameStatsCSV
+
+
+hands = {"Sarah":{"hi":""},"Caitlin":{"hi":""},"Darren":{"hi":""},"Colban":{"hi":""},"James":{"hi":""},"Name":{"hi":""}}
+
+def userStats(reader):
+    for row in spamreader:
+        player = str(row[0])
+        hands[player]['hi'] = "world"
+
+        print(hands)
+
+with open('C:/Users/cmcco/Documents/github-repos/caitsmcco.github.io/crib/data.csv', newline='') as csvfile:
+
+    spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
+    
+    userStats(spamreader)
 
 
 
