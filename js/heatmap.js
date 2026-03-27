@@ -44,7 +44,7 @@ d3.csv("../../data/crib/roundWinnerLoser.csv", function(data) {
   // Build color scale
   const hueScale = d3.scaleOrdinal()
   .domain(["Caitlin","Sarah","James","Colban","Darren"])
-  .range(["#59CD90", "#F57AE5", "#3FA7D6","#FAC05E","#EE6352"]);
+  .range(["#69e04c", "#ef8ead", "#56ebd3", "#58b5e1", "#b8e27d"]);
 
   const vibrancyScale = d3.scaleLinear()
   .domain([0, d3.max(data, d => d.diff)])
@@ -111,21 +111,3 @@ d3.csv("../../data/crib/roundWinnerLoser.csv", function(data) {
     .on("mousemove", mousemove)
     .on("mouseleave", mouseleave)
 })
-
-// Add title to graph
-svg.append("text")
-        .attr("x", 0)
-        .attr("y", -50)
-        .attr("text-anchor", "left")
-        .style("font-size", "22px")
-        .text("Winners and Losers");
-
-// Add subtitle to graph
-svg.append("text")
-        .attr("x", 0)
-        .attr("y", -20)
-        .attr("text-anchor", "left")
-        .style("font-size", "14px")
-        .style("fill", "grey")
-        .style("max-width", 400)
-        .text("A short description of the take-away message of this chart.");
