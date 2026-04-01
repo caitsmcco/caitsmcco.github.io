@@ -44,7 +44,7 @@ d3.csv("../../data/crib/roundWinnerLoser.csv", function(data) {
   // Build color scale
   const hueScale = d3.scaleOrdinal()
   .domain(["Caitlin","Sarah","James","Colban","Darren"])
-  .range(["#69e04c", "#ef8ead", "#56ebd3", "#58b5e1", "#b8e27d"]);
+  .range(["#78b98f", "#df91bf", "#35c8ef", "#d2d249", "#f42697"]);
 
   const vibrancyScale = d3.scaleLinear()
   .domain([0, d3.max(data, d => d.diff)])

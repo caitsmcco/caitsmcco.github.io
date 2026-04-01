@@ -1,5 +1,10 @@
+@font-face {
+    font-family: calivorne;
+    src: url('../assets/fonts/Avelmor.ttf');
+}
+
 body {
-  font-family: sans-serif;
+  font-family: calivorne;
   margin: 20px;
 }
 
