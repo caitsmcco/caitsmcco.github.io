@@ -62,7 +62,7 @@ h1{font-family:'Playfair Display',serif;font-size:3rem;font-weight:600;color:var
   </div>
   <div class="panel" name="cribbageboard">
     <div class="pt">Board position</div>
-    <svg id="board-svg" viewBox="-10 20 720 250"></svg>
+    <svg id="board-svg" viewBox="-10 25 720 200"></svg>
     <div class="score-bar">
         <div class="si"><span class="sd" id="dot1"></span><span class="sn" id="p1-label">—</span><span class="sv" id="p1-score">0</span><span class="sr" id="p1-detail"></span></div>
         <div class="si"><span class="sd" id="dot2"></span><span class="sn" id="p2-label">—</span><span class="sv" id="p2-score">0</span><span class="sr" id="p2-detail"></span></div>
@@ -116,7 +116,7 @@ function pegPos(sc,lane){
 }
 
 const bsvg=d3.select('#board-svg');
-const bR=XR+RB+SEP+10,bT=YT-SEP-12,bBt=YM+SEP+60,bRX=RB+SEP+45;
+const bR=XR+RB+SEP+10,bT=YT-SEP-12,bBt=YM+SEP+67,bRX=RB+SEP+45;
 bsvg.append('path').attr('d',
   `M ${8} ${bT} L ${bR-bRX} ${bT} Q ${bR} ${bT} ${bR} ${bT+bRX} L ${bR} ${bBt-bRX} Q ${bR} ${bBt} ${bR-bRX} ${bBt} L ${8} ${bBt} Q ${8-12} ${bBt} ${8-12} ${bBt-12} L ${8-12} ${bT+12} Q ${8-12} ${bT} ${8} ${bT} Z`)
   .attr('fill','#2c2010').attr('stroke','#1c1408').attr('stroke-width',2);
