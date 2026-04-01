@@ -8,7 +8,7 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#0f0e0c;--bg2:#1a1814;--bg3:#232018;--border:#2e2a22;--text:#e8dfc8;--muted:#7a7060;--gold:#c8973a;}
+:root{--bg:#222f1e;--bg2:#151a14;--bg3:#232018;--border:#2e2a22;--text:#e8dfc8;--muted:#7a7060;--gold:#c8973a;}
 body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospace;min-height:100vh;padding:1.4rem 1.8rem;}
 h1{font-family:'Playfair Display',serif;font-size:3rem;font-weight:600;color:var(--gold);letter-spacing:.04em;margin-bottom:.12rem;}
 .subtitle{font-size:2rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:1rem;}
@@ -57,7 +57,7 @@ h1{font-family:'Playfair Display',serif;font-size:3rem;font-weight:600;color:var
 <div class="filter-bar"><span class="filter-label">Opponent</span></div>
 <div class="top-row">
   <div class="panel" name="heatmap">
-    <div class="pt">Rounds <span style="color:var(--muted);font-size:1rem">(hover / click)</span></div>
+    <div class="pt">Rounds</span></div>
     <div style="overflow-x:auto"><svg id="heatmap-svg"></svg></div>
     <div class="legend"><span id="leg-l">Caitlin</span><canvas class="lgc" id="legend-canvas"></canvas><span id="leg-r">Opponent</span></div>
   </div>
@@ -94,10 +94,9 @@ const FONT='IBM Plex Mono,monospace';
 const SUIT={H:'♥',D:'♦',C:'♣',S:'♠'};
 const RED=new Set(['H','D']);
 
-function makeScale(oppName,maxDiff){
-  const oppHex=(PCOL[oppName]||PCOL.Colban).peg;
-  return d3.scaleDiverging().domain([-maxDiff,0,maxDiff])
-    .interpolator(d3.interpolateRgbBasis([oppHex,'#1a1814','#8B1A10']));
+function makeScale(opp,max){
+  return d3.scaleDiverging().domain([-max,0,max])
+    .interpolator(d3.interpolateRgbBasis([(PCOL[opp]||PCOL.Colban).peg,'#1a1814','#8B1A10']));
 }
 
 // ── BOARD ─────────────────────────────────────
@@ -474,7 +473,7 @@ function renderHeatmap(games){
       if(winner){
         const wc=winner===game.p1name?(PCOL[game.p1name]||PCOL.Caitlin).light:(PCOL[game.p2name]||PCOL.Colban).light;
         svg.append('text').attr('x',LEFT+game.maxRound*COL_W+5).attr('y',gy+CELL_H/2+1)
-          .attr('dominant-baseline','middle').attr('fill',wc).attr('font-size',12).attr('font-family',FONT).text(winner + '★');
+          .attr('dominant-baseline','middle').attr('fill',wc).attr('font-size',18).attr('font-family',FONT).text('★');
       }
     }
   });
