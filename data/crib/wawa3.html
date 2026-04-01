@@ -406,13 +406,13 @@ function renderHeatmap(games){
     const oppCol=(PCOL[game.p2name]||PCOL.Colban).peg;
     const cScale=makeScale(game.p2name,globalMax);
     const ds=new Date(game.date).toLocaleDateString('en-CA',{month:'short',day:'numeric',year:"2-digit"});
-    const ts=new Date(game.date).toLocaleDateString('en-CA',{hour:'2-digit',minute:'2-digit'});
+    const ts=new Date(game.date).toLocaleTimeString('en-CA',{hour:'2-digit',minute:'2-digit'});
 
     // Row highlight background
     const rowBg=svg.append('rect').attr('x',0).attr('y',gy-1).attr('width',totalW).attr('height',CELL_H+2)
       .attr('fill','transparent').attr('rx',3).style('transition','fill .1s');
 
-    svg.append('text').attr('x',LEFT-8).attr('y',gy+CELL_H/2-5).attr('text-anchor','end').attr('dominant-baseline','middle')
+    svg.append('text').attr('x',LEFT-8).attr('y',gy+CELL_H/2-7).attr('text-anchor','end').attr('dominant-baseline','middle')
       .attr('fill','#e8dfc8').attr('font-size',13).attr('font-family',FONT).text(ds);
     svg.append('text').attr('x',LEFT-8).attr('y',gy+CELL_H/2+6).attr('text-anchor','end').attr('dominant-baseline','middle')
       .attr('fill','#e8dfc8').attr('font-size',13).attr('font-family',FONT).text(ts);
