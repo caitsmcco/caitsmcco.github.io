@@ -177,7 +177,7 @@ function renderCards(rd,game){
   const pCards=row=>row?['p1','p2','p3','p4','p5','p6','p7'].map(f=>parseCard(row[f])).filter(Boolean):[];
   const cCards=row=>row?[parseCard(row.d1),parseCard(row.d2)].filter(Boolean):[];
   const cc=r1?parseCard(r1.cc):r2?parseCard(r2.cc):null;
-  const c1=(PCOL[game.p1name]||PCOL.Caitlin).peg,c2=(PCOL[game.p2name]||PCOL.Colban).peg;
+  const c1=(PCOL[game.p1name]||PCOL.Caitlin).light,c2=(PCOL[game.p2name]||PCOL.Colban).light;
   el.innerHTML=`
     <div style="font-size:1rem;color:var(--muted);margin-bottom:.45rem;padding-left:15px;padding-top:5px;">
         CUT: ${cc?`<span style="color:${cc.red?'#e85d4a':'#e8dfc8'}">${cc.rank}${SUIT[cc.suit]||cc.suit}</span>`:'—'} · round ${rd.round}
