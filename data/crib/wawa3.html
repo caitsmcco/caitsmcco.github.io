@@ -58,13 +58,13 @@ h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:600;color:var
 <div class="top-row">
   <div class="panel" name="heatmap">
     <div class="pt">Games</span></div>
-    <div style="overflow-x:auto"><svg id="heatmap-svg"></svg></div>
+    <div style="overflow-x:auto"><svg id="heatmap-svg" viewBox="-10 30 200 720"></svg></div>
     <div class="legend"><span id="leg-l">Opponent</span><canvas class="lgc" id="legend-canvas"></canvas><span id="leg-r">Caitlin leading</span></div>
   </div>
   <div class="panel2" name="cribbageboard">
     <!--<div class="pt">Board position</div>!-->
     <svg id="board-svg" viewBox="-10 30 720 200"></svg>
-    <div style="padding:30;">
+    <div>
         <div class="score-bar">
             <div class="si">
               <span class="sr" id="r-detail">-</span>
@@ -196,9 +196,9 @@ function renderCards(rd,game){
       <div class="cards-row">${pCards(r2).map(c=>cardEl(c)).join('')||'<span style="font-size:1rem;color:var(--muted)">—</span>'}</div></div>
     <div class="cards-section"><div class="cards-label">Crib</div>
       <div class="cards-row">
-        <span style="font-size:1rem;color:${c1};margin-right:1px">'|'</span>${cCards(r1).map(c=>cardEl(c)).join('')}
+        ${cCards(r1).map(c=>cardEl(c)).join('')}<span style="font-size:1rem;color:${c1};margin-right:1px">|</span>
         <div class="card-divider"></div>
-        <span style="font-size:1rem;color:${c2};margin-right:1px">'|'</span>${cCards(r2).map(c=>cardEl(c)).join('')}
+        <span style="font-size:1rem;color:${c2};margin-right:1px">|</span>${cCards(r2).map(c=>cardEl(c)).join('')}
       </div>
       </div>`;
 }
