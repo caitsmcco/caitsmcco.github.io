@@ -63,11 +63,19 @@ h1{font-family:'Playfair Display',serif;font-size:3rem;font-weight:600;color:var
   </div>
   <div class="panel2" name="cribbageboard">
     <div class="pt">Board position</div>
-    <svg id="board-svg" viewBox="-8 30 720 200"></svg>
+    <svg id="board-svg" viewBox="-10 30 720 200"></svg>
     <div style="padding:30;">
         <div class="score-bar">
-            <div class="si"><span class="sd" id="dot1"></span><span class="sn" id="p1-label">—</span><span class="sv" id="p1-score">0</span><span class="sr" id="p1-detail"></span></div>
-            <div class="si"><span class="sd" id="dot2"></span><span class="sn" id="p2-label">—</span><span class="sv" id="p2-score">0</span><span class="sr" id="p2-detail"></span></div>
+            <div class="si">
+                <span class="sd" id="dot1"></span>
+                <span class="sn" id="p1-label">—</span>
+                <span class="sv" id="p1-score">0</span>
+                <span class="sr" id="p1-detail">·</span>
+                <span class="sd" id="dot2"></span>
+                <span class="sn" id="p2-label">—</span>
+                <span class="sv" id="p2-score">0</span>
+                <span class="sr" id="r-detail">-</span>
+            </div>
         </div>
         <div id="cards-content"></div>
     </div>
@@ -179,8 +187,8 @@ function renderCards(rd,game){
   const cc=r1?parseCard(r1.cc):r2?parseCard(r2.cc):null;
   const c1=(PCOL[game.p1name]||PCOL.Caitlin).light,c2=(PCOL[game.p2name]||PCOL.Colban).light;
   el.innerHTML=`
-    <div style="font-size:1rem;color:var(--muted);margin-bottom:.45rem;padding-left:15px;padding-top:5px;">
-        CUT: ${cc?`<span style="color:${cc.red?'#e85d4a':'#e8dfc8'}">${cc.rank}${SUIT[cc.suit]||cc.suit}</span>`:'—'} · round ${rd.round}
+    <div style="font-size:2rem;color:var(--muted);margin-bottom:.45rem;padding-left:15px;padding-top:5px;">
+        CUT: ${cc?`<span style="color:${cc.red?'#e85d4a':'#e8dfc8'}">${cc.rank}${SUIT[cc.suit]||cc.suit}</span>`:'—'} 
     </div>
     <div class="cards-section"><div class="cards-label" style="color:${c1}">${game.p1name}</div>
       <div class="cards-row">${pCards(r1).map(c=>cardEl(c)).join('')||'<span style="font-size:1rem;color:var(--muted)">—</span>'}</div></div>
@@ -357,6 +365,7 @@ function render(){
     document.getElementById('p2-score').textContent=last.s2??0;
     document.getElementById('p1-detail').textContent='';
     document.getElementById('p2-detail').textContent='';
+    document.getElementById('r-detail').textContent= `· round ${rd.round}`;
     renderLegend(activeFilter||first.p2name,games);
     document.getElementById('leg-l').textContent=(activeFilter||first.p2name);
   }
