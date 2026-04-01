@@ -46,6 +46,7 @@ h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:600;color:var
 .card.blank{background:#1a1814;border-color:#2e2a22;}
 .card-divider{width:1px;height:38px;background:var(--border);margin:0 3px;flex-shrink:0;}
 .no-sel{color:var(--muted);font-size:1rem;padding:.4rem 0;}
+.viz-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem;}
 .tooltip{position:fixed;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:.4rem .65rem;font-size:1rem;color:var(--text);pointer-events:none;opacity:0;transition:opacity .12s;z-index:100;line-height:1.75;}
 .tooltip.vis{opacity:1;}
 .tth{color:var(--gold);font-weight:500;margin-bottom:1px;}
@@ -87,6 +88,11 @@ h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:600;color:var
     <div class="panel"><div class="pt">Win / loss by opponent</div><div id="pie-wrap" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;"></div></div>
     <div class="panel"><div class="pt">Round score vs avg &amp; best</div><svg id="bar1"></svg><div id="bar1-empty" style="font-size:1rem;color:var(--muted);">Select a round</div></div>
     <div class="panel"><div class="pt">Points by type</div><svg id="bar2"></svg><div id="bar2-empty" style="font-size:1rem;color:var(--muted);">Select a round</div></div>
+</div>
+<div class="viz-row">
+  <div class="panel"><div class="pt">Points per round distribution</div><svg id="hist-svg" style="width:100%;display:block;"></svg></div>
+  <div class="panel"><div class="pt">Momentum <span style="font-size:.7rem;color:var(--muted);letter-spacing:0;text-transform:none;" id="momentum-sub">&mdash; select a game</span></div><svg id="momentum-svg" style="width:100%;display:block;"></svg></div>
+  <div class="panel"><div class="pt">Scoring profile</div><svg id="radar-svg" style="width:100%;display:block;"></svg></div>
 </div>
 <div class="tooltip" id="tooltip"></div>
 <script>
@@ -489,7 +495,249 @@ function renderLineGraph(game){
   });
 }
 
-// ── STATE & DATA ──────────────────────────────
+// ── HISTOGRAM: points per round distribution ──────────────────────────────────
+function renderHistogram(games){
+  clearChart('hist-svg');
+  const VW=320,VH=170,ml=28,mr=12,mt=14,mb=30;
+  const iW=VW-ml-mr,iH=VH-mt-mb;
+  const svg=d3.select('#hist-svg').attr('viewBox',`0 0 ${VW} ${VH}`).attr('height',VH);
+  const g=svg.append('g').attr('transform',`translate(${ml},${mt})`);
+
+  // Build per-player round point totals
+  function roundPts(games,name){
+    return games.flatMap(gm=>{
+      const isP1=gm.p1name===name;
+      return gm.rounds.map((r,i)=>{
+        const prev=gm.rounds[i-1];
+        const score=isP1?r.s1:r.s2;
+        const prevScore=prev?(isP1?prev.s1:prev.s2):0;
+        if(score===null)return null;
+        return score-(prevScore||0);
+      }).filter(v=>v!==null&&v>=0);
+    });
+  }
+
+  const c1=PCOL.Caitlin.peg;
+  const opp=activeFilter||(games[0]&&games[0].p2name)||'Opponent';
+  const c2=(PCOL[opp]||PCOL.Colban).peg;
+
+  const pts1=roundPts(games,CAITLIN);
+  const pts2=roundPts(games,opp);
+
+  if(!pts1.length&&!pts2.length)return;
+
+  const allPts=[...pts1,...pts2];
+  const maxPt=d3.max(allPts)||1;
+  const binGen=d3.bin().domain([0,maxPt+1]).thresholds(d3.range(0,maxPt+2,1));
+  const bins1=binGen(pts1),bins2=binGen(pts2);
+
+  const x=d3.scaleLinear().domain([0,maxPt+1]).range([0,iW]);
+  const maxCount=d3.max([...bins1,...bins2],b=>b.length)||1;
+  const y=d3.scaleLinear().domain([0,maxCount]).range([iH,0]);
+
+  g.append('g').call(d3.axisLeft(y).ticks(4).tickSize(-iW))
+    .call(ax=>{ax.select('.domain').remove();ax.selectAll('.tick line').attr('stroke','#2e2a22').attr('stroke-dasharray','2,2');ax.selectAll('text').attr('fill','#7a7060').attr('font-size',6).attr('font-family',FONT);});
+  g.append('g').attr('transform',`translate(0,${iH})`).call(d3.axisBottom(x).ticks(Math.min(maxPt+1,12)).tickFormat(d=>Number.isInteger(d)?d:''))
+    .call(ax=>{ax.select('.domain').attr('stroke','#2e2a22');ax.selectAll('text').attr('fill','#7a7060').attr('font-size',6).attr('font-family',FONT);});
+
+  // Draw both players' histograms overlapping, with opacity
+  [
+    [bins2,c2,.55],
+    [bins1,c1,.55],
+  ].forEach(([bins,col,op])=>{
+    bins.forEach(b=>{
+      if(!b.length)return;
+      const bw=Math.max(x(b.x1)-x(b.x0)-1,1);
+      g.append('rect').attr('x',x(b.x0)).attr('y',y(b.length))
+        .attr('width',bw).attr('height',Math.max(iH-y(b.length),0))
+        .attr('fill',col).attr('opacity',op).attr('rx',1);
+    });
+    // Mean line
+    const mean=d3.mean(bins.flatMap(b=>Array(b.length).fill((b.x0+b.x1)/2)))||0;
+    g.append('line').attr('x1',x(mean)).attr('x2',x(mean)).attr('y1',0).attr('y2',iH)
+      .attr('stroke',col).attr('stroke-width',1.2).attr('stroke-dasharray','3,2').attr('opacity',.9);
+  });
+
+  // Legend
+  [[CAITLIN,c1],[opp,c2]].forEach(([n,col],i)=>{
+    g.append('rect').attr('x',i*(iW/2)).attr('y',-12).attr('width',6).attr('height',6).attr('fill',col).attr('rx',1).attr('opacity',.8);
+    g.append('text').attr('x',i*(iW/2)+8).attr('y',-7).attr('fill','#7a7060').attr('font-size',6.5).attr('font-family',FONT).text(n+' (dashed=mean)');
+  });
+  // X axis label
+  g.append('text').attr('x',iW/2).attr('y',iH+24).attr('text-anchor','middle').attr('fill','#5a5040').attr('font-size',6.5).attr('font-family',FONT).text('points scored in round');
+}
+
+// ── MOMENTUM RIBBON: tug-of-war per round for selected game ───────────────────
+function renderMomentum(game){
+  clearChart('momentum-svg');
+  document.getElementById('momentum-sub').textContent = game
+    ? `— ${game.p1name} vs ${game.p2name}`
+    : '— select a game';
+
+  if(!game){return;}
+
+  const VW=320,VH=170,ml=28,mr=12,mt=14,mb=30;
+  const iW=VW-ml-mr,iH=VH-mt-mb;
+  const svg=d3.select('#momentum-svg').attr('viewBox',`0 0 ${VW} ${VH}`).attr('height',VH);
+  const g=svg.append('g').attr('transform',`translate(${ml},${mt})`);
+
+  const c1=(PCOL[game.p1name]||PCOL.Caitlin).peg;
+  const c2=(PCOL[game.p2name]||PCOL.Colban).peg;
+
+  // Per-round point gains
+  const rounds=game.rounds.filter(r=>r.s1!==null&&r.s2!==null);
+  const data=rounds.map((r,i)=>{
+    const prev=rounds[i-1];
+    const g1=prev?r.s1-prev.s1:r.s1;
+    const g2=prev?r.s2-prev.s2:r.s2;
+    return{round:r.round, g1:Math.max(g1,0), g2:Math.max(g2,0)};
+  });
+
+  if(!data.length)return;
+
+  const maxGain=d3.max(data,d=>Math.max(d.g1,d.g2))||1;
+  const midY=iH/2;
+  const yScale=d3.scaleLinear().domain([0,maxGain]).range([0,midY*.92]);
+
+  const x=d3.scaleBand().domain(data.map(d=>d.round)).range([0,iW]).padding(.1);
+
+  // Centre axis
+  g.append('line').attr('x1',0).attr('x2',iW).attr('y1',midY).attr('y2',midY)
+    .attr('stroke','#3a3020').attr('stroke-width',1);
+
+  // Player labels at ends
+  g.append('text').attr('x',-4).attr('y',midY/2).attr('text-anchor','end').attr('dominant-baseline','middle')
+    .attr('fill',c1).attr('font-size',6.5).attr('font-family',FONT).attr('writing-mode','tb').text(game.p1name);
+  g.append('text').attr('x',-4).attr('y',midY+midY/2).attr('text-anchor','end').attr('dominant-baseline','middle')
+    .attr('fill',c2).attr('font-size',6.5).attr('font-family',FONT).attr('writing-mode','tb').text(game.p2name);
+
+  data.forEach(d=>{
+    const bx=x(d.round), bw=x.bandwidth();
+    const h1=yScale(d.g1), h2=yScale(d.g2);
+    // P1 bar goes up from centre
+    g.append('rect').attr('x',bx).attr('y',midY-h1).attr('width',bw).attr('height',Math.max(h1,1))
+      .attr('fill',c1).attr('opacity',.8).attr('rx',1);
+    // P2 bar goes down from centre
+    g.append('rect').attr('x',bx).attr('y',midY).attr('width',bw).attr('height',Math.max(h2,1))
+      .attr('fill',c2).attr('opacity',.8).attr('rx',1);
+    // Value labels if tall enough
+    if(h1>8)g.append('text').attr('x',bx+bw/2).attr('y',midY-h1-2).attr('text-anchor','middle')
+      .attr('fill',c1).attr('font-size',5.5).attr('font-family',FONT).text(d.g1);
+    if(h2>8)g.append('text').attr('x',bx+bw/2).attr('y',midY+h2+7).attr('text-anchor','middle')
+      .attr('fill',c2).attr('font-size',5.5).attr('font-family',FONT).text(d.g2);
+    // Round number
+    g.append('text').attr('x',bx+bw/2).attr('y',iH+10).attr('text-anchor','middle')
+      .attr('fill','#5a5040').attr('font-size',6).attr('font-family',FONT).text(d.round);
+  });
+
+  // Highlight selected round
+  if(selectedCell&&selectedCell.gameDate===game.date){
+    const sr=data.find(d=>d.round===selectedCell.round);
+    if(sr){
+      g.append('rect').attr('x',x(sr.round)-1).attr('y',0).attr('width',x.bandwidth()+2).attr('height',iH)
+        .attr('fill','none').attr('stroke','#c8973a').attr('stroke-width',1.2).attr('rx',2);
+    }
+  }
+
+  g.append('text').attr('x',iW/2).attr('y',iH+22).attr('text-anchor','middle')
+    .attr('fill','#5a5040').attr('font-size',6.5).attr('font-family',FONT).text('round');
+}
+
+// ── RADAR: scoring profile per player ────────────────────────────────────────
+function renderRadar(games){
+  clearChart('radar-svg');
+  const VW=320,VH=200;
+  const svg=d3.select('#radar-svg').attr('viewBox',`0 0 ${VW} ${VH}`).attr('height',VH);
+
+  const opp=activeFilter||(games[0]&&games[0].p2name)||'Opponent';
+  const c1=PCOL.Caitlin.peg, c2=(PCOL[opp]||PCOL.Colban).peg;
+  const axes=['Pegged','Hand','Crib','Consistency','Comeback'];
+
+  // Compute averages across filtered games
+  function stats(games, isP1){
+    const all=games.flatMap(gm=>gm.rounds.map((r,i)=>{
+      const prev=gm.rounds[i-1];
+      const pts=isP1?r.p1pegged+r.p1hand+r.p1crib:r.p2pegged+r.p2hand+r.p2crib;
+      return{
+        pegged: isP1?r.p1pegged:r.p2pegged,
+        hand:   isP1?r.p1hand:r.p2hand,
+        crib:   isP1?r.p1crib:r.p2crib,
+        total: pts,
+        prevScore: prev?(isP1?prev.s1:prev.s2):0,
+        score: isP1?r.s1:r.s2,
+      };
+    }));
+    const avgPegged=d3.mean(all,d=>d.pegged)||0;
+    const avgHand  =d3.mean(all,d=>d.hand)||0;
+    const avgCrib  =d3.mean(all,d=>d.crib)||0;
+    const stdPts   =d3.deviation(all,d=>d.total)||1;
+    const avgPts   =d3.mean(all,d=>d.total)||1;
+    // Consistency: lower variance relative to mean = higher score (invert CV)
+    const consistency=Math.max(0,1-stdPts/Math.max(avgPts,1));
+    // Comeback: how often they score more pts in a round when trailing
+    const comebk=all.filter(d=>d.prevScore!==null&&d.score!==null);
+    const trailing=comebk.filter(d=>{return true;}); // simplified
+    const comebkRate=d3.mean(comebk,d=>d.total/(avgPts||1))||0;
+    return[avgPegged,avgHand,avgCrib,consistency*15,comebkRate*8];
+  }
+
+  const vals1=stats(games,true);
+  const vals2=stats(games,false);
+
+  // Normalise to 0-1 across both players for each axis
+  const maxVals=axes.map((_,i)=>Math.max(vals1[i],vals2[i],0.01));
+  const norm=(v,i)=>v/maxVals[i];
+
+  const cx=VW/2, cy=VH/2-10, R=72;
+  const N=axes.length;
+  const angle=i=>((i/N)*2*Math.PI)-Math.PI/2;
+
+  // Grid rings
+  [.25,.5,.75,1].forEach(t=>{
+    const pts=d3.range(N).map(i=>({
+      x:cx+Math.cos(angle(i))*R*t,
+      y:cy+Math.sin(angle(i))*R*t,
+    }));
+    svg.append('polygon')
+      .attr('points',pts.map(p=>`${p.x},${p.y}`).join(' '))
+      .attr('fill','none').attr('stroke','#2e2a22').attr('stroke-width',.6);
+  });
+
+  // Axis spokes + labels
+  axes.forEach((ax,i)=>{
+    const x2=cx+Math.cos(angle(i))*R, y2=cy+Math.sin(angle(i))*R;
+    svg.append('line').attr('x1',cx).attr('y1',cy).attr('x2',x2).attr('y2',y2)
+      .attr('stroke','#2e2a22').attr('stroke-width',.6);
+    const lx=cx+Math.cos(angle(i))*(R+14), ly=cy+Math.sin(angle(i))*(R+14);
+    svg.append('text').attr('x',lx).attr('y',ly)
+      .attr('text-anchor','middle').attr('dominant-baseline','middle')
+      .attr('fill','#7a7060').attr('font-size',7.5).attr('font-family',FONT).text(ax);
+  });
+
+  // Draw polygons for each player
+  [[vals1,c1,CAITLIN],[vals2,c2,opp]].forEach(([vals,col,name])=>{
+    const pts=d3.range(N).map(i=>({
+      x:cx+Math.cos(angle(i))*R*norm(vals[i],i),
+      y:cy+Math.sin(angle(i))*R*norm(vals[i],i),
+    }));
+    svg.append('polygon')
+      .attr('points',pts.map(p=>`${p.x},${p.y}`).join(' '))
+      .attr('fill',col).attr('fill-opacity',.18)
+      .attr('stroke',col).attr('stroke-width',1.5).attr('stroke-opacity',.85);
+    pts.forEach(p=>{
+      svg.append('circle').attr('cx',p.x).attr('cy',p.y).attr('r',2.5)
+        .attr('fill',col).attr('opacity',.9);
+    });
+  });
+
+  // Legend
+  [[CAITLIN,c1],[opp,c2]].forEach(([n,col],i)=>{
+    svg.append('rect').attr('x',8+i*80).attr('y',VH-14).attr('width',7).attr('height',7).attr('fill',col).attr('rx',1).attr('opacity',.85);
+    svg.append('text').attr('x',18+i*80).attr('y',VH-8).attr('fill','#7a7060').attr('font-size',7).attr('font-family',FONT).text(n);
+  });
+}
+
+
 let allGames=[],activeFilter=null,selectedCell=null;
 
 d3.csv('edited.csv').then(raw=>{
@@ -533,6 +781,9 @@ function render(){
   const games=filteredGames();
   renderHeatmap(games);
   renderPieCharts(allGames);
+  renderHistogram(games);
+  renderMomentum(null);
+  renderRadar(games);
   const first=games[0];
   if(first){
     const last=first.rounds[first.rounds.length-1];
@@ -567,6 +818,9 @@ function activateCell(game,rd,anim){
   renderBar1(rd,game,filteredGames());
   renderBar2(rd,game);
   renderLineGraph(game);
+  renderMomentum(game);
+  renderHistogram(filteredGames());
+  renderRadar(filteredGames());
 }
 
 function renderHeatmap(games){
@@ -648,7 +902,7 @@ function renderHeatmap(games){
           if(selectedCell){
             const sg=allGames.find(g=>g.date===selectedCell.gameDate);
             const sr=sg&&sg.rounds.find(r=>r.round===selectedCell.round);
-            if(sg&&sr){activateCell(sg,sr,false);renderLineGraph(sg);}
+            if(sg&&sr){activateCell(sg,sr,false);renderLineGraph(sg);renderMomentum(sg);}
           }
         });
         node.addEventListener('click',()=>{
