@@ -192,7 +192,7 @@ function renderCards(rd,game){
         Flipped: ${cc?`<span style="color:${cc.red?'#e85d4a':'#e8dfc8'}">${cc.rank}${SUIT[cc.suit]||cc.suit}</span>`:'—'} 
     </div>
     <div class="cards-section"><div class="cards-label">Flipped Card</div>
-      <div class="cards-row">${fCards(cc).map(c=>cardEl(c)).join('')||'<span style="font-size:1rem;color:var(--muted)">—</span>'}</div></div>
+      <div class="cards-row">${fCards(r1).map(c=>cardEl(c)).join('')||'<span style="font-size:1rem;color:var(--muted)">—</span>'}</div></div>
     <div class="cards-section"><div class="cards-label" style="color:${c1}">${game.p1name}</div>
       <div class="cards-row">${pCards(r1).map(c=>cardEl(c)).join('')||'<span style="font-size:1rem;color:var(--muted)">—</span>'}</div></div>
     <div class="cards-section"><div class="cards-label" style="color:${c2}">${game.p2name}</div>
@@ -366,7 +366,7 @@ function render(){
     document.getElementById('p2-label').textContent=first.p2name;
     document.getElementById('p1-score').textContent=last.s1??0;
     document.getElementById('p2-score').textContent=last.s2??0;
-    document.getElementById('r-detail').textContent= `· round ${rd.round}`;
+    document.getElementById('r-detail').textContent= `·`;
     document.getElementById('p1-detail').textContent='·';
     renderLegend(activeFilter||first.p2name,games);
     document.getElementById('leg-l').textContent=(activeFilter||first.p2name);
