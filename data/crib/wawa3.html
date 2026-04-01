@@ -41,8 +41,8 @@ h1{font-family:'Playfair Display',serif;font-size:3rem;font-weight:600;color:var
 .card:hover{transform:translateY(-3px);}
 .card .cr{font-size:13px;line-height:1;}
 .card .cs{font-size:15px;line-height:1;}
-.card.red .cr,.card.red .cs{color:#c0392b;}
-.card.black .cr,.card.black .cs{color:#1a1814;}
+.card.red .cr,.card.red .cs{color:#c0392b;font-size: 4rem;}
+.card.black .cr,.card.black .cs{color:#1a1814;font-size: 4rem;}
 .card.blank{background:#1a1814;border-color:#2e2a22;}
 .card-divider{width:1px;height:38px;background:var(--border);margin:0 3px;flex-shrink:0;}
 .no-sel{color:var(--muted);font-size:1rem;padding:.4rem 0;}
@@ -179,7 +179,7 @@ function renderCards(rd,game){
   const cc=r1?parseCard(r1.cc):r2?parseCard(r2.cc):null;
   const c1=(PCOL[game.p1name]||PCOL.Caitlin).peg,c2=(PCOL[game.p2name]||PCOL.Colban).peg;
   el.innerHTML=`
-    <div style="font-size:1rem;color:var(--muted);margin-bottom:.45rem;padding-left:10px;">
+    <div style="font-size:1rem;color:var(--muted);margin-bottom:.45rem;padding-left:15px;padding-top:5px;">
         CUT: ${cc?`<span style="color:${cc.red?'#e85d4a':'#e8dfc8'}">${cc.rank}${SUIT[cc.suit]||cc.suit}</span>`:'—'} · round ${rd.round}
     </div>
     <div class="cards-section"><div class="cards-label" style="color:${c1}">${game.p1name}</div>
@@ -188,9 +188,9 @@ function renderCards(rd,game){
       <div class="cards-row">${pCards(r2).map(c=>cardEl(c)).join('')||'<span style="font-size:1rem;color:var(--muted)">—</span>'}</div></div>
     <div class="cards-section"><div class="cards-label">Crib</div>
       <div class="cards-row">
-        <span style="font-size:4rem;color:${c1};margin-right:1px">${game.p1name[0]}</span>${cCards(r1).map(c=>cardEl(c)).join('')}
+        <span style="font-size:1rem;color:${c1};margin-right:1px">${game.p1name[0]}</span>${cCards(r1).map(c=>cardEl(c)).join('')}
         <div class="card-divider"></div>
-        <span style="font-size:4rem;color:${c2};margin-right:1px">${game.p2name[0]}</span>${cCards(r2).map(c=>cardEl(c)).join('')}
+        <span style="font-size:1rem;color:${c2};margin-right:1px">${game.p2name[0]}</span>${cCards(r2).map(c=>cardEl(c)).join('')}
       </div>
       </div>`;
 }
