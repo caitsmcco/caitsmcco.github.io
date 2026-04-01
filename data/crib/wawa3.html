@@ -94,9 +94,10 @@ const FONT='IBM Plex Mono,monospace';
 const SUIT={H:'♥',D:'♦',C:'♣',S:'♠'};
 const RED=new Set(['H','D']);
 
-function makeScale(opp,max){
-  return d3.scaleDiverging().domain([-max,0,max])
-    .interpolator(d3.interpolateRgbBasis([PCOL.Caitlin.peg,'#1a1814',(PCOL[opp]||PCOL.Colban).peg]));
+function makeScale(oppName,maxDiff){
+  const oppHex=(PCOL[oppName]||PCOL.Colban).peg;
+  return d3.scaleDiverging().domain([-maxDiff,0,maxDiff])
+    .interpolator(d3.interpolateRgbBasis([oppHex,'#1a1814','#8B1A10']));
 }
 
 // ── BOARD ─────────────────────────────────────
