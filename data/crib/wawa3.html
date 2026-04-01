@@ -99,17 +99,18 @@ function makeScale(opp,max){
 }
 
 // ── BOARD ─────────────────────────────────────
-const BVW=560,BVH=340,PX=42,PY=26;
+const BVW=680,BVH=380,PX=52,PY=36;
 const bW=BVW-PX*2,bH=BVH-PY*2,LS=bH/3;
-const YT=PY+LS*.5,YB=PY+LS*1.5,YM=PY+LS*2.5;
-const XL=PX,XR=PX+bW,RB=LS/2,RS=LS/4,SEP=9,HR=3.8,PR=6.2;
+const YT=PY+LS*.5,YB=PY+LS*1.5,YM=PY+LS*1;
+const XL=PX,XR=PX+bW,RB=LS/2,RS=LS/4,SEP=15,HR=4.5,PR=7.0;
 
 function buildTrack(v){
   const s=(x0,x1,y,n)=>Array.from({length:n},(_,i)=>({x:x0+(x1-x0)*(i+.5)/n,y}));
   const a=(cx,cy,r,a0,a1,n,ro)=>{const R=r+ro;return Array.from({length:n},(_,i)=>{const aa=a0+(a1-a0)*(i+.5)/n;return{x:cx+Math.cos(aa)*R,y:cy+Math.sin(aa)*R};});};
-  return[...s(XL,XR,YT+v,35),...a(XR,(YT+YB)/2,RB,-Math.PI/2,Math.PI/2,10,v),...s(XR,XL,YB+v,35),...a(XL,(YB+YM)/2,RS,Math.PI/2,3*Math.PI/2,5,v),...s(XL,XR,YM+v,36)];
+  return[...s(XL,XR,YT+v,35),...a(XR,(YT+YB)/2,RB,-Math.PI/2,Math.PI/2,10,v),...s(XL,XR,YB+v,35),...a(XL,(YB+YM)/2,RS,Math.PI/2,3*Math.PI/2,5,v),...s(XL,XR,YM+v,36)];
 }
 const p1Pts=buildTrack(-SEP/2),p2Pts=buildTrack(+SEP/2);
+
 function pegPos(sc,lane){
   const pts=lane==='p1'?p1Pts:p2Pts,v=lane==='p1'?-SEP/2:SEP/2;
   if(sc<=0)return{x:XL-14,y:YT+v};
