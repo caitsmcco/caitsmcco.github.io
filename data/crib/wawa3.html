@@ -93,7 +93,7 @@ const RED=new Set(['H','D']);
 
 function makeScale(opp,max){
   return d3.scaleDiverging().domain([-max,0,max])
-    .interpolator(d3.interpolateRgbBasis([(PCOL[opp]||PCOL.Colban).peg,'#1a1814','#8B1A10']));
+    .interpolator(d3.interpolateRgbBasis([PCOL.Caitlin.peg,'#1a1814',(PCOL[opp]||PCOL.Colban).peg]));
 }
 
 // ── BOARD ─────────────────────────────────────
@@ -354,7 +354,7 @@ function render(){
     document.getElementById('p1-detail').textContent='final';
     document.getElementById('p2-detail').textContent='';
     renderLegend(activeFilter||first.p2name,games);
-    document.getElementById('leg-r').textContent=(activeFilter)+' leading';
+    document.getElementById('leg-r').textContent=(activeFilter||first.p2name)+' leading';
   }
   renderCards(null,null);
   clearChart('bar1');document.getElementById('bar1-empty').style.display='block';
