@@ -59,11 +59,11 @@ h1{font-family:'Playfair Display',serif;font-size:3rem;font-weight:600;color:var
   <div class="panel" name="heatmap">
     <div class="pt">Rounds</span></div>
     <div style="overflow-x:auto"><svg id="heatmap-svg"></svg></div>
-    <div class="legend"><span id="leg-l">Caitlin</span><canvas class="lgc" id="legend-canvas"></canvas><span id="leg-r">Opponent</span></div>
+    <div class="legend"><span id="leg-l">Opponent</span><canvas class="lgc" id="legend-canvas"></canvas><span id="leg-r">Caitlin leading</span></div>
   </div>
   <div class="panel2" name="cribbageboard">
     <div class="pt">Board position</div>
-    <svg id="board-svg" viewBox="0 30 720 200"></svg>
+    <svg id="board-svg" viewBox="-10 30 720 200"></svg>
     <div>
         <div id="cards-content"></div>
     </div>
@@ -86,9 +86,9 @@ const OPPONENTS=['Sarah','James','Colban','Darren'];
 const PCOL={
   Caitlin:{peg:'#c0392b',light:'#e85d4a'},
   Sarah:{peg:'#7B2FBE',light:'#a855f7'},
-  James:{peg:'#0e7c55',light:'#10b981'},
-  Colban:{peg:'#185fa5',light:'#3a8fd4'},
-  Darren:{peg:'#e2e435',light:'#fffe56'},
+  Colban:{peg:'#0e7c55',light:'#10b981'},
+  James:{peg:'#185fa5',light:'#3a8fd4'},
+  Darren:{peg:'#d2d249',light:'#fffe56'},
 };
 const FONT='IBM Plex Mono,monospace';
 const SUIT={H:'♥',D:'♦',C:'♣',S:'♠'};
@@ -357,7 +357,7 @@ function render(){
     document.getElementById('p1-detail').textContent='final';
     document.getElementById('p2-detail').textContent='';
     renderLegend(activeFilter||first.p2name,games);
-    document.getElementById('leg-r').textContent=(activeFilter||first.p2name)+' leading';
+    document.getElementById('leg-l').textContent=(activeFilter||first.p2name);
   }
   renderCards(null,null);
   clearChart('bar1');document.getElementById('bar1-empty').style.display='block';
@@ -415,7 +415,7 @@ function renderHeatmap(games){
     svg.append('text').attr('x',LEFT-8).attr('y',gy+CELL_H/2-5).attr('text-anchor','end').attr('dominant-baseline','middle')
       .attr('fill','#e8dfc8').attr('font-size',13).attr('font-family',FONT).text(ds);
     svg.append('text').attr('x',LEFT-8).attr('y',gy+CELL_H/2+6).attr('text-anchor','end').attr('dominant-baseline','middle')
-      .attr('fill',oppCol).attr('font-size',Math.min(CELL_H*.38,10)).attr('font-family',FONT).text('vs '+game.p2name);
+      .attr('fill',oppCol).attr('font-size',Math.max(CELL_H*.38,10)).attr('font-family',FONT).text('vs '+game.p2name);
 
     game.rounds.forEach(rd=>{
       const cx=LEFT+(rd.round-1)*COL_W;
