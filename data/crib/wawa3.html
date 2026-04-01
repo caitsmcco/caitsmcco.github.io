@@ -59,24 +59,22 @@ h1{font-family:'Playfair Display',serif;font-size:3rem;font-weight:600;color:var
     <div class="pt">Rounds <span style="color:var(--muted);font-size:1rem">(hover / click)</span></div>
     <div style="overflow-x:auto"><svg id="heatmap-svg"></svg></div>
     <div class="legend"><span id="leg-l">Caitlin</span><canvas class="lgc" id="legend-canvas"></canvas><span id="leg-r">Opponent</span></div>
-</div>
-<div>
-    <div class="panel">
-        <div class="pt">Board position</div>
-        <svg id="board-svg" viewBox="-10 0 560 340"></svg>
-        <div class="score-bar">
-            <div class="si"><span class="sd" id="dot1"></span><span class="sn" id="p1-label">—</span><span class="sv" id="p1-score">0</span><span class="sr" id="p1-detail"></span></div>
-            <div class="si"><span class="sd" id="dot2"></span><span class="sn" id="p2-label">—</span><span class="sv" id="p2-score">0</span><span class="sr" id="p2-detail"></span></div>
-        </div>
-        
-        <div class="panel"><div class="pt">Cards played</div><div id="cards-content"><div class="no-sel">Hover or click a round</div></div></div>
-        <div class="panel"><div class="pt">Round score vs avg &amp; best</div><svg id="bar1"></svg><div id="bar1-empty" style="font-size:1rem;color:var(--muted);">Select a round</div></div>
-        <div class="panel"><div class="pt">Points by type</div><svg id="bar2"></svg><div id="bar2-empty" style="font-size:1rem;color:var(--muted);">Select a round</div></div>
+  </div>
+  <div class="panel" name="cribbageboard">
+    <div class="pt">Board position</div>
+    <svg id="board-svg" viewBox="-10 0 720 340"></svg>
+    <div class="score-bar">
+        <div class="si"><span class="sd" id="dot1"></span><span class="sn" id="p1-label">—</span><span class="sv" id="p1-score">0</span><span class="sr" id="p1-detail"></span></div>
+        <div class="si"><span class="sd" id="dot2"></span><span class="sn" id="p2-label">—</span><span class="sv" id="p2-score">0</span><span class="sr" id="p2-detail"></span></div>
     </div>
+    
 </div>
 </div>
 <div class="bottom-row">
-    <div class="panel"><div class="pt">Win / loss by opponent</div><svg id="bar3"></svg></div>
+    <div class="panel" width=""><div class="pt">Win / loss by opponent</div><svg id="bar3"></svg></div>
+    <div class="panel"><div class="pt">Cards played</div><div id="cards-content"><div class="no-sel">Hover or click a round</div></div></div>
+    <div class="panel"><div class="pt">Round score vs avg &amp; best</div><svg id="bar1"></svg><div id="bar1-empty" style="font-size:1rem;color:var(--muted);">Select a round</div></div>
+    <div class="panel"><div class="pt">Points by type</div><svg id="bar2"></svg><div id="bar2-empty" style="font-size:1rem;color:var(--muted);">Select a round</div></div>
 </div>
 <div class="tooltip" id="tooltip"></div>
 <script>
