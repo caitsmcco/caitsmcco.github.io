@@ -74,7 +74,6 @@ h1{font-family:'Playfair Display',serif;font-size:3rem;font-weight:600;color:var
                 <span class="sd" id="dot2"></span>
                 <span class="sn" id="p2-label">·</span>
                 <span class="sv" id="p2-score">0</span>
-                <span class="sn" id="p2-detail">·</span>
                 <span class="sr" id="r-detail">-</span>
             </div>
         </div>
@@ -191,6 +190,8 @@ function renderCards(rd,game){
     <div style="font-size:1.5rem;color:var(--muted);margin-bottom:.45rem;padding-left:15px;padding-top:5px;">
         Flipped: ${cc?`<span style="color:${cc.red?'#e85d4a':'#e8dfc8'}">${cc.rank}${SUIT[cc.suit]||cc.suit}</span>`:'—'} 
     </div>
+    <div class="cards-section"><div class="cards-label"</div>
+      <div class="cards-row">${pCards(cc).map(c=>cardEl(c)).join('')||'<span style="font-size:1rem;color:var(--muted)">—</span>'}</div></div>
     <div class="cards-section"><div class="cards-label" style="color:${c1}">${game.p1name}</div>
       <div class="cards-row">${pCards(r1).map(c=>cardEl(c)).join('')||'<span style="font-size:1rem;color:var(--muted)">—</span>'}</div></div>
     <div class="cards-section"><div class="cards-label" style="color:${c2}">${game.p2name}</div>
@@ -366,7 +367,6 @@ function render(){
     document.getElementById('p2-score').textContent=last.s2??0;
     document.getElementById('r-detail').textContent= `· round ${rd.round}`;
     document.getElementById('p1-detail').textContent='·';
-    document.getElementById('p2-detail').textContent='·';
     renderLegend(activeFilter||first.p2name,games);
     document.getElementById('leg-l').textContent=(activeFilter||first.p2name);
   }
