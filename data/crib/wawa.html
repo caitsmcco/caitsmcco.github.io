@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cribbage Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0f0e0c;
+    --bg2:       #1a1814;
+    --bg3:       #232018;
+    --border:    #2e2a22;
+    --text:      #e8dfc8;
+    --muted:     #7a7060;
+    --gold:      #c8973a;
+    --gold-dim:  #7a5c22;
+    --p1:        #c0392b;
+    --p2:        #185fa5;
+    --p1-light:  #e85d4a;
+    --p2-light:  #3a8fd4;
+    --wood-bg:   #2c2010;
+    --wood-dark: #1c1408;
+    --hole-in:   #140e04;
+    --hole-rim:  #5a4020;
+    --track:     #3a2e18;
+    --label:     #f0d880;
+    --neg-strong: #1a3a6e;
+    --neg-mid:    #2a5a9e;
+    --neg-light:  #6a9ace;
+    --pos-strong: #7a1a14;
+    --pos-mid:    #b03020;
+    --pos-light:  #d06050;
+    --neutral:    #2e2a22;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 100vh;
+    padding: 2rem;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--gold);
+    letter-spacing: 0.04em;
+    margin-bottom: 0.2rem;
+  }
+
+  .subtitle {
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+  }
+
+  .dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    max-width: 1300px;
+  }
+
+  .panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem 1.4rem;
+  }
+
+  .panel-title {
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Board panel spans both columns */
+  .board-panel {
+    grid-column: 1 / -1;
+  }
+
+  #board-svg {
+    width: 100%;
+    display: block;
+  }
+
+  /* Score status bar */
+  .score-bar {
+    display: flex;
+    gap: 2rem;
+    margin-top: 0.8rem;
+    font-size: 0.75rem;
+  }
+  .score-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .score-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+  .score-name { color: var(--muted); }
+  .score-val  { color: var(--text); font-weight: 500; }
+  .score-round { color: var(--muted); font-size: 0.65rem; }
+
+  /* Heatmap */
+  .heatmap-panel {
+    grid-column: 1 / -1;
+  }
+
+  .heatmap-wrap {
+    overflow-x: auto;
+  }
+
+  #heatmap-svg {
+    display: block;
+  }
+
+  /* Tooltip */
+  .tooltip {
+    position: fixed;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.7rem;
+    color: var(--text);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 100;
+    line-height: 1.6;
+  }
+  .tooltip.visible { opacity: 1; }
+  .tt-round { color: var(--gold); font-weight: 500; margin-bottom: 2px; }
+  .tt-p1 { color: var(--p1-light); }
+  .tt-p2 { color: var(--p2-light); }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 0.8rem;
+    font-size: 0.65rem;
+    color: var(--muted);
+  }
+  .legend-grad {
+    width: 120px;
+    height: 10px;
+    border-radius: 3px;
+  }
+
+  .no-data {
+    color: var(--muted);
+    font-size: 0.75rem;
+    padding: 2rem;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<h1>Cribbage</h1>
+<div class="subtitle">Game history dashboard</div>
+
+<div class="dashboard">
+
+  <!-- Board -->
+  <div class="panel board-panel">
+    <div class="panel-title">Board position</div>
+    <svg id="board-svg" viewBox="0 0 780 300"></svg>
+    <div class="score-bar">
+      <div class="score-item">
+        <span class="score-dot" style="background:var(--p1)"></span>
+        <span class="score-name" id="p1-label">—</span>
+        <span class="score-val" id="p1-score">0</span>
+        <span class="score-round" id="p1-detail"></span>
+      </div>
+      <div class="score-item">
+        <span class="score-dot" style="background:var(--p2)"></span>
+        <span class="score-name" id="p2-label">—</span>
+        <span class="score-val" id="p2-score">0</span>
+        <span class="score-round" id="p2-detail"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Heatmap -->
+  <div class="panel heatmap-panel">
+    <div class="panel-title">Score differential per round  <span style="color:var(--muted);font-size:0.6rem">(hover to navigate board)</span></div>
+    <div class="heatmap-wrap">
+      <svg id="heatmap-svg"></svg>
+    </div>
+    <div class="legend">
+      <span id="p1-leg">P1 leading</span>
+      <canvas class="legend-grad" id="legend-canvas"></canvas>
+      <span id="p2-leg">P2 leading</span>
+    </div>
+  </div>
+
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+// ─── Board geometry ───────────────────────────────────────────────────────────
+const BW = 780, BH = 300;
+const PAD_X = 52, PAD_Y = 30;
+const boardW = BW - PAD_X * 2;
+const boardH = BH - PAD_Y * 2;
+const LANE_SPACING = boardH / 3;
+const Y_TOP    = PAD_Y + LANE_SPACING * 0.5;
+const Y_BOTTOM = PAD_Y + LANE_SPACING * 1.5;
+const Y_MIDDLE = PAD_Y + LANE_SPACING * 2.5;
+const X_LEFT   = PAD_X;
+const X_RIGHT  = PAD_X + boardW;
+const R_BIG    = LANE_SPACING / 2;
+const R_SMALL  = LANE_SPACING / 2;
+const LANE_SEP = 9;
+const HR = 4, PR = 6.5;
+
+const BOARD_BG    = '#2c2010';
+const WOOD_DARK   = '#1c1408';
+const HOLE_IN_C   = '#140e04';
+const HOLE_RIM_C  = '#5a4020';
+const LABEL_C     = '#f0d880';
+const TRACK_C     = '#3a2e18';
+const P1C = '#c0392b', P2C = '#185fa5';
+
+function buildTrack(vOff) {
+  function straight(x0, x1, y, n) {
+    return Array.from({length: n}, (_, i) => ({
+      x: x0 + (x1 - x0) * (i + 0.5) / n, y
+    }));
+  }
+  function uturn(cx, cy, r, a0, a1, n, rOff) {
+    const R = r + rOff;
+    return Array.from({length: n}, (_, i) => {
+      const a = a0 + (a1 - a0) * (i + 0.5) / n;
+      return { x: cx + Math.cos(a) * R, y: cy + Math.sin(a) * R };
+    });
+  }
+  return [
+    ...straight(X_LEFT, X_RIGHT, Y_TOP    + vOff, 35),
+    ...uturn(X_RIGHT, (Y_TOP+Y_BOTTOM)/2, R_BIG,   -Math.PI/2,  Math.PI/2,   10, vOff),
+    ...straight(X_RIGHT, X_LEFT,  Y_BOTTOM + vOff, 35),
+    ...uturn(X_LEFT,  (Y_BOTTOM+Y_MIDDLE)/2, R_SMALL, Math.PI/2, 3*Math.PI/2,  5, vOff),
+    ...straight(X_LEFT, X_RIGHT, Y_MIDDLE + vOff, 36),
+  ];
+}
+
+const p1Pts = buildTrack(-LANE_SEP / 2);
+const p2Pts = buildTrack(+LANE_SEP / 2);
+
+function getPegPos(score, lane) {
+  const pts = lane === 'p1' ? p1Pts : p2Pts;
+  const vOff = lane === 'p1' ? -LANE_SEP/2 : LANE_SEP/2;
+  if (score <= 0) return { x: X_LEFT - 14, y: Y_TOP + vOff };
+  return pts[Math.min(Math.round(score) - 1, pts.length - 1)];
+}
+
+// ─── Build board SVG ──────────────────────────────────────────────────────────
+const boardSvg = d3.select('#board-svg');
+
+const boardRight = X_RIGHT + R_BIG + LANE_SEP + 4;
+const boardTop   = Y_TOP - LANE_SEP - 16;
+const boardBot   = Y_MIDDLE + LANE_SEP + 16;
+const boardRX    = R_BIG + LANE_SEP + 4;
+
+boardSvg.append('path')
+  .attr('d', `M ${X_LEFT} ${boardTop} L ${boardRight-boardRX} ${boardTop}
+    Q ${boardRight} ${boardTop} ${boardRight} ${boardTop+boardRX}
+    L ${boardRight} ${boardBot-boardRX}
+    Q ${boardRight} ${boardBot} ${boardRight-boardRX} ${boardBot}
+    L ${X_LEFT} ${boardBot}
+    Q ${X_LEFT-12} ${boardBot} ${X_LEFT-12} ${boardBot-12}
+    L ${X_LEFT-12} ${boardTop+12}
+    Q ${X_LEFT-12} ${boardTop} ${X_LEFT} ${boardTop} Z`)
+  .attr('fill', BOARD_BG).attr('stroke', WOOD_DARK).attr('stroke-width', 2);
+
+function arcPath(cx, cy, r, a0, a1) {
+  const x0=cx+Math.cos(a0)*r, y0=cy+Math.sin(a0)*r;
+  const x1=cx+Math.cos(a1)*r, y1=cy+Math.sin(a1)*r;
+  const large=Math.abs(a1-a0)>Math.PI?1:0, sweep=a1>a0?1:0;
+  return `M ${x0} ${y0} A ${r} ${r} 0 ${large} ${sweep} ${x1} ${y1}`;
+}
+
+const guides = boardSvg.append('g').attr('stroke', TRACK_C).attr('stroke-width', 0.6).attr('fill', 'none');
+[-LANE_SEP/2, LANE_SEP/2].forEach(v => {
+  guides.append('line').attr('x1',X_LEFT).attr('y1',Y_TOP+v).attr('x2',X_RIGHT).attr('y2',Y_TOP+v);
+  guides.append('line').attr('x1',X_LEFT).attr('y1',Y_BOTTOM+v).attr('x2',X_RIGHT).attr('y2',Y_BOTTOM+v);
+  guides.append('line').attr('x1',X_LEFT).attr('y1',Y_MIDDLE+v).attr('x2',X_RIGHT).attr('y2',Y_MIDDLE+v);
+  guides.append('path').attr('d', arcPath(X_RIGHT,(Y_TOP+Y_BOTTOM)/2, R_BIG+v, -Math.PI/2, Math.PI/2));
+  guides.append('path').attr('d', arcPath(X_LEFT,(Y_BOTTOM+Y_MIDDLE)/2, R_SMALL+v, Math.PI/2, 3*Math.PI/2));
+});
+
+[p1Pts, p2Pts].forEach(pts => {
+  const g = boardSvg.append('g');
+  g.selectAll('.rim').data(pts).join('circle').attr('class','rim')
+    .attr('cx',d=>d.x).attr('cy',d=>d.y).attr('r',HR+1.4).attr('fill',HOLE_RIM_C);
+  g.selectAll('.hole').data(pts).join('circle').attr('class','hole')
+    .attr('cx',d=>d.x).attr('cy',d=>d.y).attr('r',HR).attr('fill',HOLE_IN_C);
+});
+
+// Score labels
+[5,10,15,20,25,30,35, 50,55,60,65,70,75,80, 90,95,100,105,110,115,120,121].forEach(n => {
+  if (n<1||n>121) return;
+  const p = p1Pts[n-1]; if (!p) return;
+  const dy = n<=35 ? -(HR+6) : n<=80 ? (HR+6) : -(HR+6);
+  boardSvg.append('text')
+    .attr('x',p.x).attr('y',p.y+dy)
+    .attr('text-anchor','middle').attr('dominant-baseline','middle')
+    .attr('fill',LABEL_C).attr('font-size',6.5).attr('font-family','IBM Plex Mono, monospace').attr('font-weight','bold')
+    .text(n);
+});
+
+boardSvg.append('text').attr('x',X_LEFT-16).attr('y',Y_TOP)
+  .attr('text-anchor','end').attr('dominant-baseline','middle')
+  .attr('fill',LABEL_C).attr('font-size',8).attr('font-family','IBM Plex Mono, monospace').attr('font-weight','bold').text('START');
+
+// Pegs
+const peg1  = boardSvg.append('circle').attr('r',PR).attr('fill',P1C).attr('stroke','rgba(0,0,0,0.3)').attr('stroke-width',1);
+const peg2  = boardSvg.append('circle').attr('r',PR).attr('fill',P2C).attr('stroke','rgba(0,0,0,0.3)').attr('stroke-width',1);
+const shin1 = boardSvg.append('circle').attr('r',PR*0.27).attr('fill','rgba(255,255,255,0.36)').attr('pointer-events','none');
+const shin2 = boardSvg.append('circle').attr('r',PR*0.27).attr('fill','rgba(255,255,255,0.36)').attr('pointer-events','none');
+const lbl1  = boardSvg.append('text').attr('text-anchor','middle').attr('dominant-baseline','middle')
+  .attr('fill','#fff').attr('font-size',7).attr('font-weight','bold').attr('font-family','IBM Plex Mono,monospace').attr('pointer-events','none').text('1');
+const lbl2  = boardSvg.append('text').attr('text-anchor','middle').attr('dominant-baseline','middle')
+  .attr('fill','#fff').attr('font-size',7).attr('font-weight','bold').attr('font-family','IBM Plex Mono,monospace').attr('pointer-events','none').text('2');
+
+function placePegs(s1, s2, animate) {
+  const p1 = getPegPos(s1,'p1'), p2 = getPegPos(s2,'p2');
+  const dur = 500;
+  const upd = (sel, x, y) => animate
+    ? sel.transition().duration(dur).ease(d3.easeCubicInOut).attr('cx',x).attr('cy',y)
+    : sel.attr('cx',x).attr('cy',y);
+  upd(peg1, p1.x, p1.y); upd(peg2, p2.x, p2.y);
+  upd(shin1, p1.x-PR*.25, p1.y-PR*.25); upd(shin2, p2.x-PR*.25, p2.y-PR*.25);
+  const updT = (sel, x, y) => animate
+    ? sel.transition().duration(dur).ease(d3.easeCubicInOut).attr('x',x).attr('y',y)
+    : sel.attr('x',x).attr('y',y);
+  updT(lbl1, p1.x, p1.y+.5); updT(lbl2, p2.x, p2.y+.5);
+}
+
+placePegs(0, 0, false);
+
+// ─── Load and parse CSV ───────────────────────────────────────────────────────
+d3.csv('edited.csv').then(raw => {
+  // Group rows by gameDate → each unique date = one game
+  const games = d3.groups(raw, d => d.gameDate);
+
+  // For each game, get the two players and their per-round EORScores
+  const gameData = games.map(([date, rows]) => {
+    const players = [...new Set(rows.map(d => d.Name))];
+    const maxRound = d3.max(rows, d => +d.Round);
+    const rounds = d3.range(1, maxRound + 1).map(r => {
+      const rRows = rows.filter(d => +d.Round === r);
+      const byPlayer = Object.fromEntries(rRows.map(d => [d.Name, d]));
+      const p1row = byPlayer[players[0]];
+      const p2row = byPlayer[players[1]];
+      const s1 = p1row ? (+p1row.EORScore || 0) : null;
+      const s2 = p2row ? (+p2row.EORScore || 0) : null;
+      return { round: r, s1, s2,
+        p1pegged: p1row ? +p1row.peggedPoints||0 : 0,
+        p2pegged: p2row ? +p2row.peggedPoints||0 : 0,
+        p1hand:   p1row ? +p1row.handPoints||0 : 0,
+        p2hand:   p2row ? +p2row.handPoints||0 : 0,
+        p1crib:   p1row ? +p1row.cribPoints||0 : 0,
+        p2crib:   p2row ? +p2row.cribPoints||0 : 0,
+      };
+    });
+    return { date, players, rounds, maxRound };
+  });
+
+  // Colour scale: diverging, centred at 0
+  // positive diff = p1 leading (red), negative = p2 leading (blue)
+  const maxDiff = d3.max(gameData.flatMap(g =>
+    g.rounds.map(r => r.s1 !== null && r.s2 !== null ? Math.abs(r.s1 - r.s2) : 0)
+  ));
+
+  const colorScale = d3.scaleDiverging()
+    .domain([-maxDiff, 0, maxDiff])
+    .interpolator(d3.interpolateRgbBasis(['#2a5a9e','#0f0e0c','#b03020']));
+
+  // ─── Heatmap ───────────────────────────────────────────────────────────────
+  const hmSvg = d3.select('#heatmap-svg');
+  const CELL  = 34, GAP = 3;
+  const ROW_H = CELL + GAP;
+  const COL_W = CELL + GAP;
+  const LEFT_MARGIN = 140, TOP_MARGIN = 48, BOT_MARGIN = 28;
+
+  const maxRounds = d3.max(gameData, g => g.maxRound);
+  const hmW = LEFT_MARGIN + maxRounds * COL_W + 20;
+  const hmH = TOP_MARGIN + gameData.length * ROW_H + BOT_MARGIN;
+
+  hmSvg.attr('width', hmW).attr('height', hmH);
+
+  // Column headers (round numbers)
+  d3.range(1, maxRounds+1).forEach(r => {
+    hmSvg.append('text')
+      .attr('x', LEFT_MARGIN + (r-1)*COL_W + CELL/2)
+      .attr('y', TOP_MARGIN - 10)
+      .attr('text-anchor','middle')
+      .attr('fill','#7a7060')
+      .attr('font-size', 10)
+      .attr('font-family','IBM Plex Mono, monospace')
+      .text(r);
+  });
+
+  hmSvg.append('text')
+    .attr('x', LEFT_MARGIN + (maxRounds/2)*COL_W)
+    .attr('y', TOP_MARGIN - 28)
+    .attr('text-anchor','middle')
+    .attr('fill','#5a5040')
+    .attr('font-size', 9)
+    .attr('font-family','IBM Plex Mono, monospace')
+    .attr('letter-spacing', 2)
+    .text('ROUND');
+
+  const tooltip = document.getElementById('tooltip');
+
+  gameData.forEach((game, gi) => {
+    const gy = TOP_MARGIN + gi * ROW_H;
+
+    // Row label: date + player names
+    const dateStr = new Date(game.date).toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'2-digit'});
+    hmSvg.append('text')
+      .attr('x', LEFT_MARGIN - 8).attr('y', gy + CELL/2 - 5)
+      .attr('text-anchor','end').attr('dominant-baseline','middle')
+      .attr('fill','#e8dfc8').attr('font-size', 10).attr('font-family','IBM Plex Mono, monospace')
+      .text(dateStr);
+
+    hmSvg.append('text')
+      .attr('x', LEFT_MARGIN - 8).attr('y', gy + CELL/2 + 8)
+      .attr('text-anchor','end').attr('dominant-baseline','middle')
+      .attr('fill','#7a7060').attr('font-size', 8.5).attr('font-family','IBM Plex Mono, monospace')
+      .text(`${game.players[0]} vs ${game.players[1]}`);
+
+    // Cells
+    game.rounds.forEach(rd => {
+      const cx2 = LEFT_MARGIN + (rd.round-1)*COL_W;
+      const diff = (rd.s1 !== null && rd.s2 !== null) ? (rd.s1 - rd.s2) : null;
+      const fill = diff !== null ? colorScale(diff) : '#1a1814';
+
+      const cell = hmSvg.append('rect')
+        .attr('x', cx2).attr('y', gy)
+        .attr('width', CELL).attr('height', CELL)
+        .attr('rx', 3)
+        .attr('fill', fill)
+        .attr('stroke', '#0f0e0c').attr('stroke-width', 1.5)
+        .attr('cursor', diff !== null ? 'pointer' : 'default')
+        .style('transition', 'opacity 0.1s');
+
+      if (diff !== null) {
+        // diff label
+        hmSvg.append('text')
+          .attr('x', cx2 + CELL/2).attr('y', gy + CELL/2 + 1)
+          .attr('text-anchor','middle').attr('dominant-baseline','middle')
+          .attr('fill', Math.abs(diff) > maxDiff*0.3 ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.4)')
+          .attr('font-size', 8).attr('font-family','IBM Plex Mono, monospace')
+          .attr('pointer-events','none')
+          .text(diff > 0 ? `+${diff}` : diff);
+
+        const cellNode = cell.node();
+        cellNode.addEventListener('mouseenter', function(e) {
+          cell.attr('stroke','#c8973a').attr('stroke-width',2);
+
+          // Update board pegs
+          placePegs(rd.s1, rd.s2, true);
+
+          // Update score bar
+          document.getElementById('p1-label').textContent = game.players[0];
+          document.getElementById('p2-label').textContent = game.players[1];
+          document.getElementById('p1-score').textContent = rd.s1;
+          document.getElementById('p2-score').textContent = rd.s2;
+          document.getElementById('p1-detail').textContent = `after round ${rd.round}`;
+          document.getElementById('p2-detail').textContent = '';
+
+          // Tooltip
+          tooltip.innerHTML = `
+            <div class="tt-round">Round ${rd.round} — ${dateStr}</div>
+            <div class="tt-p1">${game.players[0]}: ${rd.s1} pts  (+peg:${rd.p1pegged} hand:${rd.p1hand}${rd.p1crib?` crib:${rd.p1crib}`:''})</div>
+            <div class="tt-p2">${game.players[1]}: ${rd.s2} pts  (+peg:${rd.p2pegged} hand:${rd.p2hand}${rd.p2crib?` crib:${rd.p2crib}`:''})</div>
+            <div style="color:#5a5040;margin-top:2px">diff: ${diff>0?'+':''}${diff}</div>
+          `;
+          tooltip.classList.add('visible');
+        });
+
+        cellNode.addEventListener('mousemove', function(e) {
+          tooltip.style.left = (e.clientX + 14) + 'px';
+          tooltip.style.top  = (e.clientY - 10) + 'px';
+        });
+
+        cellNode.addEventListener('mouseleave', function() {
+          cell.attr('stroke','#0f0e0c').attr('stroke-width',1.5);
+          tooltip.classList.remove('visible');
+        });
+      }
+    });
+
+    // Final score marker
+    const lastRound = game.rounds[game.rounds.length - 1];
+    if (lastRound.s1 !== null && lastRound.s2 !== null) {
+      const winner = lastRound.s1 >= 121 ? game.players[0] : lastRound.s2 >= 121 ? game.players[1] : null;
+      if (winner) {
+        const wx = LEFT_MARGIN + game.maxRound * COL_W + 6;
+        hmSvg.append('text')
+          .attr('x', wx).attr('y', gy + CELL/2 + 1)
+          .attr('dominant-baseline','middle')
+          .attr('fill', winner===game.players[0] ? '#c0392b' : '#185fa5')
+          .attr('font-size', 8).attr('font-family','IBM Plex Mono, monospace')
+          .text(winner.slice(0,4)+'★');
+      }
+    }
+  });
+
+  // ─── Legend canvas ─────────────────────────────────────────────────────────
+  const lc = document.getElementById('legend-canvas');
+  lc.width = 120; lc.height = 10;
+  const lctx = lc.getContext('2d');
+  for (let i = 0; i < 120; i++) {
+    const t = (i / 119) * 2 * maxDiff - maxDiff;
+    lctx.fillStyle = colorScale(t);
+    lctx.fillRect(i, 0, 1, 10);
+  }
+
+  document.getElementById('p1-leg').textContent = gameData[0]?.players[0] ?? 'P1';
+  document.getElementById('p2-leg').textContent = gameData[0]?.players[1] ?? 'P2';
+
+  // ─── Init board to last cell of first game ─────────────────────────────────
+  const first = gameData[0];
+  if (first) {
+    const last = first.rounds[first.rounds.length-1];
+    placePegs(last.s1 ?? 0, last.s2 ?? 0, false);
+    document.getElementById('p1-label').textContent = first.players[0];
+    document.getElementById('p2-label').textContent = first.players[1];
+    document.getElementById('p1-score').textContent = last.s1 ?? 0;
+    document.getElementById('p2-score').textContent = last.s2 ?? 0;
+    document.getElementById('p1-detail').textContent = `final`;
+  }
+
+}).catch(err => {
+  console.error('CSV load error:', err);
+  document.querySelector('.dashboard').innerHTML =
+    `<div class="no-data">Could not load data.csv — make sure it is in the same directory and you are serving over HTTP (not file://).</div>`;
+});
+</script>
+</body>
+</html>
