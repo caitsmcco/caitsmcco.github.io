@@ -11,7 +11,7 @@
 :root{--bg:#0f0e0c;--bg2:#1a1814;--bg3:#232018;--border:#2e2a22;--text:#e8dfc8;--muted:#7a7060;--gold:#c8973a;}
 body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospace;min-height:100vh;padding:1.4rem 1.8rem;}
 h1{font-family:'Playfair Display',serif;font-size:3rem;font-weight:600;color:var(--gold);letter-spacing:.04em;margin-bottom:.12rem;}
-.subtitle{font-size:1.5rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:1rem;}
+.subtitle{font-size:2rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:1rem;}
 .filter-bar{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;margin-bottom:1rem;}
 .filter-label{font-size:1rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
 .pill{display:flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg2);font-size:1rem;cursor:pointer;transition:border-color .15s,background .15s;user-select:none;color:var(--muted);}
@@ -382,9 +382,9 @@ function renderHeatmap(games){
   const FIXED_H=380,maxR=d3.max(games,g=>g.maxRound);
   const LEFT=138,TOP=36,BOT=16;
   const availH=FIXED_H-TOP-BOT;
-  const CELL_H=Math.max(16,Math.floor((availH-games.length*3)/games.length));
+  const CELL_H=Math.floor((availH-games.length*3)/games.length);
   const ROW_H=CELL_H+3;
-  const CELL_W=Math.min(CELL_H,30),COL_W=CELL_W+3;
+  const CELL_W=60,COL_W=CELL_W+3;
   const totalW=LEFT+maxR*COL_W+38,totalH=TOP+games.length*ROW_H+BOT;
   svg.attr('width',totalW).attr('height',Math.max(totalH,FIXED_H));
 
@@ -470,7 +470,7 @@ function renderHeatmap(games){
       if(winner){
         const wc=winner===game.p1name?(PCOL[game.p1name]||PCOL.Caitlin).light:(PCOL[game.p2name]||PCOL.Colban).light;
         svg.append('text').attr('x',LEFT+game.maxRound*COL_W+5).attr('y',gy+CELL_H/2+1)
-          .attr('dominant-baseline','middle').attr('fill',wc).attr('font-size',7.5).attr('font-family',FONT).text(winner.slice(0,3)+'★');
+          .attr('dominant-baseline','middle').attr('fill',wc).attr('font-size',12).attr('font-family',FONT).text(winner+'★');
       }
     }
   });
