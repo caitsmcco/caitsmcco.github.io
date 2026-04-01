@@ -18,9 +18,9 @@ h1{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:600;color:v
 .pill .pdot{width:7px;height:7px;border-radius:50%;}
 .pill.active{color:var(--text);border-color:#5a5040;background:var(--bg3);}
 .pill:hover{border-color:var(--gold);}
-.top-row{display:grid;grid-template-columns:2fr 3fr;gap:1rem;align-items:start;margin-bottom:1rem;}
-.bottom-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1rem;align-items:start;}
-.panel{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.9rem 1.1rem;}
+.top-row{height:60%;display:grid;grid-template-columns:2fr 3fr;gap:1rem;align-items:start;margin-bottom:1rem;}
+.bottom-row{height:30%;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1rem;align-items:start;}
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.9rem 1.1rem;height:100%}
 .pt{font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.7rem;display:flex;align-items:center;gap:8px;}
 .pt::after{content:'';flex:1;height:1px;background:var(--border);}
 #heatmap-svg{display:block;width:100%;}
@@ -70,10 +70,10 @@ h1{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:600;color:v
   </div>
 </div>
 <div class="bottom-row">
+  <div class="panel"><div class="pt">Win / loss by opponent</div><svg id="bar3"></svg></div>
   <div class="panel"><div class="pt">Cards played</div><div id="cards-content"><div class="no-sel">Hover or click a round</div></div></div>
   <div class="panel"><div class="pt">Round score vs avg &amp; best</div><svg id="bar1"></svg><div id="bar1-empty" style="font-size:.6rem;color:var(--muted);">Select a round</div></div>
   <div class="panel"><div class="pt">Points by type</div><svg id="bar2"></svg><div id="bar2-empty" style="font-size:.6rem;color:var(--muted);">Select a round</div></div>
-  <div class="panel"><div class="pt">Win / loss by opponent</div><svg id="bar3"></svg></div>
 </div>
 <div class="tooltip" id="tooltip"></div>
 <script>
