@@ -89,8 +89,10 @@ h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:600;color:var
     <div class="panel"><div class="pt">Round score vs avg &amp; best</div><svg id="bar1"></svg><div id="bar1-empty" style="font-size:1rem;color:var(--muted);">Select a round</div></div>
     <div class="panel"><div class="pt">Points by type</div><svg id="bar2"></svg><div id="bar2-empty" style="font-size:1rem;color:var(--muted);">Select a round</div></div>
 </div>
-<div class="viz-row">
-  <div class="panel"><div class="pt">Points per round distribution</div><svg id="hist-svg" style="width:100%;display:block;"></svg></div>
+<div class="viz-row" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr;">
+  <div class="panel"><div class="pt">Pegged</div><svg id="swarm-peg" style="width:100%;display:block;"></svg></div>
+  <div class="panel"><div class="pt">Hand</div><svg id="swarm-hand" style="width:100%;display:block;"></svg></div>
+  <div class="panel"><div class="pt">Crib</div><svg id="swarm-crib" style="width:100%;display:block;"></svg></div>
   <div class="panel"><div class="pt">Momentum <span style="font-size:.7rem;color:var(--muted);letter-spacing:0;text-transform:none;" id="momentum-sub">&mdash; select a game</span></div><svg id="momentum-svg" style="width:100%;display:block;"></svg></div>
   <div class="panel"><div class="pt">Scoring profile</div><svg id="radar-svg" style="width:100%;display:block;"></svg></div>
 </div>
@@ -496,75 +498,134 @@ function renderLineGraph(game){
 }
 
 // ── HISTOGRAM: points per round distribution ──────────────────────────────────
-function renderHistogram(games){
-  clearChart('hist-svg');
-  const VW=320,VH=170,ml=28,mr=12,mt=14,mb=30;
-  const iW=VW-ml-mr,iH=VH-mt-mb;
-  const svg=d3.select('#hist-svg').attr('viewBox',`0 0 ${VW} ${VH}`).attr('height',VH);
-  const g=svg.append('g').attr('transform',`translate(${ml},${mt})`);
+// ── SWARM CHARTS: one per scoring type, all players ───────────────────────────
+function renderSwarms(games){
+  // Collect every player who appears across ALL games (not just filtered)
+  const allPlayers=[...new Set(allGames.flatMap(g=>[g.p1name,g.p2name]))].sort();
 
-  // Build per-player round point totals
-  function roundPts(games,name){
-    return games.flatMap(gm=>{
-      const isP1=gm.p1name===name;
-      return gm.rounds.map((r,i)=>{
-        const prev=gm.rounds[i-1];
-        const score=isP1?r.s1:r.s2;
-        const prevScore=prev?(isP1?prev.s1:prev.s2):0;
-        if(score===null)return null;
-        return score-(prevScore||0);
-      }).filter(v=>v!==null&&v>=0);
+  // For each player, gather their values across the supplied games
+  // games here = allGames so all players always show, filter just dims non-active ones
+  const activeOpps=new Set(games.map(g=>g.p2name));
+  activeOpps.add(CAITLIN);
+
+  function vals(playerName, key){
+    return allGames.flatMap(gm=>{
+      const isP1=gm.p1name===playerName;
+      const isP2=gm.p2name===playerName;
+      if(!isP1&&!isP2)return[];
+      const field=isP1?'p1'+key:'p2'+key;
+      return gm.rounds.map(r=>({
+        v: r[field],
+        active: activeOpps.has(playerName),
+      })).filter(d=>d.v!=null&&d.v>=0);
     });
   }
 
-  const c1=PCOL.Caitlin.peg;
-  const opp=activeFilter||(games[0]&&games[0].p2name)||'Opponent';
-  const c2=(PCOL[opp]||PCOL.Colban).peg;
+  const types=[
+    {id:'swarm-peg', key:'pegged', label:'Pegged pts / round'},
+    {id:'swarm-hand',key:'hand',   label:'Hand pts / round'},
+    {id:'swarm-crib',key:'crib',   label:'Crib pts / round'},
+  ];
 
-  const pts1=roundPts(games,CAITLIN);
-  const pts2=roundPts(games,opp);
-
-  if(!pts1.length&&!pts2.length)return;
-
-  const allPts=[...pts1,...pts2];
-  const maxPt=d3.max(allPts)||1;
-  const binGen=d3.bin().domain([0,maxPt+1]).thresholds(d3.range(0,maxPt+2,1));
-  const bins1=binGen(pts1),bins2=binGen(pts2);
-
-  const x=d3.scaleLinear().domain([0,maxPt+1]).range([0,iW]);
-  const maxCount=d3.max([...bins1,...bins2],b=>b.length)||1;
-  const y=d3.scaleLinear().domain([0,maxCount]).range([iH,0]);
-
-  g.append('g').call(d3.axisLeft(y).ticks(4).tickSize(-iW))
-    .call(ax=>{ax.select('.domain').remove();ax.selectAll('.tick line').attr('stroke','#2e2a22').attr('stroke-dasharray','2,2');ax.selectAll('text').attr('fill','#7a7060').attr('font-size',6).attr('font-family',FONT);});
-  g.append('g').attr('transform',`translate(0,${iH})`).call(d3.axisBottom(x).ticks(Math.min(maxPt+1,12)).tickFormat(d=>Number.isInteger(d)?d:''))
-    .call(ax=>{ax.select('.domain').attr('stroke','#2e2a22');ax.selectAll('text').attr('fill','#7a7060').attr('font-size',6).attr('font-family',FONT);});
-
-  // Draw both players' histograms overlapping, with opacity
-  [
-    [bins2,c2,.55],
-    [bins1,c1,.55],
-  ].forEach(([bins,col,op])=>{
-    bins.forEach(b=>{
-      if(!b.length)return;
-      const bw=Math.max(x(b.x1)-x(b.x0)-1,1);
-      g.append('rect').attr('x',x(b.x0)).attr('y',y(b.length))
-        .attr('width',bw).attr('height',Math.max(iH-y(b.length),0))
-        .attr('fill',col).attr('opacity',op).attr('rx',1);
+  // Swarm collision: simple beeswarm along Y axis
+  function beeswarm(data, yScale, dotR){
+    // Sort by value ascending
+    const pts=data.map(d=>({...d,y:yScale(d.v),x:0})).sort((a,b)=>a.y-b.y);
+    // For each point, push x away from already-placed points that overlap in y
+    pts.forEach((p,i)=>{
+      const placed=pts.slice(0,i);
+      let x=0;
+      for(let attempt=0;attempt<60;attempt++){
+        const sign=attempt%2===0?1:-1;
+        x=sign*Math.ceil(attempt/2)*dotR*1.9;
+        const overlap=placed.some(q=>Math.abs(q.y-p.y)<dotR*2&&Math.abs(q.x-x)<dotR*2);
+        if(!overlap)break;
+      }
+      p.x=x;
     });
-    // Mean line
-    const mean=d3.mean(bins.flatMap(b=>Array(b.length).fill((b.x0+b.x1)/2)))||0;
-    g.append('line').attr('x1',x(mean)).attr('x2',x(mean)).attr('y1',0).attr('y2',iH)
-      .attr('stroke',col).attr('stroke-width',1.2).attr('stroke-dasharray','3,2').attr('opacity',.9);
+    return pts;
+  }
+
+  const VW=160, VH=220, mt=10, mb=28, ml=22, mr=22;
+  const iH=VH-mt-mb;
+  const DOT_R=3.2;
+  const PLAYERS_ALL=[CAITLIN,...OPPONENTS];
+
+  types.forEach(({id,key,label})=>{
+    clearChart(id);
+    const svg=d3.select('#'+id)
+      .attr('viewBox',`0 0 ${VW} ${VH}`)
+      .attr('height',VH);
+    const g=svg.append('g').attr('transform',`translate(${VW/2},${mt})`);
+
+    // Gather all values to set shared scale
+    const allVals=PLAYERS_ALL.flatMap(p=>vals(p,key).map(d=>d.v));
+    if(!allVals.length)return;
+    const maxV=d3.max(allVals)||1;
+    const y=d3.scaleLinear().domain([0,maxV]).range([iH,0]);
+
+    // Y axis
+    g.append('g').attr('transform',`translate(${-VW/2+ml},0)`).call(d3.axisLeft(y).ticks(5).tickSize(3))
+      .call(ax=>{ax.select('.domain').remove();ax.selectAll('.tick line').attr('stroke','#2e2a22');ax.selectAll('text').attr('fill','#7a7060').attr('font-size',6.5).attr('font-family',FONT);});
+
+    // Centre axis line
+    g.append('line').attr('x1',0).attr('x2',0).attr('y1',0).attr('y2',iH)
+      .attr('stroke','#2e2a22').attr('stroke-width',0.5);
+
+    // Mean lines per player (stagger labels)
+    PLAYERS_ALL.forEach((pname,pi)=>{
+      const pVals=vals(pname,key);
+      if(!pVals.length)return;
+      const mean=d3.mean(pVals,d=>d.v);
+      const col=(PCOL[pname]||PCOL.Colban).peg;
+      const active=activeOpps.has(pname);
+      g.append('line')
+        .attr('x1',-VW/2+ml).attr('x2',VW/2-mr)
+        .attr('y1',y(mean)).attr('y2',y(mean))
+        .attr('stroke',col).attr('stroke-width',active?1:0.4)
+        .attr('stroke-dasharray','3,2')
+        .attr('opacity',active?0.7:0.2);
+    });
+
+    // Draw swarm per player — all players in the same column, colour-coded
+    const allPts=PLAYERS_ALL.flatMap(pname=>{
+      const pVals=vals(pname,key);
+      const col=(PCOL[pname]||PCOL.Colban).peg;
+      const active=activeOpps.has(pname);
+      return pVals.map(d=>({v:d.v,col,active,pname}));
+    });
+
+    const swarm=beeswarm(allPts,y,DOT_R);
+
+    swarm.forEach(p=>{
+      g.append('circle')
+        .attr('cx',p.x)
+        .attr('cy',p.y)
+        .attr('r',DOT_R)
+        .attr('fill',p.col)
+        .attr('opacity',p.active?0.75:0.12)
+        .attr('stroke',p.active?'rgba(0,0,0,0.15)':'none')
+        .attr('stroke-width',0.5);
+    });
+
+    // X axis label
+    g.append('text').attr('x',0).attr('y',iH+20)
+      .attr('text-anchor','middle').attr('fill','#5a5040')
+      .attr('font-size',6.5).attr('font-family',FONT).text(label);
   });
 
-  // Legend
-  [[CAITLIN,c1],[opp,c2]].forEach(([n,col],i)=>{
-    g.append('rect').attr('x',i*(iW/2)).attr('y',-12).attr('width',6).attr('height',6).attr('fill',col).attr('rx',1).attr('opacity',.8);
-    g.append('text').attr('x',i*(iW/2)+8).attr('y',-7).attr('fill','#7a7060').attr('font-size',6.5).attr('font-family',FONT).text(n+' (dashed=mean)');
+  // Shared legend — append once after the third swarm
+  const legendSvg=d3.select('#swarm-crib');
+  PLAYERS_ALL.forEach((pname,i)=>{
+    const col=(PCOL[pname]||PCOL.Colban).peg;
+    const active=activeOpps.has(pname);
+    legendSvg.append('circle').attr('cx',8).attr('cy',VH-mb+18+i*10)
+      .attr('r',3).attr('fill',col).attr('opacity',active?1:0.3);
+    legendSvg.append('text').attr('x',14).attr('y',VH-mb+18+i*10+1)
+      .attr('dominant-baseline','middle')
+      .attr('fill',active?'#7a7060':'#3a3020')
+      .attr('font-size',7).attr('font-family',FONT).text(pname);
   });
-  // X axis label
-  g.append('text').attr('x',iW/2).attr('y',iH+24).attr('text-anchor','middle').attr('fill','#5a5040').attr('font-size',6.5).attr('font-family',FONT).text('points scored in round');
 }
 
 // ── MOMENTUM RIBBON: tug-of-war per round for selected game ───────────────────
@@ -781,7 +842,7 @@ function render(){
   const games=filteredGames();
   renderHeatmap(games);
   renderPieCharts(allGames);
-  renderHistogram(games);
+  renderSwarms(games);
   renderMomentum(null);
   renderRadar(games);
   const first=games[0];
@@ -819,7 +880,7 @@ function activateCell(game,rd,anim){
   renderBar2(rd,game);
   renderLineGraph(game);
   renderMomentum(game);
-  renderHistogram(filteredGames());
+  renderSwarms(filteredGames());
   renderRadar(filteredGames());
 }
 
