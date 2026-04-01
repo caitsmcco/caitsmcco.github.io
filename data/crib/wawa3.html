@@ -62,7 +62,7 @@ h1{font-family:'Playfair Display',serif;font-size:3rem;font-weight:600;color:var
   </div>
   <div class="panel" name="cribbageboard">
     <div class="pt">Board position</div>
-    <svg id="board-svg" viewBox="-10 25 720 200"></svg>
+    <svg id="board-svg" viewBox="-10 30 720 200"></svg>
     <div class="score-bar">
         <div class="si"><span class="sd" id="dot1"></span><span class="sn" id="p1-label">—</span><span class="sv" id="p1-score">0</span><span class="sr" id="p1-detail"></span></div>
         <div class="si"><span class="sd" id="dot2"></span><span class="sn" id="p2-label">—</span><span class="sv" id="p2-score">0</span><span class="sr" id="p2-detail"></span></div>
@@ -377,7 +377,7 @@ function activateCell(game,rd,anim){
 
 function renderHeatmap(games){
   const svg=d3.select('#heatmap-svg');svg.selectAll('*').remove();
-  if(!games.length){svg.attr('width',220).attr('height',46);svg.append('text').attr('x',12).attr('y',26).attr('fill','#5a5040').attr('font-size',11).attr('font-family',FONT).text('No games.');return;}
+  if(!games.length){svg.append('text').attr('x',12).attr('y',26).attr('fill','#5a5040').attr('font-size',13).attr('font-family',FONT).text('No games.');return;}
 
   const FIXED_H=380,maxR=d3.max(games,g=>g.maxRound);
   const LEFT=138,TOP=36,BOT=16;
