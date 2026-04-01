@@ -52,7 +52,7 @@ h1{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:600;color:v
 </head>
 <body>
 <h1>Cribbage</h1>
-<div class="subtitle">Game history dashboard</div>
+<div class="subtitle">An analysis of 25 gaames of cribbage</div>
 <div class="filter-bar"><span class="filter-label">Opponent</span></div>
 <div class="top-row">
   <div class="panel">
@@ -62,7 +62,7 @@ h1{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:600;color:v
   </div>
   <div class="panel">
     <div class="pt">Board position</div>
-    <svg id="board-svg" viewBox="0 0 560 340"></svg>
+    <svg id="board-svg" viewBox="-10 0 560 340"></svg>
     <div class="score-bar">
       <div class="si"><span class="sd" id="dot1"></span><span class="sn" id="p1-label">—</span><span class="sv" id="p1-score">0</span><span class="sr" id="p1-detail"></span></div>
       <div class="si"><span class="sd" id="dot2"></span><span class="sn" id="p2-label">—</span><span class="sv" id="p2-score">0</span><span class="sr" id="p2-detail"></span></div>
@@ -99,7 +99,7 @@ function makeScale(opp,max){
 const BVW=560,BVH=340,PX=42,PY=26;
 const bW=BVW-PX*2,bH=BVH-PY*2,LS=bH/3;
 const YT=PY+LS*.5,YB=PY+LS*1.5,YM=PY+LS*2.5;
-const XL=PX,XR=PX+bW,RB=LS/2,RS=LS/2,SEP=9,HR=3.8,PR=6.2;
+const XL=PX,XR=PX+bW,RB=LS/2,RS=LS/4,SEP=9,HR=3.8,PR=6.2;
 
 function buildTrack(v){
   const s=(x0,x1,y,n)=>Array.from({length:n},(_,i)=>({x:x0+(x1-x0)*(i+.5)/n,y}));
@@ -305,7 +305,7 @@ function renderBar3(allGames){
 // ── STATE & DATA ──────────────────────────────
 let allGames=[],activeFilter=null,selectedCell=null;
 
-d3.csv('data.csv').then(raw=>{
+d3.csv('edited.csv').then(raw=>{
   const grouped=d3.groups(raw,d=>d.gameDate);
   allGames=grouped.map(([date,rows])=>{
     const names=[...new Set(rows.map(d=>d.Name))];
