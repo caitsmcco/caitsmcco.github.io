@@ -199,124 +199,48 @@ function renderCards(rd,game){
 function clearChart(id){d3.select('#'+id).selectAll('*').remove();}
 function bDims(id){const e=document.getElementById(id),w=e.getBoundingClientRect().width||240;return{w,h:150,ml:28,mr:6,mt:10,mb:26};}
 
-function renderDot1(rd, game, allGames){
-  clearChart('bar1');
-  const empty=document.getElementById('bar1-empty');
-  if(!rd){empty.style.display='block';return;}
-  empty.style.display='none';
-
+function renderBar1(rd,game,allGames){
+  clearChart('bar1');const empty=document.getElementById('bar1-empty');
+  if(!rd){empty.style.display='block';return;}empty.style.display='none';
   function roundPts(g){
     return g.rounds.map(r=>{
       const prev=g.rounds.find(x=>x.round===r.round-1);
-      return{
-        round:r.round,
-        pts1:r.s1!==null?(r.s1-(prev?prev.s1||0:0)):null,
-        pts2:r.s2!==null?(r.s2-(prev?prev.s2||0:0)):null
-      };
+      return{round:r.round,pts1:r.s1!==null?(r.s1-(prev?prev.s1||0:0)):null,pts2:r.s2!==null?(r.s2-(prev?prev.s2||0:0)):null};
     });
   }
-
   const all=allGames.flatMap(g=>roundPts(g));
   const avg1=d3.mean(all.filter(r=>r.pts1!==null),r=>r.pts1)||0;
   const avg2=d3.mean(all.filter(r=>r.pts2!==null),r=>r.pts2)||0;
   const best1=d3.max(all.filter(r=>r.pts1!==null),r=>r.pts1)||0;
   const best2=d3.max(all.filter(r=>r.pts2!==null),r=>r.pts2)||0;
-
   const tp=roundPts(game).find(r=>r.round===rd.round)||{pts1:0,pts2:0};
   const t1=tp.pts1||0,t2=tp.pts2||0;
-
-  const c1=(PCOL[game.p1name]||PCOL.Caitlin).peg;
-  const c2=(PCOL[game.p2name]||PCOL.Colban).peg;
-
+  const c1=(PCOL[game.p1name]||PCOL.Caitlin).peg,c2=(PCOL[game.p2name]||PCOL.Colban).peg;
   const {w,h,ml,mr,mt,mb}=bDims('bar1');
   const svg=d3.select('#bar1').attr('width',w).attr('height',h+mt+mb);
-
-  const W=w-ml-mr, H=h;
-  const g=svg.append('g').attr('transform',`translate(${ml},${mt})`);
-
-  const cats=['Avg','This','Best'];
-  const v1=[avg1,t1,best1];
-  const v2=[avg2,t2,best2];
-
+  const W=w-ml-mr,H=h,g=svg.append('g').attr('transform',`translate(${ml},${mt})`);
+  const cats=['Avg','This','Best'],v1=[avg1,t1,best1],v2=[avg2,t2,best2];
   const maxV=d3.max([...v1,...v2])||1;
-
-  const x=d3.scalePoint().domain(cats).range([0,W]).padding(0.5);
+  const x0=d3.scaleBand().domain(cats).range([0,W]).padding(.25);
+  const xi=d3.scaleBand().domain(['p1','p2']).range([0,x0.bandwidth()]).padding(.08);
   const y=d3.scaleLinear().domain([0,maxV*1.15]).range([H,0]);
-
-  // axes
-  g.append('g')
-    .attr('transform',`translate(0,${H})`)
-    .call(d3.axisBottom(x))
-    .call(ax=>{
-      ax.select('.domain').remove();
-      ax.selectAll('text')
-        .attr('fill','#7a7060')
-        .attr('font-size',7.5)
-        .attr('font-family',FONT);
-    });
-
-  g.append('g')
-    .call(d3.axisLeft(y).ticks(4).tickSize(-W))
-    .call(ax=>{
-      ax.select('.domain').remove();
-      ax.selectAll('.tick line')
-        .attr('stroke','#2e2a22')
-        .attr('stroke-dasharray','2,2');
-      ax.selectAll('text')
-        .attr('fill','#7a7060')
-        .attr('font-size',6.5)
-        .attr('font-family',FONT);
-    });
-
-  // offset so dots don't overlap
-  const offset = 6;
-
-  cats.forEach((cat, i)=>{
-    [
-      {val:v1[i], col:c1, dx:-offset},
-      {val:v2[i], col:c2, dx: offset}
-    ].forEach(({val,col,dx})=>{
-      if(val<=0) return;
-
-      const cx = x(cat) + dx;
-      const cy = y(val);
-
-      g.append('circle')
-        .attr('cx', cx)
-        .attr('cy', cy)
-        .attr('r', 4)
-        .attr('fill', col)
-        .attr('opacity', 0.9);
-
-      g.append('text')
-        .attr('x', cx)
-        .attr('y', cy - 6)
-        .attr('text-anchor','middle')
-        .attr('fill', col)
-        .attr('font-size',6)
-        .attr('font-family',FONT)
-        .text(Math.round(val*10)/10);
+  g.append('g').attr('transform',`translate(0,${H})`).call(d3.axisBottom(x0).tickSize(0))
+    .call(ax=>{ax.select('.domain').remove();ax.selectAll('text').attr('fill','#7a7060').attr('font-size',7.5).attr('font-family',FONT);});
+  g.append('g').call(d3.axisLeft(y).ticks(4).tickSize(-W))
+    .call(ax=>{ax.select('.domain').remove();ax.selectAll('.tick line').attr('stroke','#2e2a22').attr('stroke-dasharray','2,2');ax.selectAll('text').attr('fill','#7a7060').attr('font-size',6.5).attr('font-family',FONT);});
+  cats.forEach((cat,ci)=>{
+    [[v1[ci],c1,'p1'],[v2[ci],c2,'p2']].forEach(([val,col,key])=>{
+      if(val<=0)return;
+      const bx=x0(cat)+xi(key),bw=xi.bandwidth(),by=y(val),bh=H-by;
+      g.append('rect').attr('x',bx).attr('y',by).attr('width',bw).attr('height',Math.max(bh,0)).attr('fill',col).attr('rx',2).attr('opacity',.85);
+      g.append('text').attr('x',bx+bw/2).attr('y',by-3).attr('text-anchor','middle').attr('fill',col).attr('font-size',6).attr('font-family',FONT).text(Math.round(val*10)/10);
     });
   });
-
-  // legend (unchanged)
   [[game.p1name,c1],[game.p2name,c2]].forEach(([n,col],i)=>{
-    g.append('circle')
-      .attr('cx', W-62)
-      .attr('cy', i*12+3)
-      .attr('r', 3)
-      .attr('fill', col);
-
-    g.append('text')
-      .attr('x', W-56)
-      .attr('y', i*12+5.5)
-      .attr('fill','#7a7060')
-      .attr('font-size',6.5)
-      .attr('font-family',FONT)
-      .text(n);
+    g.append('rect').attr('x',W-65).attr('y',i*12).attr('width',6).attr('height',6).attr('fill',col).attr('rx',1);
+    g.append('text').attr('x',W-56).attr('y',i*12+5.5).attr('fill','#7a7060').attr('font-size',6.5).attr('font-family',FONT).text(n);
   });
 }
-
 
 function renderBar2(rd,game){
   clearChart('bar2');const empty=document.getElementById('bar2-empty');
