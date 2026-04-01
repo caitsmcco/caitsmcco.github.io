@@ -62,7 +62,7 @@ h1{font-family:'Playfair Display',serif;font-size:3rem;font-weight:600;color:var
   </div>
   <div class="panel" name="cribbageboard">
     <div class="pt">Board position</div>
-    <svg id="board-svg" viewBox="-10 0 720 340"></svg>
+    <svg id="board-svg" viewBox="-10 0 720 240"></svg>
     <div class="panel"><div class="pt">Cards played</div><div id="cards-content"><div class="no-sel">Hover or click a round</div></div></div>
     <div class="score-bar">
         <div class="si"><span class="sd" id="dot1"></span><span class="sn" id="p1-label">—</span><span class="sv" id="p1-score">0</span><span class="sr" id="p1-detail"></span></div>
@@ -97,7 +97,7 @@ function makeScale(opp,max){
 }
 
 // ── BOARD ─────────────────────────────────────
-const BVW=680,BVH=380,PX=52,PY=36;
+const BVW=680,BVH=380,PX=52,PY=10;
 const bW=BVW-PX*2,bH=BVH-PY*2,LS=bH/3;
 const YT=PY+LS*.5,YB=PY+LS*1.5,YM=PY+LS*1;
 const XL=PX,XR=PX+bW,RB=LS/2,RS=LS/4,SEP=15,HR=4.5,PR=7.0;
