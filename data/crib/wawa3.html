@@ -355,7 +355,7 @@ function render(){
     document.getElementById('p2-label').textContent=first.p2name;
     document.getElementById('p1-score').textContent=last.s1??0;
     document.getElementById('p2-score').textContent=last.s2??0;
-    document.getElementById('p1-detail').textContent='final';
+    document.getElementById('p1-detail').textContent='';
     document.getElementById('p2-detail').textContent='';
     renderLegend(activeFilter||first.p2name,games);
     document.getElementById('leg-l').textContent=(activeFilter||first.p2name);
@@ -405,7 +405,7 @@ function renderHeatmap(games){
     const gy=TOP+gi*ROW_H;
     const oppCol=(PCOL[game.p2name]||PCOL.Colban).peg;
     const cScale=makeScale(game.p2name,globalMax);
-    const ds=new Date(game.date).toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'2-digit'});
+    const ds=new Date(game.date).toLocaleDateString('en-CA',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
 
     // Row highlight background
     const rowBg=svg.append('rect').attr('x',0).attr('y',gy-1).attr('width',totalW).attr('height',CELL_H+2)
