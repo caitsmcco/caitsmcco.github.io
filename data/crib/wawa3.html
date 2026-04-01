@@ -63,6 +63,7 @@ h1{font-family:'Playfair Display',serif;font-size:3rem;font-weight:600;color:var
   <div class="panel" name="cribbageboard">
     <div class="pt">Board position</div>
     <svg id="board-svg" viewBox="-10 0 720 340"></svg>
+    <div class="panel"><div class="pt">Cards played</div><div id="cards-content"><div class="no-sel">Hover or click a round</div></div></div>
     <div class="score-bar">
         <div class="si"><span class="sd" id="dot1"></span><span class="sn" id="p1-label">—</span><span class="sv" id="p1-score">0</span><span class="sr" id="p1-detail"></span></div>
         <div class="si"><span class="sd" id="dot2"></span><span class="sn" id="p2-label">—</span><span class="sv" id="p2-score">0</span><span class="sr" id="p2-detail"></span></div>
@@ -72,7 +73,6 @@ h1{font-family:'Playfair Display',serif;font-size:3rem;font-weight:600;color:var
 </div>
 <div class="bottom-row">
     <div class="panel" width=""><div class="pt">Win / loss by opponent</div><svg id="bar3"></svg></div>
-    <div class="panel"><div class="pt">Cards played</div><div id="cards-content"><div class="no-sel">Hover or click a round</div></div></div>
     <div class="panel"><div class="pt">Round score vs avg &amp; best</div><svg id="bar1"></svg><div id="bar1-empty" style="font-size:1rem;color:var(--muted);">Select a round</div></div>
     <div class="panel"><div class="pt">Points by type</div><svg id="bar2"></svg><div id="bar2-empty" style="font-size:1rem;color:var(--muted);">Select a round</div></div>
 </div>
@@ -118,7 +118,7 @@ function pegPos(sc,lane){
 const bsvg=d3.select('#board-svg');
 const bR=XR+RB+SEP+10,bT=YT-SEP-12,bBt=YM+SEP+60,bRX=RB+SEP+45;
 bsvg.append('path').attr('d',
-  `M ${XL} ${bT} L ${bR-bRX} ${bT} Q ${bR} ${bT} ${bR} ${bT+bRX} L ${bR} ${bBt-bRX} Q ${bR} ${bBt} ${bR-bRX} ${bBt} L ${XL} ${bBt} Q ${XL-12} ${bBt} ${XL-12} ${bBt-12} L ${XL-12} ${bT+12} Q ${XL-12} ${bT} ${XL} ${bT} Z`)
+  `M ${8} ${bT} L ${bR-bRX} ${bT} Q ${bR} ${bT} ${bR} ${bT+bRX} L ${bR} ${bBt-bRX} Q ${bR} ${bBt} ${bR-bRX} ${bBt} L ${8} ${bBt} Q ${8-12} ${bBt} ${8-12} ${bBt-12} L ${8-12} ${bT+12} Q ${8-12} ${bT} ${8} ${bT} Z`)
   .attr('fill','#2c2010').attr('stroke','#1c1408').attr('stroke-width',2);
 const ap=(cx,cy,r,a0,a1)=>{const x0=cx+Math.cos(a0)*r,y0=cy+Math.sin(a0)*r,x1=cx+Math.cos(a1)*r,y1=cy+Math.sin(a1)*r;return`M ${x0} ${y0} A ${r} ${r} 0 ${Math.abs(a1-a0)>Math.PI?1:0} ${a1>a0?1:0} ${x1} ${y1}`;};
 const gd=bsvg.append('g').attr('stroke','#3a2e18').attr('stroke-width',.6).attr('fill','none');
@@ -138,11 +138,11 @@ const gd=bsvg.append('g').attr('stroke','#3a2e18').attr('stroke-width',.6).attr(
   if(n<1||n>121)return;const p=p1Pts[n-1];if(!p)return;
   const dy=n<=35?-(HR+5.5):n<=80?(HR-15):-(HR+5.5);
   bsvg.append('text').attr('x',p.x).attr('y',p.y+dy).attr('text-anchor','middle').attr('dominant-baseline','middle')
-    .attr('fill','#f0d880').attr('font-size',5.8).attr('font-family',FONT).attr('font-weight','bold').text(n);
+    .attr('fill','#f0d880').attr('font-size',7).attr('font-family',FONT).text(n);
 });
 bsvg.append('text').attr('x',XL-16).attr('y',YT).attr('text-anchor','end').attr('dominant-baseline','middle')
   .attr('fill','#f0d880').attr('font-size',7).attr('font-family',FONT).attr('font-weight','bold')
-  .attr('transform','rotate(90 24,90)').text('START');
+  .attr('transform','rotate(90 30,90)').text('START');
 
 const peg1=bsvg.append('circle').attr('r',PR).attr('stroke','rgba(0,0,0,.3)').attr('stroke-width',1);
 const peg2=bsvg.append('circle').attr('r',PR).attr('stroke','rgba(0,0,0,.3)').attr('stroke-width',1);
