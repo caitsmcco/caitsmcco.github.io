@@ -72,8 +72,9 @@ h1{font-family:'Playfair Display',serif;font-size:3rem;font-weight:600;color:var
                 <span class="sv" id="p1-score">0</span>
                 <span class="sr" id="p1-detail">·</span>
                 <span class="sd" id="dot2"></span>
-                <span class="sn" id="p2-label">—</span>
+                <span class="sn" id="p2-label">·</span>
                 <span class="sv" id="p2-score">0</span>
+                <span class="sn" id="p2-detail">·</span>
                 <span class="sr" id="r-detail">-</span>
             </div>
         </div>
@@ -187,8 +188,8 @@ function renderCards(rd,game){
   const cc=r1?parseCard(r1.cc):r2?parseCard(r2.cc):null;
   const c1=(PCOL[game.p1name]||PCOL.Caitlin).light,c2=(PCOL[game.p2name]||PCOL.Colban).light;
   el.innerHTML=`
-    <div style="font-size:2rem;color:var(--muted);margin-bottom:.45rem;padding-left:15px;padding-top:5px;">
-        CUT: ${cc?`<span style="color:${cc.red?'#e85d4a':'#e8dfc8'}">${cc.rank}${SUIT[cc.suit]||cc.suit}</span>`:'—'} 
+    <div style="font-size:1.5rem;color:var(--muted);margin-bottom:.45rem;padding-left:15px;padding-top:5px;">
+        Flipped: ${cc?`<span style="color:${cc.red?'#e85d4a':'#e8dfc8'}">${cc.rank}${SUIT[cc.suit]||cc.suit}</span>`:'—'} 
     </div>
     <div class="cards-section"><div class="cards-label" style="color:${c1}">${game.p1name}</div>
       <div class="cards-row">${pCards(r1).map(c=>cardEl(c)).join('')||'<span style="font-size:1rem;color:var(--muted)">—</span>'}</div></div>
@@ -363,9 +364,9 @@ function render(){
     document.getElementById('p2-label').textContent=first.p2name;
     document.getElementById('p1-score').textContent=last.s1??0;
     document.getElementById('p2-score').textContent=last.s2??0;
-    document.getElementById('p1-detail').textContent='';
-    document.getElementById('p2-detail').textContent='';
     document.getElementById('r-detail').textContent= `· round ${rd.round}`;
+    document.getElementById('p1-detail').textContent='·';
+    document.getElementById('p2-detail').textContent='·';
     renderLegend(activeFilter||first.p2name,games);
     document.getElementById('leg-l').textContent=(activeFilter||first.p2name);
   }
@@ -381,6 +382,7 @@ function activateCell(game,rd,anim){
   document.getElementById('p2-label').textContent=game.p2name;
   document.getElementById('p1-score').textContent=rd.s1;
   document.getElementById('p2-score').textContent=rd.s2;
+  document.getElementById('r-detail').textContent= `· round ${rd.round}`;
   renderCards(rd,game);
   renderBar1(rd,game,filteredGames());
   renderBar2(rd,game);
