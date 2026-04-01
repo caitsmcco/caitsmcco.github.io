@@ -36,7 +36,7 @@ h1{font-family:'Playfair Display',serif;font-size:3rem;font-weight:600;color:var
 .lgc{width:90px;height:7px;border-radius:3px;}
 .cards-section{margin-bottom:.55rem;}
 .cards-label{font-size:1rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.3rem;}
-.cards-row{display:flex;gap:3px;flex-wrap:wrap;align-items:center;min-height:42px;}
+.cards-row{display:flex;gap:6;flex-wrap:wrap;align-items:center;min-height:42px;}
 .card{width:52px;height:76px;border-radius:3px;border:1px solid #3a3020;background:#f5f0e8;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:2px;font-weight:700;font-family:'IBM Plex Mono',monospace;transition:transform .15s;}
 .card:hover{transform:translateY(-3px);}
 .card .cr{font-size:13px;line-height:1;}
@@ -57,7 +57,7 @@ h1{font-family:'Playfair Display',serif;font-size:3rem;font-weight:600;color:var
 <div class="filter-bar"><span class="filter-label">Opponent</span></div>
 <div class="top-row">
   <div class="panel" name="heatmap">
-    <div class="pt">All Games</span></div>
+    <div class="pt">Games</span></div>
     <div style="overflow-x:auto"><svg id="heatmap-svg"></svg></div>
     <div class="legend"><span id="leg-l">Opponent</span><canvas class="lgc" id="legend-canvas"></canvas><span id="leg-r">Caitlin leading</span></div>
   </div>
@@ -415,7 +415,7 @@ function renderHeatmap(games){
     svg.append('text').attr('x',LEFT-8).attr('y',gy+CELL_H/2-7).attr('text-anchor','end').attr('dominant-baseline','middle')
       .attr('fill','#e8dfc8').attr('font-size',13).attr('font-family',FONT).text(ds);
     svg.append('text').attr('x',LEFT-8).attr('y',gy+CELL_H/2+6).attr('text-anchor','end').attr('dominant-baseline','middle')
-      .attr('fill','#e8dfc8').attr('font-size',13).attr('font-family',FONT).text(ts);
+      .attr('fill','#e8dfc8').attr('fill',oppCol).attr('font-size',11).attr('font-family',FONT).text(ts);
     //svg.append('text').attr('x',LEFT-8).attr('y',gy+CELL_H/2+6).attr('text-anchor','end').attr('dominant-baseline','middle')
     //  .attr('fill',oppCol).attr('font-size',10).attr('font-family',FONT).text('vs '+game.p2name);
     game.rounds.forEach(rd=>{
