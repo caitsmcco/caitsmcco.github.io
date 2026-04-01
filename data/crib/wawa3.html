@@ -86,9 +86,9 @@ const OPPONENTS=['Sarah','James','Colban','Darren'];
 const PCOL={
   Caitlin:{peg:'#c0392b',light:'#e85d4a'},
   Sarah:{peg:'#6113a5',light:'#a855f7'},
-  Colban:{peg:'#0e7c55',light:'#10b981'},
+  Colban:{peg:'#918000',light:'#fffe56'},
   James:{peg:'#185fa5',light:'#3a8fd4'},
-  Darren:{peg:'#a9af00',light:'#fffe56'},
+  Darren:{peg:'#0e7c55',light:'#10b981'},
 };
 const FONT='IBM Plex Mono,monospace';
 const SUIT={H:'♥',D:'♦',C:'♣',S:'♠'};
@@ -405,7 +405,8 @@ function renderHeatmap(games){
     const gy=TOP+gi*ROW_H;
     const oppCol=(PCOL[game.p2name]||PCOL.Colban).peg;
     const cScale=makeScale(game.p2name,globalMax);
-    const ds=new Date(game.date).toLocaleDateString('en-CA',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    const ds=new Date(game.date).toLocaleDateString('en-CA',{month:'short',day:'numeric',year:"2-digit"});
+    const ts=new Date(game.date).toLocaleDateString('en-CA',{hour:'2-digit',minute:'2-digit'});
 
     // Row highlight background
     const rowBg=svg.append('rect').attr('x',0).attr('y',gy-1).attr('width',totalW).attr('height',CELL_H+2)
@@ -414,7 +415,9 @@ function renderHeatmap(games){
     svg.append('text').attr('x',LEFT-8).attr('y',gy+CELL_H/2-5).attr('text-anchor','end').attr('dominant-baseline','middle')
       .attr('fill','#e8dfc8').attr('font-size',13).attr('font-family',FONT).text(ds);
     svg.append('text').attr('x',LEFT-8).attr('y',gy+CELL_H/2+6).attr('text-anchor','end').attr('dominant-baseline','middle')
-      .attr('fill',oppCol).attr('font-size',10).attr('font-family',FONT).text('vs '+game.p2name);
+      .attr('fill','#e8dfc8').attr('font-size',13).attr('font-family',FONT).text(ts);
+    //svg.append('text').attr('x',LEFT-8).attr('y',gy+CELL_H/2+6).attr('text-anchor','end').attr('dominant-baseline','middle')
+    //  .attr('fill',oppCol).attr('font-size',10).attr('font-family',FONT).text('vs '+game.p2name);
     game.rounds.forEach(rd=>{
       const cx=LEFT+(rd.round-1)*COL_W;
       const diff=(rd.s1!==null&&rd.s2!==null)?(rd.s1-rd.s2):null;
