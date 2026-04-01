@@ -64,12 +64,12 @@ h1{font-family:'Playfair Display',serif;font-size:3rem;font-weight:600;color:var
   <div class="panel2" name="cribbageboard">
     <div class="pt">Board position</div>
     <svg id="board-svg" viewBox="-10 30 720 200"></svg>
-    <div style="padding:10;">
-        <div id="cards-content"></div>
+    <div style="padding:30;">
         <div class="score-bar">
             <div class="si"><span class="sd" id="dot1"></span><span class="sn" id="p1-label">—</span><span class="sv" id="p1-score">0</span><span class="sr" id="p1-detail"></span></div>
             <div class="si"><span class="sd" id="dot2"></span><span class="sn" id="p2-label">—</span><span class="sv" id="p2-score">0</span><span class="sr" id="p2-detail"></span></div>
         </div>
+        <div id="cards-content"></div>
     </div>
     
 </div>
@@ -88,7 +88,7 @@ const PCOL={
   Sarah:{peg:'#7B2FBE',light:'#a855f7'},
   Colban:{peg:'#0e7c55',light:'#10b981'},
   James:{peg:'#185fa5',light:'#3a8fd4'},
-  Darren:{peg:'#d2d249',light:'#fffe56'},
+  Darren:{peg:'#c5c737',light:'#fffe56'},
 };
 const FONT='IBM Plex Mono,monospace';
 const SUIT={H:'♥',D:'♦',C:'♣',S:'♠'};
@@ -191,7 +191,8 @@ function renderCards(rd,game){
         <span style="font-size:1rem;color:${c1};margin-right:1px">${game.p1name[0]}</span>${cCards(r1).map(c=>cardEl(c)).join('')}
         <div class="card-divider"></div>
         <span style="font-size:1rem;color:${c2};margin-right:1px">${game.p2name[0]}</span>${cCards(r2).map(c=>cardEl(c)).join('')}
-      </div></div>`;
+      </div>
+      </div>`;
 }
 
 // ── BAR CHARTS ────────────────────────────────
