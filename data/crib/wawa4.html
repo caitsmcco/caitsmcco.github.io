@@ -19,7 +19,7 @@ h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:600;color:var
 .pill.active{color:var(--text);border-color:#5a5040;background:var(--bg3);}
 .pill:hover{border-color:var(--gold);}
 .top-row{height:60%;display:grid;grid-template-columns:2fr 3fr;gap:1rem;align-items:start;margin-bottom:1rem;}
-.bottom-row{height:30%;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1rem;align-items:start;}
+.bottom-row{display:grid;grid-template-columns:2fr 3fr 3fr 3fr;gap:1rem;align-items:start;margin-bottom:1rem;}
 .panel{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.9rem 1.1rem;height:100%}
 .panel2{padding:.9rem 1.1rem;height:100%}
 .pt{font-size:1rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.7rem;display:flex;align-items:center;gap:8px;}
@@ -83,8 +83,8 @@ h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:600;color:var
 </div>
 </div>
 <div class="bottom-row">
+    <div class="panel" id="line-panel"><div class="pt">Score progression</div><svg id="linegraph" style="width:100%;display:block;overflow:hidden;"></svg><div id="line-empty" style="font-size:1rem;color:var(--muted);">Select a round</div></div>
     <div class="panel"><div class="pt">Win / loss by opponent</div><div id="pie-wrap" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;"></div></div>
-    <div class="panel"><div class="pt">Score progression</div><svg id="linegraph"></svg><div id="line-empty" style="font-size:1rem;color:var(--muted);">Select a round</div></div>
     <div class="panel"><div class="pt">Round score vs avg &amp; best</div><svg id="bar1"></svg><div id="bar1-empty" style="font-size:1rem;color:var(--muted);">Select a round</div></div>
     <div class="panel"><div class="pt">Points by type</div><svg id="bar2"></svg><div id="bar2-empty" style="font-size:1rem;color:var(--muted);">Select a round</div></div>
 </div>
@@ -423,15 +423,22 @@ function renderLineGraph(game){
   if(!game){empty.style.display='block';return;}
   empty.style.display='none';
 
-  const el=document.getElementById('linegraph');
-  const W=el.parentElement.getBoundingClientRect().width-32||240;
-  const H=150, ml=28, mr=10, mt=10, mb=22;
-  const svg=d3.select('#linegraph').attr('width',W).attr('height',H+mt+mb);
-  const iW=W-ml-mr, g=svg.append('g').attr('transform',`translate(${ml},${mt})`);
+  // Fixed internal coordinate space — SVG scales via width:100% + viewBox
+  const VW=320, VH=182, ml=26, mr=10, mt=10, mb=22;
+  const iW=VW-ml-mr, iH=VH-mt-mb;
 
-  const rounds=game.rounds.filter(r=>r.s1!==null&&r.s2!==null);
+  const svg=d3.select('#linegraph')
+    .attr('viewBox',`0 0 ${VW} ${VH}`)
+    .attr('preserveAspectRatio','xMidYMid meet')
+    .attr('height', VH);   // fixed pixel height prevents vertical growth too
+
+  const g=svg.append('g').attr('transform',`translate(${ml},${mt})`);
+
+  // Prepend round 0 at score 0 so lines start at origin
+  const rounds=[{round:0,s1:0,s2:0},...game.rounds.filter(r=>r.s1!==null&&r.s2!==null)];
+
   const x=d3.scaleLinear().domain([0,game.maxRound]).range([0,iW]);
-  const y=d3.scaleLinear().domain([0,121]).range([H,0]);
+  const y=d3.scaleLinear().domain([0,121]).range([iH,0]);
 
   const c1=(PCOL[game.p1name]||PCOL.Caitlin).peg;
   const c2=(PCOL[game.p2name]||PCOL.Colban).peg;
@@ -439,16 +446,16 @@ function renderLineGraph(game){
   // Grid lines
   g.append('g').call(d3.axisLeft(y).ticks(5).tickSize(-iW))
     .call(ax=>{ax.select('.domain').remove();ax.selectAll('.tick line').attr('stroke','#2e2a22').attr('stroke-dasharray','2,2');ax.selectAll('text').attr('fill','#7a7060').attr('font-size',6).attr('font-family',FONT);});
-  g.append('g').attr('transform',`translate(0,${H})`).call(d3.axisBottom(x).ticks(game.maxRound).tickFormat(d=>d>0?d:''))
+  g.append('g').attr('transform',`translate(0,${iH})`).call(d3.axisBottom(x).ticks(game.maxRound).tickFormat(d=>Number.isInteger(d)&&d>=0?d:''))
     .call(ax=>{ax.select('.domain').attr('stroke','#2e2a22');ax.selectAll('text').attr('fill','#7a7060').attr('font-size',6).attr('font-family',FONT);});
 
-  // Winning line
+  // Winning line at 121
   g.append('line').attr('x1',0).attr('x2',iW).attr('y1',y(121)).attr('y2',y(121))
     .attr('stroke','#5a5040').attr('stroke-width',.8).attr('stroke-dasharray','4,3');
 
   // Area fills
-  const area1=d3.area().x(r=>x(r.round)).y0(H).y1(r=>y(r.s1)).curve(d3.curveMonotoneX);
-  const area2=d3.area().x(r=>x(r.round)).y0(H).y1(r=>y(r.s2)).curve(d3.curveMonotoneX);
+  const area1=d3.area().x(r=>x(r.round)).y0(iH).y1(r=>y(r.s1)).curve(d3.curveMonotoneX);
+  const area2=d3.area().x(r=>x(r.round)).y0(iH).y1(r=>y(r.s2)).curve(d3.curveMonotoneX);
   g.append('path').datum(rounds).attr('d',area1).attr('fill',c1).attr('opacity',.12);
   g.append('path').datum(rounds).attr('d',area2).attr('fill',c2).attr('opacity',.12);
 
@@ -458,27 +465,27 @@ function renderLineGraph(game){
   g.append('path').datum(rounds).attr('d',line1).attr('fill','none').attr('stroke',c1).attr('stroke-width',1.8);
   g.append('path').datum(rounds).attr('d',line2).attr('fill','none').attr('stroke',c2).attr('stroke-width',1.8);
 
-  // Dots
-  rounds.forEach(r=>{
-    g.append('circle').attr('cx',x(r.round)).attr('cy',y(r.s1)).attr('r',2.8).attr('fill',c1);
-    g.append('circle').attr('cx',x(r.round)).attr('cy',y(r.s2)).attr('r',2.8).attr('fill',c2);
+  // Dots (skip round 0 origin dot — it's just the baseline)
+  rounds.filter(r=>r.round>0).forEach(r=>{
+    g.append('circle').attr('cx',x(r.round)).attr('cy',y(r.s1)).attr('r',2.5).attr('fill',c1);
+    g.append('circle').attr('cx',x(r.round)).attr('cy',y(r.s2)).attr('r',2.5).attr('fill',c2);
   });
 
-  // Highlight selected round if any
+  // Highlight selected round
   if(selectedCell&&selectedCell.gameDate===game.date){
     const selRd=rounds.find(r=>r.round===selectedCell.round);
     if(selRd){
-      g.append('line').attr('x1',x(selRd.round)).attr('x2',x(selRd.round)).attr('y1',0).attr('y2',H)
+      g.append('line').attr('x1',x(selRd.round)).attr('x2',x(selRd.round)).attr('y1',0).attr('y2',iH)
         .attr('stroke','#c8973a').attr('stroke-width',1).attr('stroke-dasharray','3,2').attr('opacity',.7);
-      g.append('circle').attr('cx',x(selRd.round)).attr('cy',y(selRd.s1)).attr('r',4.5).attr('fill',c1).attr('stroke','#c8973a').attr('stroke-width',1.5);
-      g.append('circle').attr('cx',x(selRd.round)).attr('cy',y(selRd.s2)).attr('r',4.5).attr('fill',c2).attr('stroke','#c8973a').attr('stroke-width',1.5);
+      g.append('circle').attr('cx',x(selRd.round)).attr('cy',y(selRd.s1)).attr('r',4).attr('fill',c1).attr('stroke','#c8973a').attr('stroke-width',1.5);
+      g.append('circle').attr('cx',x(selRd.round)).attr('cy',y(selRd.s2)).attr('r',4).attr('fill',c2).attr('stroke','#c8973a').attr('stroke-width',1.5);
     }
   }
 
   // Legend
   [[game.p1name,c1],[game.p2name,c2]].forEach(([n,col],i)=>{
-    g.append('rect').attr('x',iW-75+i*40).attr('y',-8).attr('width',6).attr('height',6).attr('fill',col).attr('rx',1);
-    g.append('text').attr('x',iW-75+i*40+8).attr('y',-3).attr('fill','#7a7060').attr('font-size',6.5).attr('font-family',FONT).text(n);
+    g.append('rect').attr('x',iW-78+i*42).attr('y',-8).attr('width',6).attr('height',6).attr('fill',col).attr('rx',1);
+    g.append('text').attr('x',iW-78+i*42+8).attr('y',-3).attr('fill','#7a7060').attr('font-size',6.5).attr('font-family',FONT).text(n);
   });
 }
 
