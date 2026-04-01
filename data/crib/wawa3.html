@@ -57,7 +57,7 @@ h1{font-family:'Playfair Display',serif;font-size:3rem;font-weight:600;color:var
 <div class="filter-bar"><span class="filter-label">Opponent</span></div>
 <div class="top-row">
   <div class="panel" name="heatmap">
-    <div class="pt" id="gamesTitle">All Games</span></div>
+    <div class="pt">All Games</span></div>
     <div style="overflow-x:auto"><svg id="heatmap-svg"></svg></div>
     <div class="legend"><span id="leg-l">Opponent</span><canvas class="lgc" id="legend-canvas"></canvas><span id="leg-r">Caitlin leading</span></div>
   </div>
@@ -416,11 +416,6 @@ function renderHeatmap(games){
       .attr('fill','#e8dfc8').attr('font-size',13).attr('font-family',FONT).text(ds);
     svg.append('text').attr('x',LEFT-8).attr('y',gy+CELL_H/2+6).attr('text-anchor','end').attr('dominant-baseline','middle')
       .attr('fill',oppCol).attr('font-size',10).attr('font-family',FONT).text('vs '+game.p2name);
-    if (activeFilter == null){
-        document.getElementById("gamesTitle").innerHTML('All Games');
-    } else {
-        document.getElementById("gamesTitle").innerHTML('vs '+game.p2name);
-    }
     game.rounds.forEach(rd=>{
       const cx=LEFT+(rd.round-1)*COL_W;
       const diff=(rd.s1!==null&&rd.s2!==null)?(rd.s1-rd.s2):null;
