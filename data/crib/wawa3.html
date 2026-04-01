@@ -85,10 +85,10 @@ const CAITLIN='Caitlin';
 const OPPONENTS=['Sarah','James','Colban','Darren'];
 const PCOL={
   Caitlin:{peg:'#c0392b',light:'#e85d4a'},
-  Sarah:{peg:'#7B2FBE',light:'#a855f7'},
+  Sarah:{peg:'#6113a5',light:'#a855f7'},
   Colban:{peg:'#0e7c55',light:'#10b981'},
-  James:{peg:'#185fa5',light:'#3a8fd4'},
-  Darren:{peg:'#c5c737',light:'#fffe56'},
+  James:{peg:'#0e7c55',light:'#3a8fd4'},
+  Darren:{peg:'#a9af00',light:'#fffe56'},
 };
 const FONT='IBM Plex Mono,monospace';
 const SUIT={H:'♥',D:'♦',C:'♣',S:'♠'};
@@ -179,8 +179,8 @@ function renderCards(rd,game){
   const cc=r1?parseCard(r1.cc):r2?parseCard(r2.cc):null;
   const c1=(PCOL[game.p1name]||PCOL.Caitlin).peg,c2=(PCOL[game.p2name]||PCOL.Colban).peg;
   el.innerHTML=`
-    <div style="font-size:1rem;color:var(--muted);margin-bottom:.45rem">
-      CUT: ${cc?`<span style="color:${cc.red?'#e85d4a':'#e8dfc8'}">${cc.rank}${SUIT[cc.suit]||cc.suit}</span>`:'—'} · round ${rd.round}
+    <div style="font-size:1rem;color:var(--muted);margin-bottom:.45rem;padding-left:10px;">
+        CUT: ${cc?`<span style="color:${cc.red?'#e85d4a':'#e8dfc8'}">${cc.rank}${SUIT[cc.suit]||cc.suit}</span>`:'—'} · round ${rd.round}
     </div>
     <div class="cards-section"><div class="cards-label" style="color:${c1}">${game.p1name}</div>
       <div class="cards-row">${pCards(r1).map(c=>cardEl(c)).join('')||'<span style="font-size:1rem;color:var(--muted)">—</span>'}</div></div>
@@ -188,9 +188,9 @@ function renderCards(rd,game){
       <div class="cards-row">${pCards(r2).map(c=>cardEl(c)).join('')||'<span style="font-size:1rem;color:var(--muted)">—</span>'}</div></div>
     <div class="cards-section"><div class="cards-label">Crib</div>
       <div class="cards-row">
-        <span style="font-size:1rem;color:${c1};margin-right:1px">${game.p1name[0]}</span>${cCards(r1).map(c=>cardEl(c)).join('')}
+        <span style="font-size:4rem;color:${c1};margin-right:1px">${game.p1name[0]}</span>${cCards(r1).map(c=>cardEl(c)).join('')}
         <div class="card-divider"></div>
-        <span style="font-size:1rem;color:${c2};margin-right:1px">${game.p2name[0]}</span>${cCards(r2).map(c=>cardEl(c)).join('')}
+        <span style="font-size:4rem;color:${c2};margin-right:1px">${game.p2name[0]}</span>${cCards(r2).map(c=>cardEl(c)).join('')}
       </div>
       </div>`;
 }
@@ -336,7 +336,7 @@ function buildPills(){
       render();});
     bar.appendChild(p);
   };
-  mk('All games',null,'#5a5040');
+  mk('Games',null,'#5a5040');
   OPPONENTS.forEach(opp=>{if(allGames.some(g=>g.p2name===opp))mk(opp,opp,(PCOL[opp]||PCOL.Colban).peg);});
 }
 
@@ -372,8 +372,6 @@ function activateCell(game,rd,anim){
   document.getElementById('p2-label').textContent=game.p2name;
   document.getElementById('p1-score').textContent=rd.s1;
   document.getElementById('p2-score').textContent=rd.s2;
-  document.getElementById('p1-detail').textContent=`after round ${rd.round}`;
-  document.getElementById('p2-detail').textContent='';
   renderCards(rd,game);
   renderBar1(rd,game,filteredGames());
   renderBar2(rd,game);
