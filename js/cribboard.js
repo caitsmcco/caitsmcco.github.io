@@ -62,7 +62,7 @@ function getPegPos(score, lane) {
   return pts[Math.max(0, idx)];
 }
 
-const svg = d3.select('#board')
+const svg2= d3.select('#board')
   .append('svg')
   .attr('viewBox', `-10 0 ${W + 40} ${H + 30}`)
   .attr('width', '100%');
@@ -73,7 +73,7 @@ const boardTop   = Y_TOP - LANE_SEP - 15;
 const boardBot   = Y_MIDDLE + LANE_SEP + 60;
 const boardRX    = R_BIG + LANE_SEP + 45;
 
-svg.append('path')
+svg2.append('path')
   .attr('d', `
     M ${8} ${boardTop}
     L ${boardRight - boardRX} ${boardTop}
@@ -99,7 +99,7 @@ function arcPath(cx, cy, r, a0, a1) {
   return `M ${x0} ${y0} A ${r} ${r} 0 ${large} ${sweep} ${x1} ${y1}`;
 }
 
-const guides = svg.append('g')
+const guides = svg2.append('g')
   .attr('stroke', TRACK_C)
   .attr('stroke-width', 1)
   .attr('fill', 'none');
@@ -114,7 +114,7 @@ const guides = svg.append('g')
 
 // Holes — one group per lane
 [p1Pts, p2Pts].forEach(pts => {
-  const g = svg.append('g');
+  const g = svg2.append('g');
   g.selectAll('circle.rim')
     .data(pts)
     .join('circle')
@@ -142,7 +142,7 @@ labelNums.forEach(n => {
   else if (n <= 80) dy = HR -15;
   else dy = -(HR + 7);
 
-  svg.append('text')
+  svg2.append('text')
     .attr('x', p.x)
     .attr('y', p.y + dy)
     .attr('text-anchor', 'middle')
@@ -154,7 +154,7 @@ labelNums.forEach(n => {
 });
 
 // START label
-svg.append('text')
+svg2.append('text')
   .attr('x', X_LEFT - 16)
   .attr('y', Y_TOP)
   .attr('text-anchor', 'end')
@@ -166,20 +166,20 @@ svg.append('text')
   .text('START');
 
 // Pegs — two circles with text labels, updated by D3 transitions
-const peg1 = svg.append('circle')
+const peg1 = svg2.append('circle')
   .attr('r', PR)
   .attr('fill', P1C)
   .attr('stroke', 'rgba(0,0,0,0.22)')
   .attr('stroke-width', 1);
 
-const peg2 = svg.append('circle')
+const peg2 = svg2.append('circle')
   .attr('r', PR)
   .attr('fill', P2C)
   .attr('stroke', 'rgba(0,0,0,0.22)')
   .attr('stroke-width', 1);
 
-const shine1 = svg.append('circle').attr('r', PR * 0.27).attr('fill', 'rgba(255,255,255,0.38)').attr('pointer-events', 'none');
-const shine2 = svg.append('circle').attr('r', PR * 0.27).attr('fill', 'rgba(255,255,255,0.38)').attr('pointer-events', 'none');
+const shine1 = svg2.append('circle').attr('r', PR * 0.27).attr('fill', 'rgba(255,255,255,0.38)').attr('pointer-events', 'none');
+const shine2 = svg2.append('circle').attr('r', PR * 0.27).attr('fill', 'rgba(255,255,255,0.38)').attr('pointer-events', 'none');
 
 function placePegs(s1, s2) {
   const pos1 = getPegPos(s1, 'p1');
