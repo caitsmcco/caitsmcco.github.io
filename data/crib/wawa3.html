@@ -379,7 +379,7 @@ function renderHeatmap(games){
   const svg=d3.select('#heatmap-svg');svg.selectAll('*').remove();
   if(!games.length){svg.append('text').attr('x',12).attr('y',26).attr('fill','#5a5040').attr('font-size',13).attr('font-family',FONT).text('No games.');return;}
 
-  const FIXED_H=380,maxR=d3.max(games,g=>g.maxRound);
+  const FIXED_H=800,maxR=d3.max(games,g=>g.maxRound);
   const LEFT=138,TOP=36,BOT=16;
   const availH=FIXED_H-TOP-BOT;
   const CELL_H=Math.floor((availH-games.length*3)/games.length);
@@ -470,7 +470,7 @@ function renderHeatmap(games){
       if(winner){
         const wc=winner===game.p1name?(PCOL[game.p1name]||PCOL.Caitlin).light:(PCOL[game.p2name]||PCOL.Colban).light;
         svg.append('text').attr('x',LEFT+game.maxRound*COL_W+5).attr('y',gy+CELL_H/2+1)
-          .attr('dominant-baseline','middle').attr('fill',wc).attr('font-size',12).attr('font-family',FONT).text(winner+'★');
+          .attr('dominant-baseline','middle').attr('fill',wc).attr('font-size',12).attr('font-family',FONT).text('★');
       }
     }
   });
