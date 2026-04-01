@@ -116,7 +116,7 @@ function pegPos(sc,lane){
 }
 
 const bsvg=d3.select('#board-svg');
-const bR=XR+RB+SEP+4,bT=YT-SEP-12,bBt=YM+SEP+60,bRX=RB+SEP+45;
+const bR=XR+RB+SEP+10,bT=YT-SEP-12,bBt=YM+SEP+60,bRX=RB+SEP+45;
 bsvg.append('path').attr('d',
   `M ${XL} ${bT} L ${bR-bRX} ${bT} Q ${bR} ${bT} ${bR} ${bT+bRX} L ${bR} ${bBt-bRX} Q ${bR} ${bBt} ${bR-bRX} ${bBt} L ${XL} ${bBt} Q ${XL-12} ${bBt} ${XL-12} ${bBt-12} L ${XL-12} ${bT+12} Q ${XL-12} ${bT} ${XL} ${bT} Z`)
   .attr('fill','#2c2010').attr('stroke','#1c1408').attr('stroke-width',2);
@@ -136,7 +136,7 @@ const gd=bsvg.append('g').attr('stroke','#3a2e18').attr('stroke-width',.6).attr(
 });
 [5,10,15,20,25,30,35,50,55,60,65,70,75,80,90,95,100,105,110,115,120,121].forEach(n=>{
   if(n<1||n>121)return;const p=p1Pts[n-1];if(!p)return;
-  const dy=n<=35?-(HR+5.5):n<=80?(HR+5.5):-(HR+5.5);
+  const dy=n<=35?-(HR+5.5):n<=80?(HR-15):-(HR+5.5);
   bsvg.append('text').attr('x',p.x).attr('y',p.y+dy).attr('text-anchor','middle').attr('dominant-baseline','middle')
     .attr('fill','#f0d880').attr('font-size',5.8).attr('font-family',FONT).attr('font-weight','bold').text(n);
 });
