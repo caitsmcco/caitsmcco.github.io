@@ -153,7 +153,7 @@ const lb2=bsvg.append('text').attr('text-anchor','middle').attr('dominant-baseli
 
 function setPegColors(c1,c2){peg1.attr('fill',c1);peg2.attr('fill',c2);document.getElementById('dot1').style.background=c1;document.getElementById('dot2').style.background=c2;}
 function placePegs(s1,s2,anim,i1,i2){
-  const pp1=pegPos(s1,'p1'),pp2=pegPos(s2,'p2'),dur=480;
+  const pp1=pegPos(s1,'p1'),pp2=pegPos(s2,'p2'),dur=240;
   const upd=(sel,x,y)=>anim?sel.transition().duration(dur).ease(d3.easeCubicInOut).attr('cx',x).attr('cy',y):sel.attr('cx',x).attr('cy',y);
   upd(peg1,pp1.x,pp1.y);upd(peg2,pp2.x,pp2.y);upd(sh1,pp1.x-PR*.25,pp1.y-PR*.25);upd(sh2,pp2.x-PR*.25,pp2.y-PR*.25);
   const updT=(sel,x,y)=>anim?sel.transition().duration(dur).ease(d3.easeCubicInOut).attr('x',x).attr('y',y):sel.attr('x',x).attr('y',y);
