@@ -184,14 +184,15 @@ function renderCards(rd,game){
   const r1=byP[game.p1name],r2=byP[game.p2name];
   const pCards=row=>row?['p1','p2','p3','p4','p5','p6','p7'].map(f=>parseCard(row[f])).filter(Boolean):[];
   const cCards=row=>row?[parseCard(row.d1),parseCard(row.d2)].filter(Boolean):[];
+  const fCards=row=>row?[parseCard(row.cc)].filter(Boolean):[];
   const cc=r1?parseCard(r1.cc):r2?parseCard(r2.cc):null;
   const c1=(PCOL[game.p1name]||PCOL.Caitlin).light,c2=(PCOL[game.p2name]||PCOL.Colban).light;
   el.innerHTML=`
     <div style="font-size:1.5rem;color:var(--muted);margin-bottom:.45rem;padding-left:15px;padding-top:5px;">
         Flipped: ${cc?`<span style="color:${cc.red?'#e85d4a':'#e8dfc8'}">${cc.rank}${SUIT[cc.suit]||cc.suit}</span>`:'—'} 
     </div>
-    <div class="cards-section"><div class="cards-label"</div>
-      <div class="cards-row">${pCards(cc).map(c=>cardEl(c)).join('')||'<span style="font-size:1rem;color:var(--muted)">—</span>'}</div></div>
+    <div class="cards-section"><div class="cards-label">Flipped Card</div>
+      <div class="cards-row">${fCards(cc).map(c=>cardEl(c)).join('')||'<span style="font-size:1rem;color:var(--muted)">—</span>'}</div></div>
     <div class="cards-section"><div class="cards-label" style="color:${c1}">${game.p1name}</div>
       <div class="cards-row">${pCards(r1).map(c=>cardEl(c)).join('')||'<span style="font-size:1rem;color:var(--muted)">—</span>'}</div></div>
     <div class="cards-section"><div class="cards-label" style="color:${c2}">${game.p2name}</div>
