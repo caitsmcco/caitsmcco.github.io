@@ -54,7 +54,7 @@ h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:600;color:var
 <body>
 <h1>Cribbage</h1>
 <div class="subtitle">An analysis of 25 games of cribbage</div>
-<div class="filter-bar"><span class="filter-label">Opponent</span></div>
+<div class="filter-bar"><span class="filter-label"></span></div>
 <div class="top-row">
   <div class="panel" name="heatmap">
     <div class="pt">Games</span></div>
@@ -344,7 +344,7 @@ function buildPills(){
       render();});
     bar.appendChild(p);
   };
-  mk('Games',null,'#5a5040');
+  mk('All',null,'#5a5040');
   OPPONENTS.forEach(opp=>{if(allGames.some(g=>g.p2name===opp))mk(opp,opp,(PCOL[opp]||PCOL.Colban).peg);});
 }
 
