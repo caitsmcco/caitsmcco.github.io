@@ -18,9 +18,12 @@ h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:600;color:var
 .pill .pdot{width:7px;height:7px;border-radius:50%;}
 .pill.active{color:var(--text);border-color:#5a5040;background:var(--bg3);}
 .pill:hover{border-color:var(--gold);}
-.top-row{height:60%;display:grid;grid-template-columns:2fr 3fr;gap:1rem;align-items:start;margin-bottom:1rem;}
+.top-row{height:680px;display:grid;grid-template-columns:2fr 3fr;gap:1rem;align-items:stretch;margin-bottom:1rem;}
 .bottom-row{display:grid;grid-template-columns:2fr 3fr 3fr 3fr;gap:1rem;align-items:start;margin-bottom:1rem;}
 .panel{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.9rem 1.1rem;height:100%}
+.panel.heatmap-panel{display:flex;flex-direction:column;}
+.heatmap-svg-wrap{flex:1;min-height:0;display:flex;flex-direction:column;}
+.heatmap-svg-wrap svg{flex:1;min-height:0;width:100%;height:100%;display:block;}
 .panel2{padding:.9rem 1.1rem;height:100%}
 .pt{font-size:1rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.7rem;display:flex;align-items:center;gap:8px;}
 .pt::after{content:'';flex:1;height:1px;background:var(--border);}
@@ -57,9 +60,9 @@ h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:600;color:var
 <div class="subtitle">An analysis of 25 games of cribbage</div>
 <div class="filter-bar"><span class="filter-label"></span></div>
 <div class="top-row">
-  <div class="panel" name="heatmap">
-    <div class="pt">Games</span></div>
-    <div><svg id="heatmap-svg" style="width:100%;display:block;"></svg></div>
+  <div class="panel heatmap-panel" name="heatmap">
+    <div class="pt">Games</div>
+    <div class="heatmap-svg-wrap"><svg id="heatmap-svg"></svg></div>
     <div class="legend"><span id="leg-l">Opponent</span><canvas class="lgc" id="legend-canvas"></canvas><span id="leg-r">Caitlin leading</span></div>
   </div>
   <div class="panel2" name="cribbageboard">
@@ -911,22 +914,32 @@ function renderHeatmap(games){
 
   const maxR=d3.max(games,g=>g.maxRound);
 
-  // Internal coordinate space — all sizes are in these units, viewBox scales to container
+  // Fixed internal coordinate space.
+  // Width is fixed — columns always fit across this many units.
+  // Height is driven purely by row count — the SVG element itself fills
+  // the flex container, so more rows = shorter rows, fewer = taller rows.
+  // preserveAspectRatio=none lets both axes scale independently.
   const LEFT=112, TOP=36, BOT=16, RIGHT=28;
-  // Cell width: fit maxR columns across a comfortable internal width
-  const INNER_W=540; // internal canvas width available for cells+label
+  const INNER_W=540;
   const CELL_W=Math.floor((INNER_W-LEFT-RIGHT)/maxR);
-  const COL_W=CELL_W; // no gap needed — stroke provides separation
-  // Row height: scale to fit all games in a fixed internal height
-  const INNER_H=Math.max(games.length*28, games.length*14+100);
-  const CELL_H=Math.floor((INNER_H-TOP-BOT)/games.length)-2;
-  const ROW_H=CELL_H+2;
+  const COL_W=CELL_W;
+
+  // Internal height: fixed row unit so viewBox aspect ratio reflects row count.
+  // The SVG container is CSS-height:100% so it fills the panel; the coordinate
+  // system just needs consistent proportions — 28 units per row is readable.
+  const ROW_UNIT=28;
+  const CELL_H=ROW_UNIT-4;
+  const ROW_H=ROW_UNIT;
   const totalW=LEFT+maxR*COL_W+RIGHT;
   const totalH=TOP+games.length*ROW_H+BOT;
 
   svg
     .attr('viewBox',`0 0 ${totalW} ${totalH}`)
-    .attr('preserveAspectRatio','xMidYMid meet');
+    .attr('preserveAspectRatio','none');
+
+  // Clear any previously set wrapper height
+  const wrap=document.querySelector('.heatmap-svg-wrap');
+  if(wrap) wrap.style.height='';
 
   const globalMax=d3.max(games.flatMap(g=>g.rounds.map(r=>r.s1!==null&&r.s2!==null?Math.abs(r.s1-r.s2):0)))||1;
 
