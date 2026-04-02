@@ -59,25 +59,25 @@ h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:600;color:var
 <div class="top-row">
   <div class="panel" name="heatmap">
     <div class="pt">Games</span></div>
-    <div style="overflow-x:auto"><svg id="heatmap-svg"></svg></div>
+    <div style="overflow-x:auto"><svg id="heatmap-svg" viewBox="0 0 1000 500"></svg></div>
     <div class="legend"><span id="leg-l">Opponent</span><canvas class="lgc" id="legend-canvas"></canvas><span id="leg-r">Caitlin leading</span></div>
   </div>
   <div class="panel2" name="cribbageboard">
     <!--<div class="pt">Board position</div>!-->
+    <div class="score-bar">
+        <div class="si">
+          <span class="sr" id="r-detail">-</span>
+            <span class="sd" id="dot1"></span>
+            <span class="sn" id="p1-label">—</span>
+            <span class="sv" id="p1-score">0</span>
+            <span class="sr" id="p1-detail">·</span>
+            <span class="sd" id="dot2"></span>
+            <span class="sn" id="p2-label">·</span>
+            <span class="sv" id="p2-score">0</span>
+        </div>
+    </div>
     <svg id="board-svg" viewBox="-10 30 720 200"></svg>
     <div>
-        <div class="score-bar">
-            <div class="si">
-              <span class="sr" id="r-detail">-</span>
-                <span class="sd" id="dot1"></span>
-                <span class="sn" id="p1-label">—</span>
-                <span class="sv" id="p1-score">0</span>
-                <span class="sr" id="p1-detail">·</span>
-                <span class="sd" id="dot2"></span>
-                <span class="sn" id="p2-label">·</span>
-                <span class="sv" id="p2-score">0</span>
-            </div>
-        </div>
         <div id="cards-content"></div>
     </div>
     
@@ -207,7 +207,7 @@ function placePegs(s1,s2,anim,i1,i2,prev1,prev2){
     pegB2.attr('cx',pb2.x).attr('cy',pb2.y);
   } else {
     // Animated: back peg leaps past front to new score, staggered between players
-    const D=320;
+    const D=0;
 
     // Player 1 animates first, player 2 after a short delay
     // The "lesser" peg (back) overtakes the front peg to land at the new score
