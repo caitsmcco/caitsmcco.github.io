@@ -47,6 +47,7 @@ h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:600;color:var
 .card-divider{width:1px;height:38px;background:var(--border);margin:0 3px;flex-shrink:0;}
 .no-sel{color:var(--muted);font-size:1rem;padding:.4rem 0;}
 .viz-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem;}
+.panel svg,.panel2 svg{width:100%;height:auto;display:block;}
 .tooltip{position:fixed;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:.4rem .65rem;font-size:1rem;color:var(--text);pointer-events:none;opacity:0;transition:opacity .12s;z-index:100;line-height:1.75;}
 .tooltip.vis{opacity:1;}
 .tth{color:var(--gold);font-weight:500;margin-bottom:1px;}
@@ -59,32 +60,32 @@ h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:600;color:var
 <div class="top-row">
   <div class="panel" name="heatmap">
     <div class="pt">Games</span></div>
-    <div style="overflow-x:auto"><svg id="heatmap-svg" viewBox="0 0 1000 500"></svg></div>
+    <div style="overflow-x:auto"><svg id="heatmap-svg"></svg></div>
     <div class="legend"><span id="leg-l">Opponent</span><canvas class="lgc" id="legend-canvas"></canvas><span id="leg-r">Caitlin leading</span></div>
-    <div id="line-panel"><div class="pt">Score progression</div><svg id="linegraph" style="width:100%;display:block;overflow:hidden;"></svg><div id="line-empty" style="font-size:1rem;color:var(--muted);">Select a round</div></div>
   </div>
   <div class="panel2" name="cribbageboard">
     <!--<div class="pt">Board position</div>!-->
-    <div class="score-bar">
-        <div class="si">
-          <span class="sr" id="r-detail">-</span>
-            <span class="sd" id="dot1"></span>
-            <span class="sn" id="p1-label">—</span>
-            <span class="sv" id="p1-score">0</span>
-            <span class="sr" id="p1-detail">·</span>
-            <span class="sd" id="dot2"></span>
-            <span class="sn" id="p2-label">·</span>
-            <span class="sv" id="p2-score">0</span>
-        </div>
-    </div>
-    <svg id="board-svg" viewBox="-10 30 720 200"></svg>
+    <svg id="board-svg" viewBox="-10 30 720 200" preserveAspectRatio="xMidYMid meet"></svg>
     <div>
+        <div class="score-bar">
+            <div class="si">
+              <span class="sr" id="r-detail">-</span>
+                <span class="sd" id="dot1"></span>
+                <span class="sn" id="p1-label">—</span>
+                <span class="sv" id="p1-score">0</span>
+                <span class="sr" id="p1-detail">·</span>
+                <span class="sd" id="dot2"></span>
+                <span class="sn" id="p2-label">·</span>
+                <span class="sv" id="p2-score">0</span>
+            </div>
+        </div>
         <div id="cards-content"></div>
     </div>
     
 </div>
 </div>
 <div class="bottom-row">
+    <div class="panel" id="line-panel"><div class="pt">Score progression</div><svg id="linegraph" style="width:100%;display:block;overflow:hidden;"></svg><div id="line-empty" style="font-size:1rem;color:var(--muted);">Select a round</div></div>
     <div class="panel"><div class="pt">Win / loss by opponent</div><div id="pie-wrap" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;"></div></div>
     <div class="panel"><div class="pt">Round score vs avg &amp; best</div><svg id="bar1"></svg><div id="bar1-empty" style="font-size:1rem;color:var(--muted);">Select a round</div></div>
     <div class="panel"><div class="pt">Points by type</div><svg id="bar2"></svg><div id="bar2-empty" style="font-size:1rem;color:var(--muted);">Select a round</div></div>
@@ -207,7 +208,7 @@ function placePegs(s1,s2,anim,i1,i2,prev1,prev2){
     pegB2.attr('cx',pb2.x).attr('cy',pb2.y);
   } else {
     // Animated: back peg leaps past front to new score, staggered between players
-    const D=0;
+    const D=320;
 
     // Player 1 animates first, player 2 after a short delay
     // The "lesser" peg (back) overtakes the front peg to land at the new score
@@ -281,8 +282,19 @@ function renderCards(rd,game){
 }
 
 // ── BAR CHARTS ────────────────────────────────
+// All SVGs use viewBox + width:100% — no pixel reads, no getBoundingClientRect.
+// Internal coordinate space: VW×VH. SVG scales to fill container via CSS.
 function clearChart(id){d3.select('#'+id).selectAll('*').remove();}
-function bDims(id){const e=document.getElementById(id),w=e.getBoundingClientRect().width||240;return{w,h:150,ml:28,mr:6,mt:10,mb:26};}
+const BAR_VW=280,BAR_VH=186,BAR_ML=30,BAR_MR=8,BAR_MT=12,BAR_MB=28;
+const BAR_W=BAR_VW-BAR_ML-BAR_MR, BAR_H=BAR_VH-BAR_MT-BAR_MB;
+
+function barSvg(id){
+  return d3.select('#'+id)
+    .attr('viewBox',`0 0 ${BAR_VW} ${BAR_VH}`)
+    .attr('preserveAspectRatio','xMidYMid meet')
+    .attr('width','100%')
+    .attr('height',null); // let CSS / viewBox control height
+}
 
 function renderBar1(rd,game,allGames){
   clearChart('bar1');const empty=document.getElementById('bar1-empty');
@@ -301,9 +313,9 @@ function renderBar1(rd,game,allGames){
   const tp=roundPts(game).find(r=>r.round===rd.round)||{pts1:0,pts2:0};
   const t1=tp.pts1||0,t2=tp.pts2||0;
   const c1=(PCOL[game.p1name]||PCOL.Caitlin).peg,c2=(PCOL[game.p2name]||PCOL.Colban).peg;
-  const {w,h,ml,mr,mt,mb}=bDims('bar1');
-  const svg=d3.select('#bar1').attr('width',w).attr('height',h+mt+mb);
-  const W=w-ml-mr,H=h,g=svg.append('g').attr('transform',`translate(${ml},${mt})`);
+  const svg=barSvg('bar1');
+  const g=svg.append('g').attr('transform',`translate(${BAR_ML},${BAR_MT})`);
+  const W=BAR_W,H=BAR_H;
   const cats=['Avg','This','Best'],v1=[avg1,t1,best1],v2=[avg2,t2,best2];
   const maxV=d3.max([...v1,...v2])||1;
   const x0=d3.scaleBand().domain(cats).range([0,W]).padding(.25);
@@ -333,9 +345,9 @@ function renderBar2(rd,game){
   const c1=(PCOL[game.p1name]||PCOL.Caitlin).peg,c2=(PCOL[game.p2name]||PCOL.Colban).peg;
   const cats=['Pegged','Hand','Crib'],v1=[rd.p1pegged,rd.p1hand,rd.p1crib],v2=[rd.p2pegged,rd.p2hand,rd.p2crib];
   const maxV=d3.max([...v1,...v2])||1;
-  const {w,h,ml,mr,mt,mb}=bDims('bar2');
-  const svg=d3.select('#bar2').attr('width',w).attr('height',h+mt+mb);
-  const W=w-ml-mr,H=h,g=svg.append('g').attr('transform',`translate(${ml},${mt})`);
+  const svg=barSvg('bar2');
+  const g=svg.append('g').attr('transform',`translate(${BAR_ML},${BAR_MT})`);
+  const W=BAR_W,H=BAR_H;
   const x0=d3.scaleBand().domain(cats).range([0,W]).padding(.25);
   const xi=d3.scaleBand().domain(['p1','p2']).range([0,x0.bandwidth()]).padding(.08);
   const y=d3.scaleLinear().domain([0,maxV*1.15]).range([H,0]);
@@ -362,67 +374,72 @@ function renderPieCharts(allGames){
     const wins=gs.filter(g=>{const l=g.rounds[g.rounds.length-1];return l&&l.s1>=121;}).length;
     return{opp,wins,losses:gs.length-wins,total:gs.length};
   }).filter(d=>d.total>0);
-
   if(!data.length)return;
 
+  // Render all pies in one viewBox SVG so they scale together
   const maxTotal=d3.max(data,d=>d.total);
-  const MIN_R=28, MAX_R=54;
+  const MIN_R=26, MAX_R=46;
   const rScale=d3.scaleSqrt().domain([1,maxTotal]).range([MIN_R,MAX_R]);
+  const PAD=8;
 
-  data.forEach(d=>{
+  // Compute layout: each pie gets a column of width 2*(MAX_R+PAD)
+  const COL=( MAX_R+PAD)*2+2;
+  const VH=MAX_R*2+PAD*2+22; // height: diameter + label space
+  const VW=COL*data.length;
+
+  const svg=d3.create('svg')
+    .attr('viewBox',`0 0 ${VW} ${VH}`)
+    .attr('preserveAspectRatio','xMidYMid meet')
+    .attr('width','100%')
+    .attr('style','display:block;');
+
+  const arc=d3.arc();
+  const pie=d3.pie().value(v=>v).sort(null);
+  const caitlinCol=PCOL.Caitlin.peg;
+
+  data.forEach((d,i)=>{
     const R=rScale(d.total);
-    const S=R*2+40, cx=R+4, cy=R+4;
+    const cx=COL*i+COL/2, cy=MAX_R+PAD;
     const oppCol=(PCOL[d.opp]||PCOL.Colban).peg;
-    const caitlinCol=PCOL.Caitlin.peg;
-
-    const container=document.createElement('div');
-    container.style.cssText='display:flex;flex-direction:column;align-items:center;gap:3px;';
-
-    const svg=d3.create('svg').attr('width',S).attr('height',S+18);
-    const arc=d3.arc().innerRadius(R*.48).outerRadius(R);
-    const pie=d3.pie().value(v=>v).sort(null);
     const slices=pie([d.wins,d.losses]);
-    const cols=[caitlinCol, oppCol];
+    const cols=[caitlinCol,oppCol];
 
-    svg.selectAll('path').data(slices).join('path')
-      .attr('transform',`translate(${cx},${cy})`)
-      .attr('d',arc)
-      .attr('fill',(_, i)=>cols[i])
-      .attr('opacity',(_, i)=>i===0?.9:.6)
-      .attr('stroke','#151a14').attr('stroke-width',1);
+    slices.forEach((s,si)=>{
+      svg.append('path')
+        .attr('transform',`translate(${cx},${cy})`)
+        .attr('d',arc.innerRadius(R*.46).outerRadius(R)(s))
+        .attr('fill',cols[si])
+        .attr('opacity',si===0?.9:.6)
+        .attr('stroke','#151a14').attr('stroke-width',1);
+    });
 
-    // Centre: total games
+    // Total in centre
     svg.append('text').attr('x',cx).attr('y',cy+1)
       .attr('text-anchor','middle').attr('dominant-baseline','middle')
-      .attr('fill','#e8dfc8').attr('font-size',Math.max(8,R*.28)).attr('font-weight','500').attr('font-family',FONT)
+      .attr('fill','#e8dfc8').attr('font-size',Math.max(7,R*.28)).attr('font-weight','500').attr('font-family',FONT)
       .text(d.total);
 
-    // W/L counts around ring
-    if(d.wins>0){
-      const midA=slices[0].startAngle+(slices[0].endAngle-slices[0].startAngle)/2;
-      const lr=R*.72;
-      svg.append('text').attr('x',cx+Math.sin(midA)*lr).attr('y',cy-Math.cos(midA)*lr+1)
+    // W/L labels on slice midpoints
+    slices.forEach((s,si)=>{
+      const n=si===0?d.wins:d.losses;
+      if(!n)return;
+      const midA=(s.startAngle+s.endAngle)/2;
+      const lr=R*.7;
+      svg.append('text')
+        .attr('x',cx+Math.sin(midA)*lr).attr('y',cy-Math.cos(midA)*lr+1)
         .attr('text-anchor','middle').attr('dominant-baseline','middle')
-        .attr('fill','#fff').attr('font-size',Math.max(7,R*.22)).attr('font-weight','bold').attr('font-family',FONT)
-        .text(d.wins+'W');
-    }
-    if(d.losses>0){
-      const midA=slices[1].startAngle+(slices[1].endAngle-slices[1].startAngle)/2;
-      const lr=R*.72;
-      svg.append('text').attr('x',cx+Math.sin(midA)*lr).attr('y',cy-Math.cos(midA)*lr+1)
-        .attr('text-anchor','middle').attr('dominant-baseline','middle')
-        .attr('fill','rgba(255,255,255,.75)').attr('font-size',Math.max(7,R*.22)).attr('font-weight','bold').attr('font-family',FONT)
-        .text(d.losses+'L');
-    }
+        .attr('fill',si===0?'#fff':'rgba(255,255,255,.8)')
+        .attr('font-size',Math.max(6,R*.2)).attr('font-weight','bold').attr('font-family',FONT)
+        .text(n+(si===0?'W':'L'));
+    });
 
-    // Opponent name label below
-    svg.append('text').attr('x',cx).attr('y',cy*2+10)
-      .attr('text-anchor','middle').attr('fill',oppCol).attr('font-size',10).attr('font-family',FONT)
+    // Name below
+    svg.append('text').attr('x',cx).attr('y',cy+MAX_R+12)
+      .attr('text-anchor','middle').attr('fill',oppCol).attr('font-size',9).attr('font-family',FONT)
       .text(d.opp);
-
-    container.appendChild(svg.node());
-    wrap.appendChild(container);
   });
+
+  wrap.appendChild(svg.node());
 }
 
 function renderLineGraph(game){
@@ -438,7 +455,8 @@ function renderLineGraph(game){
   const svg=d3.select('#linegraph')
     .attr('viewBox',`0 0 ${VW} ${VH}`)
     .attr('preserveAspectRatio','xMidYMid meet')
-    .attr('height', VH);   // fixed pixel height prevents vertical growth too
+    .attr('width','100%')
+    .attr('height',null);
 
   const g=svg.append('g').attr('transform',`translate(${ml},${mt})`);
 
@@ -888,8 +906,8 @@ function renderHeatmap(games){
   const svg=d3.select('#heatmap-svg');svg.selectAll('*').remove();
   if(!games.length){svg.append('text').attr('x',12).attr('y',26).attr('fill','#5a5040').attr('font-size',10).attr('font-family',FONT).text('No games.');return;}
 
-  const FIXED_H=400,maxR=d3.max(games,g=>g.maxRound);
-  const LEFT=90,TOP=5,BOT=5;
+  const FIXED_H=850,maxR=d3.max(games,g=>g.maxRound);
+  const LEFT=138,TOP=36,BOT=16;
   const availH=FIXED_H-TOP-BOT;
   const CELL_H=Math.floor((availH-games.length*3)/games.length);
   const ROW_H=CELL_H+3;
