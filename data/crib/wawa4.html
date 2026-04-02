@@ -207,12 +207,12 @@ function placePegs(s1,s2,anim,i1,i2,prev1,prev2){
     pegB2.attr('cx',pb2.x).attr('cy',pb2.y);
   } else {
     // Animated: back peg leaps past front to new score, staggered between players
-    const D=0;
+    const D=200;
 
     // Player 1 animates first, player 2 after a short delay
     // The "lesser" peg (back) overtakes the front peg to land at the new score
     const go1=()=>{
-      pegB1.transition().duration(D).ease(d3.easeCubicIn)
+      pegB1.transition().duration(0).ease(d3.easeCubicIn)
         .attr('cx',pp1.x).attr('cy',pp1.y)
         .on('end',()=>{
           // back peg is now at new score; old front becomes new back
@@ -888,8 +888,8 @@ function renderHeatmap(games){
   const svg=d3.select('#heatmap-svg');svg.selectAll('*').remove();
   if(!games.length){svg.append('text').attr('x',12).attr('y',26).attr('fill','#5a5040').attr('font-size',10).attr('font-family',FONT).text('No games.');return;}
 
-  const FIXED_H=850,maxR=d3.max(games,g=>g.maxRound);
-  const LEFT=138,TOP=36,BOT=16;
+  const FIXED_H=500,maxR=d3.max(games,g=>g.maxRound);
+  const LEFT=60,TOP=36,BOT=16;
   const availH=FIXED_H-TOP-BOT;
   const CELL_H=Math.floor((availH-games.length*3)/games.length);
   const ROW_H=CELL_H+3;
