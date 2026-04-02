@@ -53,7 +53,7 @@ h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:600;color:var
 </head>
 <body>
 <h1>Cribbage</h1>
-<div class="subtitle">An analysis of 25 games of cribbage</div>
+<div class="subtitle">An exploration of a semesters worth of cribbage games</div>
 <div class="filter-bar"><span class="filter-label"></span></div>
 <div class="top-row">
   <div class="panel" name="heatmap">
@@ -62,21 +62,21 @@ h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:600;color:var
     <div class="legend"><span id="leg-l">Opponent</span><canvas class="lgc" id="legend-canvas"></canvas><span id="leg-r">Caitlin leading</span></div>
   </div>
   <div class="panel2" name="cribbageboard">
+    <div class="score-bar">
+        <div class="si">
+          <span class="sr" id="r-detail">Round 0 ·</span>
+            <span class="sd" id="dot1"></span>
+            <span class="sn" id="p1-label">—</span>
+            <span class="sv" id="p1-score">0</span>
+            <span class="sr" id="p1-detail">·</span>
+            <span class="sd" id="dot2"></span>
+            <span class="sn" id="p2-label">·</span>
+            <span class="sv" id="p2-score">0</span>
+        </div>
+    </div>
     <!--<div class="pt">Board position</div>!-->
     <svg id="board-svg" viewBox="-10 30 720 200"></svg>
     <div>
-        <div class="score-bar">
-            <div class="si">
-              <span class="sr" id="r-detail">-</span>
-                <span class="sd" id="dot1"></span>
-                <span class="sn" id="p1-label">—</span>
-                <span class="sv" id="p1-score">0</span>
-                <span class="sr" id="p1-detail">·</span>
-                <span class="sd" id="dot2"></span>
-                <span class="sn" id="p2-label">·</span>
-                <span class="sv" id="p2-score">0</span>
-            </div>
-        </div>
         <div id="cards-content"></div>
     </div>
     
@@ -380,7 +380,7 @@ function activateCell(game,rd,anim){
   document.getElementById('p2-label').textContent=game.p2name;
   document.getElementById('p1-score').textContent=rd.s1;
   document.getElementById('p2-score').textContent=rd.s2;
-  document.getElementById('r-detail').textContent= `round ${rd.round} · `;
+  document.getElementById('r-detail').textContent= `Round ${rd.round} · `;
   renderCards(rd,game);
   renderBar1(rd,game,filteredGames());
   renderBar2(rd,game);
