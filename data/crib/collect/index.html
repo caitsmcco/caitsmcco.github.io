@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Collect Data — Cribbage</title>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Design tokens (shared with dashboard + about) ─────────── */
+    :root {
+      --bg:       #222f1e;
+      --bg2:      #151a14;
+      --bg3:      #232018;
+      --border:   #2e2a22;
+      --text:     #e8dfc8;
+      --muted:    #7a7060;
+      --gold:     #c8973a;
+
+      /* Player accent colours */
+      --pa:       #185fa5;   /* Player A — blue */
+      --pa-hover: #0d3d6e;
+      --pb:       #c0392b;   /* Player B — red  */
+      --pb-hover: #7a1a14;
+
+      /* Card highlights */
+      --next-card:  #c8973a;   /* border on the slot waiting for the next card */
+      --played-card:#8B1A10;   /* border on a slot that has been filled         */
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      min-height: 100vh;
+      padding-bottom: 3rem;
+    }
+
+    /* ── Nav ───────────────────────────────────────────────────── */
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      padding: .6rem 1.8rem;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+    }
+
+    .nav-brand {
+      font-family: 'Playfair Display', serif;
+      color: var(--gold);
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-decoration: none;
+    }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: .85rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      transition: color .15s;
+    }
+
+    nav a:hover  { color: var(--text); }
+    nav a.active { color: var(--gold); }
+
+    /* ── Page header ───────────────────────────────────────────── */
+    .page-header {
+      padding: 0 1.8rem;
+      margin-bottom: 1.5rem;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: .04em;
+      margin-bottom: .2rem;
+    }
+
+    .subtitle {
+      font-size: .85rem;
+      color: var(--muted);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    /* ── Section title ─────────────────────────────────────────── */
+    .pt {
+      font-size: .75rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: .6rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pt::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ── Panel ─────────────────────────────────────────────────── */
+    .panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .9rem 1.1rem;
+    }
+
+    /* ── Main 3-column layout ──────────────────────────────────── */
+    .game-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem;
+      padding: 0 1.8rem;
+      margin-bottom: 1rem;
+    }
+
+    /* ── Name-entry overlay ────────────────────────────────────── */
+    #nameEntry {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .8rem;
+      padding: 1.2rem;
+    }
+
+    #nameEntry p {
+      font-size: .8rem;
+      color: var(--muted);
+    }
+
+    .name-row {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      font-size: .85rem;
+      color: var(--muted);
+    }
+
+    .name-input {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .85rem;
+      padding: .35rem .6rem;
+      width: 130px;
+      outline: none;
+      transition: border-color .15s;
+    }
+
+    .name-input:focus { border-color: var(--gold); }
+
+    /* ── Player panel shared ───────────────────────────────────── */
+    .player-panel { display: flex; flex-direction: column; gap: .6rem; }
+
+    .player-score-row {
+      display: flex;
+      align-items: baseline;
+      gap: .5rem;
+      margin-bottom: .4rem;
+    }
+
+    .player-name-label {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .total-score {
+      font-size: 1.4rem;
+      font-weight: 600;
+      font-family: 'Playfair Display', serif;
+      color: var(--gold);
+    }
+
+    /* Mode selector buttons (peg / hand / crib) */
+    .mode-buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: .4rem;
+    }
+
+    .mode-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .7rem;
+      padding: .35rem .2rem;
+      cursor: pointer;
+      transition: background .12s, color .12s, border-color .12s;
+      text-align: center;
+    }
+
+    .mode-btn:hover:not(:disabled) {
+      border-color: var(--gold);
+      color: var(--text);
+    }
+
+    .mode-btn:disabled {
+      border-color: var(--gold);
+      color: var(--gold);
+      background: var(--bg2);
+      cursor: default;
+    }
+
+    /* Point-addition buttons */
+    .add-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+    }
+
+    .add-btn {
+      border-radius: 5px;
+      border: 1px solid transparent;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .72rem;
+      padding: .38rem 0;
+      cursor: pointer;
+      transition: background .12s;
+    }
+
+    .add-btn-a {
+      background: var(--pa);
+      color: #e8f0fb;
+      border-color: #0d3d6e;
+    }
+
+    .add-btn-a:hover { background: var(--pa-hover); }
+
+    .add-btn-b {
+      background: var(--pb);
+      color: #fbe8e8;
+      border-color: #7a1a14;
+    }
+
+    .add-btn-b:hover { background: var(--pb-hover); }
+
+    .oops-btn {
+      grid-column: span 5;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .72rem;
+      padding: .3rem;
+      cursor: pointer;
+      transition: color .12s, border-color .12s;
+    }
+
+    .oops-btn:hover { color: var(--text); border-color: var(--gold); }
+
+    /* ── Centre column: cards ──────────────────────────────────── */
+    .centre-col { display: flex; flex-direction: column; gap: .6rem; }
+
+    /* Slot buttons — crib cards, cut card, play order */
+    .slot-row {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .slot-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .72rem;
+      padding: .3rem .5rem;
+      cursor: pointer;
+      transition: background .12s, border-color .12s, color .12s;
+      min-width: 44px;
+    }
+
+    .slot-btn:disabled {
+      background: var(--bg2);
+      cursor: default;
+    }
+
+    /* played / filled slot */
+    .slot-btn.filled {
+      background: var(--bg3);
+      border-color: var(--played-card);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    /* Cut card slot */
+    #cc { width: 100%; }
+
+    /* Running total display */
+    .running-total {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      text-align: center;
+      padding: .5rem;
+      font-size: 1.1rem;
+      color: var(--gold);
+    }
+
+    .running-total-label {
+      font-size: .65rem;
+      color: var(--muted);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+
+    /* Go / End Play / New Round buttons */
+    .action-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .action-btn {
+      flex: 1;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .78rem;
+      padding: .5rem;
+      cursor: pointer;
+      transition: color .12s, border-color .12s;
+    }
+
+    .action-btn:hover { color: var(--text); border-color: var(--gold); }
+
+    .action-btn.primary {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    .action-btn.primary:hover { background: #2a1e08; }
+
+    /* ── Deck ──────────────────────────────────────────────────── */
+    .deck-panel {
+      padding: .9rem 1.1rem;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin: 0 1.8rem 1rem;
+    }
+
+    .deck-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+
+    .deck-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .78rem;
+      padding: .28rem .45rem;
+      cursor: pointer;
+      transition: background .1s, border-color .1s, opacity .1s;
+      white-space: nowrap;
+    }
+
+    .deck-btn:disabled { opacity: .22; cursor: default; }
+
+    /* Suit colours */
+    .suit-s { color: #c0c8d8; }
+    .suit-d { color: #e85d4a; }
+    .suit-c { color: #6aaa6a; }
+    .suit-h { color: #e85d4a; }
+
+    .deck-btn:hover:not(:disabled) { border-color: var(--gold); }
+
+    /* ── Footer actions ────────────────────────────────────────── */
+    .footer-actions {
+      display: flex;
+      gap: .8rem;
+      padding: 0 1.8rem;
+    }
+
+    .footer-btn {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .8rem;
+      padding: .5rem 1.2rem;
+      cursor: pointer;
+      transition: color .12s, border-color .12s;
+    }
+
+    .footer-btn:hover { color: var(--text); border-color: var(--gold); }
+
+    .footer-btn.primary { border-color: var(--gold); color: var(--gold); }
+    .footer-btn.primary:hover { background: #2a1e08; }
+
+    /* ── Responsive ────────────────────────────────────────────── */
+    @media (max-width: 800px) {
+      .game-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Navigation ────────────────────────────────────────────── -->
+  <nav>
+    <a class="nav-brand" href="index.html">Cribbage</a>
+    <a href="../index.html">Dashboard</a>
+    <a href="../about/index.html">About Cribbage</a>
+    <a href="index.html" class="active">Collect Data</a>
+  </nav>
+
+  <div class="page-header">
+    <h1>Collect Data</h1>
+    <div class="subtitle">Record a game round by round</div>
+  </div>
+
+  <!-- ── Three-column game area ─────────────────────────────────── -->
+  <div class="game-grid">
+
+    <!-- ── Player A (left) ──────────────────────────────────────── -->
+    <div class="panel player-panel" id="playeraInfo">
+      <div class="pt">Player A</div>
+
+      <div class="player-score-row">
+        <span class="player-name-label" id="playeraName">Player 1</span>
+        <span>:</span>
+        <span class="total-score" id="pointa">0</span>
+      </div>
+
+      <!-- Mode selector -->
+      <div class="mode-buttons">
+        <button class="mode-btn" id="peggedPointsA" disabled onclick="setMode('peggedPoints')">
+          Peg <span id="peggedPointsa">0</span>
+        </button>
+        <button class="mode-btn" id="handPointsA" onclick="setMode('handPoints')">
+          Hand <span id="handPointsa">0</span>
+        </button>
+        <button class="mode-btn" id="cribPointsA" onclick="setMode('cribPoints')">
+          Crib <span id="cribPointsa">0</span>
+        </button>
+        <button class="oops-btn" style="grid-column:auto;" onclick="zero('a')">↺ oops</button>
+      </div>
+
+      <!-- Point buttons -->
+      <div class="add-grid">
+        <button class="add-btn add-btn-a" onclick="add('a',1)">+1</button>
+        <button class="add-btn add-btn-a" onclick="add('a',2)">+2</button>
+        <button class="add-btn add-btn-a" onclick="add('a',3)">+3</button>
+        <button class="add-btn add-btn-a" onclick="add('a',4)">+4</button>
+        <button class="add-btn add-btn-a" onclick="add('a',5)">+5</button>
+        <button class="add-btn add-btn-a" onclick="add('a',6)">+6</button>
+        <button class="add-btn add-btn-a" onclick="add('a',7)">+7</button>
+        <button class="add-btn add-btn-a" onclick="add('a',8)">+8</button>
+        <button class="add-btn add-btn-a" onclick="add('a',9)">+9</button>
+        <button class="add-btn add-btn-a" onclick="add('a',10)">+10</button>
+        <button class="add-btn add-btn-a" onclick="add('a',11)">+11</button>
+        <button class="add-btn add-btn-a" onclick="add('a',12)">+12</button>
+        <button class="add-btn add-btn-a" onclick="add('a',13)">+13</button>
+        <button class="add-btn add-btn-a" onclick="add('a',14)">+14</button>
+        <button class="add-btn add-btn-a" onclick="add('a',15)">+15</button>
+        <button class="add-btn add-btn-a" onclick="add('a',16)">+16</button>
+        <button class="add-btn add-btn-a" onclick="add('a',17)">+17</button>
+        <button class="add-btn add-btn-a" onclick="add('a',18)">+18</button>
+        <button class="add-btn add-btn-a" onclick="add('a',20)">+20</button>
+        <button class="add-btn add-btn-a" onclick="add('a',21)">+21</button>
+        <button class="add-btn add-btn-a" onclick="add('a',22)">+22</button>
+        <button class="add-btn add-btn-a" onclick="add('a',23)">+23</button>
+        <button class="add-btn add-btn-a" onclick="add('a',24)">+24</button>
+        <button class="add-btn add-btn-a" onclick="add('a',28)">+28</button>
+        <button class="add-btn add-btn-a" onclick="add('a',29)">+29</button>
+      </div>
+    </div>
+
+    <!-- ── Centre: card slots ────────────────────────────────────── -->
+    <div class="panel centre-col" id="main">
+
+      <!-- Name entry (shown until New Game is clicked) -->
+      <div id="nameEntry">
+        <p>Enter player names to begin</p>
+        <div class="name-row">
+          <input class="name-input" type="text" id="pNamea" placeholder="Player A">
+          <span style="color:var(--muted)">vs</span>
+          <input class="name-input" type="text" id="pNameb" placeholder="Player B">
+        </div>
+        <button class="action-btn primary" onclick="enterName()">New Game</button>
+      </div>
+
+      <!-- Card slots (hidden until game starts) -->
+      <div id="roundCards" style="display:none;">
+
+        <!-- Crib slots (4 discard cards) -->
+        <div class="pt">Crib</div>
+        <div class="slot-row">
+          <button name="C" class="slot-btn next_button" id="d1" disabled onclick="removeCard('d1')">C</button>
+          <button name="R" class="slot-btn next_button" id="d2" disabled onclick="removeCard('d2')">R</button>
+          <button name="I" class="slot-btn next_button" id="d3" disabled onclick="removeCard('d3')">I</button>
+          <button name="B" class="slot-btn next_button" id="d4" disabled onclick="removeCard('d4')">B</button>
+        </div>
+
+        <!-- Cut card -->
+        <div class="pt" style="margin-top:.4rem;">Cut card</div>
+        <div class="slot-row">
+          <button name="Cut Card" class="slot-btn next_button" id="cc" disabled onclick="removeCard('cc')">Cut Card</button>
+        </div>
+
+        <!-- Played cards -->
+        <div class="pt" style="margin-top:.4rem;">Play order</div>
+        <div class="slot-row" style="flex-direction:column; gap:4px;">
+          <div style="display:flex;gap:5px;">
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p1a')" id="p1a">p1a</button>
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p1b')" id="p1b">p1b</button>
+          </div>
+          <div style="display:flex;gap:5px;">
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p2a')" id="p2a">p2a</button>
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p2b')" id="p2b">p2b</button>
+          </div>
+          <div style="display:flex;gap:5px;">
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p3a')" id="p3a">p3a</button>
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p3b')" id="p3b">p3b</button>
+          </div>
+          <div style="display:flex;gap:5px;">
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p4a')" id="p4a">p4a</button>
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p4b')" id="p4b">p4b</button>
+          </div>
+          <div style="display:flex;gap:5px;">
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p5a')" id="p5a">p5a</button>
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p5b')" id="p5b">p5b</button>
+          </div>
+          <div style="display:flex;gap:5px;">
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p6a')" id="p6a">p6a</button>
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p6b')" id="p6b">p6b</button>
+          </div>
+          <div style="display:flex;gap:5px;">
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p7a')" id="p7a">p7a</button>
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p7b')" id="p7b">p7b</button>
+          </div>
+        </div>
+
+        <!-- GO / End Play -->
+        <div class="action-row" style="margin-top:.6rem;">
+          <button class="action-btn" onclick="addGo('GO')" id="GO">Go</button>
+          <button class="action-btn" onclick="endPlay()">End Play</button>
+        </div>
+
+        <!-- Running total -->
+        <div style="margin-top:.5rem;">
+          <div class="running-total-label">Running total</div>
+          <div class="running-total" id="runningTotal">0</div>
+        </div>
+
+      </div><!-- /roundCards -->
+    </div><!-- /centre-col -->
+
+    <!-- ── Player B (right) ──────────────────────────────────────── -->
+    <div class="panel player-panel" id="playerbInfo">
+      <div class="pt">Player B</div>
+
+      <div class="player-score-row">
+        <span class="player-name-label" id="playerbName">Player 2</span>
+        <span>:</span>
+        <span class="total-score" id="pointb">0</span>
+      </div>
+
+      <!-- Mode selector -->
+      <div class="mode-buttons">
+        <button class="mode-btn" id="peggedPointsB" disabled onclick="setMode('peggedPoints')">
+          Peg <span id="peggedPointsb">0</span>
+        </button>
+        <button class="mode-btn" id="handPointsB" onclick="setMode('handPoints')">
+          Hand <span id="handPointsb">0</span>
+        </button>
+        <button class="mode-btn" id="cribPointsB" onclick="setMode('cribPoints')">
+          Crib <span id="cribPointsb">0</span>
+        </button>
+        <button class="oops-btn" style="grid-column:auto;" onclick="zero('b')">↺ oops</button>
+      </div>
+
+      <!-- Point buttons -->
+      <div class="add-grid">
+        <button class="add-btn add-btn-b" onclick="add('b',1)">+1</button>
+        <button class="add-btn add-btn-b" onclick="add('b',2)">+2</button>
+        <button class="add-btn add-btn-b" onclick="add('b',3)">+3</button>
+        <button class="add-btn add-btn-b" onclick="add('b',4)">+4</button>
+        <button class="add-btn add-btn-b" onclick="add('b',5)">+5</button>
+        <button class="add-btn add-btn-b" onclick="add('b',6)">+6</button>
+        <button class="add-btn add-btn-b" onclick="add('b',7)">+7</button>
+        <button class="add-btn add-btn-b" onclick="add('b',8)">+8</button>
+        <button class="add-btn add-btn-b" onclick="add('b',9)">+9</button>
+        <button class="add-btn add-btn-b" onclick="add('b',10)">+10</button>
+        <button class="add-btn add-btn-b" onclick="add('b',11)">+11</button>
+        <button class="add-btn add-btn-b" onclick="add('b',12)">+12</button>
+        <button class="add-btn add-btn-b" onclick="add('b',13)">+13</button>
+        <button class="add-btn add-btn-b" onclick="add('b',14)">+14</button>
+        <button class="add-btn add-btn-b" onclick="add('b',15)">+15</button>
+        <button class="add-btn add-btn-b" onclick="add('b',16)">+16</button>
+        <button class="add-btn add-btn-b" onclick="add('b',17)">+17</button>
+        <button class="add-btn add-btn-b" onclick="add('b',18)">+18</button>
+        <button class="add-btn add-btn-b" onclick="add('b',20)">+20</button>
+        <button class="add-btn add-btn-b" onclick="add('b',21)">+21</button>
+        <button class="add-btn add-btn-b" onclick="add('b',22)">+22</button>
+        <button class="add-btn add-btn-b" onclick="add('b',23)">+23</button>
+        <button class="add-btn add-btn-b" onclick="add('b',24)">+24</button>
+        <button class="add-btn add-btn-b" onclick="add('b',28)">+28</button>
+        <button class="add-btn add-btn-b" onclick="add('b',29)">+29</button>
+      </div>
+    </div>
+
+  </div><!-- /game-grid -->
+
+  <!-- ── Deck ──────────────────────────────────────────────────── -->
+  <div class="deck-panel">
+    <div class="pt">Deck</div>
+    <div class="deck-row">
+      <button class="deck-btn button_deck" name="1"  onclick="addCard('AS')"  id="AS" ><span class="suit-s">A♠</span></button>
+      <button class="deck-btn button_deck" name="2"  onclick="addCard('2S')"  id="2S" ><span class="suit-s">2♠</span></button>
+      <button class="deck-btn button_deck" name="3"  onclick="addCard('3S')"  id="3S" ><span class="suit-s">3♠</span></button>
+      <button class="deck-btn button_deck" name="4"  onclick="addCard('4S')"  id="4S" ><span class="suit-s">4♠</span></button>
+      <button class="deck-btn button_deck" name="5"  onclick="addCard('5S')"  id="5S" ><span class="suit-s">5♠</span></button>
+      <button class="deck-btn button_deck" name="6"  onclick="addCard('6S')"  id="6S" ><span class="suit-s">6♠</span></button>
+      <button class="deck-btn button_deck" name="7"  onclick="addCard('7S')"  id="7S" ><span class="suit-s">7♠</span></button>
+      <button class="deck-btn button_deck" name="8"  onclick="addCard('8S')"  id="8S" ><span class="suit-s">8♠</span></button>
+      <button class="deck-btn button_deck" name="9"  onclick="addCard('9S')"  id="9S" ><span class="suit-s">9♠</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('10S')" id="10S"><span class="suit-s">10♠</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('JS')"  id="JS" ><span class="suit-s">J♠</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('QS')"  id="QS" ><span class="suit-s">Q♠</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('KS')"  id="KS" ><span class="suit-s">K♠</span></button>
+    </div>
+    <div class="deck-row">
+      <button class="deck-btn button_deck" name="1"  onclick="addCard('AD')"  id="AD" ><span class="suit-d">A♦</span></button>
+      <button class="deck-btn button_deck" name="2"  onclick="addCard('2D')"  id="2D" ><span class="suit-d">2♦</span></button>
+      <button class="deck-btn button_deck" name="3"  onclick="addCard('3D')"  id="3D" ><span class="suit-d">3♦</span></button>
+      <button class="deck-btn button_deck" name="4"  onclick="addCard('4D')"  id="4D" ><span class="suit-d">4♦</span></button>
+      <button class="deck-btn button_deck" name="5"  onclick="addCard('5D')"  id="5D" ><span class="suit-d">5♦</span></button>
+      <button class="deck-btn button_deck" name="6"  onclick="addCard('6D')"  id="6D" ><span class="suit-d">6♦</span></button>
+      <button class="deck-btn button_deck" name="7"  onclick="addCard('7D')"  id="7D" ><span class="suit-d">7♦</span></button>
+      <button class="deck-btn button_deck" name="8"  onclick="addCard('8D')"  id="8D" ><span class="suit-d">8♦</span></button>
+      <button class="deck-btn button_deck" name="9"  onclick="addCard('9D')"  id="9D" ><span class="suit-d">9♦</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('10D')" id="10D"><span class="suit-d">10♦</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('JD')"  id="JD" ><span class="suit-d">J♦</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('QD')"  id="QD" ><span class="suit-d">Q♦</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('KD')"  id="KD" ><span class="suit-d">K♦</span></button>
+    </div>
+    <div class="deck-row">
+      <button class="deck-btn button_deck" name="1"  onclick="addCard('AC')"  id="AC" ><span class="suit-c">A♣</span></button>
+      <button class="deck-btn button_deck" name="2"  onclick="addCard('2C')"  id="2C" ><span class="suit-c">2♣</span></button>
+      <button class="deck-btn button_deck" name="3"  onclick="addCard('3C')"  id="3C" ><span class="suit-c">3♣</span></button>
+      <button class="deck-btn button_deck" name="4"  onclick="addCard('4C')"  id="4C" ><span class="suit-c">4♣</span></button>
+      <button class="deck-btn button_deck" name="5"  onclick="addCard('5C')"  id="5C" ><span class="suit-c">5♣</span></button>
+      <button class="deck-btn button_deck" name="6"  onclick="addCard('6C')"  id="6C" ><span class="suit-c">6♣</span></button>
+      <button class="deck-btn button_deck" name="7"  onclick="addCard('7C')"  id="7C" ><span class="suit-c">7♣</span></button>
+      <button class="deck-btn button_deck" name="8"  onclick="addCard('8C')"  id="8C" ><span class="suit-c">8♣</span></button>
+      <button class="deck-btn button_deck" name="9"  onclick="addCard('9C')"  id="9C" ><span class="suit-c">9♣</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('10C')" id="10C"><span class="suit-c">10♣</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('JC')"  id="JC" ><span class="suit-c">J♣</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('QC')"  id="QC" ><span class="suit-c">Q♣</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('KC')"  id="KC" ><span class="suit-c">K♣</span></button>
+    </div>
+    <div class="deck-row">
+      <button class="deck-btn button_deck" name="1"  onclick="addCard('AH')"  id="AH" ><span class="suit-h">A♥</span></button>
+      <button class="deck-btn button_deck" name="2"  onclick="addCard('2H')"  id="2H" ><span class="suit-h">2♥</span></button>
+      <button class="deck-btn button_deck" name="3"  onclick="addCard('3H')"  id="3H" ><span class="suit-h">3♥</span></button>
+      <button class="deck-btn button_deck" name="4"  onclick="addCard('4H')"  id="4H" ><span class="suit-h">4♥</span></button>
+      <button class="deck-btn button_deck" name="5"  onclick="addCard('5H')"  id="5H" ><span class="suit-h">5♥</span></button>
+      <button class="deck-btn button_deck" name="6"  onclick="addCard('6H')"  id="6H" ><span class="suit-h">6♥</span></button>
+      <button class="deck-btn button_deck" name="7"  onclick="addCard('7H')"  id="7H" ><span class="suit-h">7♥</span></button>
+      <button class="deck-btn button_deck" name="8"  onclick="addCard('8H')"  id="8H" ><span class="suit-h">8♥</span></button>
+      <button class="deck-btn button_deck" name="9"  onclick="addCard('9H')"  id="9H" ><span class="suit-h">9♥</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('10H')" id="10H"><span class="suit-h">10♥</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('JH')"  id="JH" ><span class="suit-h">J♥</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('QH')"  id="QH" ><span class="suit-h">Q♥</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('KH')"  id="KH" ><span class="suit-h">K♥</span></button>
+    </div>
+  </div>
+
+  <!-- ── Footer actions ─────────────────────────────────────────── -->
+  <div class="footer-actions">
+    <button class="footer-btn primary" onclick="newRound()">New Round</button>
+    <button class="footer-btn primary" onclick="endGame()">End Game</button>
+    <button class="footer-btn" onclick="download()">Download CSV</button>
+  </div>
+
+
+  <script>
+    // ═══════════════════════════════════════════════════════════
+    //  STATE
+    // ═══════════════════════════════════════════════════════════
+
+    let mode         = 'peggedPoints';
+    let round        = 1;
+    let runningTotal = 0;
+
+    // Holds all card slots and point values for the current round
+    let play = {
+      cc:'XX', d1:'XX', d2:'XX', d3:'XX', d4:'XX',
+      p1a:'XX', p2a:'XX', p3a:'XX', p4a:'XX', p5a:'XX', p6a:'XX', p7a:'XX',
+      p1b:'XX', p2b:'XX', p3b:'XX', p4b:'XX', p5b:'XX', p6b:'XX', p7b:'XX',
+      handPointsa:0, peggedPointsa:0, cribPointsa:0, EORScorea:0,
+      handPointsb:0, peggedPointsb:0, cribPointsb:0, EORScoreb:0,
+    };
+
+    // Card slot order for odd rounds (Player A deals first)
+    const cardOrder1 = [
+      'd1','d2','d3','d4','cc',
+      'p1a','p1b','p2a','p2b','p3a','p3b',
+      'p4a','p4b','p5a','p5b','p6a','p6b','p7a','p7b',
+    ];
+
+    // Card slot order for even rounds (Player B deals first)
+    const cardOrder2 = [
+      'd1','d2','d3','d4','cc',
+      'p1b','p1a','p2b','p2a','p3b','p3a',
+      'p4b','p4a','p5b','p5a','p6b','p6a','p7b','p7a',
+    ];
+
+    let games    = [];
+    let gameDate = new Date();
+
+    let game = {
+      gameDate: gameDate,
+      pNamea:   'Player 1',
+      pNameb:   'Player 2',
+    };
+
+    let rounds = [];
+
+    // Colours used to highlight the next expected slot and filled slots
+    const nextCardColor   = 'var(--next-card)';
+    const playedCardColor = 'var(--played-card)';
+
+    // The queue of slots to fill — starts as cardOrder1
+    let next = [...cardOrder1];
+
+
+    // ═══════════════════════════════════════════════════════════
+    //  GAME SETUP
+    // ═══════════════════════════════════════════════════════════
+
+    function enterName() {
+      game.pNamea = document.getElementById('pNamea').value.trim() || 'Player 1';
+      game.pNameb = document.getElementById('pNameb').value.trim() || 'Player 2';
+      document.getElementById('nameEntry').style.display   = 'none';
+      document.getElementById('roundCards').style.display  = 'block';
+      document.getElementById('playeraName').textContent   = game.pNamea;
+      document.getElementById('playerbName').textContent   = game.pNameb;
+      // Highlight the first expected slot
+      document.getElementById(next[0]).style.borderColor = nextCardColor;
+    }
+
+
+    // ═══════════════════════════════════════════════════════════
+    //  SCORING MODE
+    // ═══════════════════════════════════════════════════════════
+
+    function setMode(thisMode) {
+      // Re-enable the previously active mode buttons for both players
+      document.getElementById(mode + 'A').disabled = false;
+      document.getElementById(mode + 'B').disabled = false;
+      mode = thisMode;
+      // Disable the newly active mode buttons
+      document.getElementById(thisMode + 'A').disabled = true;
+      document.getElementById(thisMode + 'B').disabled = true;
+    }
+
+
+    // ═══════════════════════════════════════════════════════════
+    //  POINT ENTRY
+    // ═══════════════════════════════════════════════════════════
+
+    function add(player, amount) {
+      const id = mode + player;
+      play[id] += amount;
+      document.getElementById(id).textContent = play[id];
+
+      // Stop adding to the total once a player has won (121)
+      if (play['EORScore' + player] === 120 && amount !== 1) return;
+
+      if (play.EORScorea < 121 && play.EORScoreb < 121) {
+        play['EORScore' + player] += amount;
+        document.getElementById('point' + player).textContent = play['EORScore' + player];
+      }
+    }
+
+    function zero(player) {
+      const id = mode + player;
+      // Subtract the current mode's points from the running EOR total
+      play['EORScore' + player] -= play[id];
+      play[id] = 0;
+      document.getElementById(id).textContent = 0;
+      document.getElementById('point' + player).textContent = play['EORScore' + player];
+    }
+
+
+    // ═══════════════════════════════════════════════════════════
+    //  ROUND MANAGEMENT
+    // ═══════════════════════════════════════════════════════════
+
+    function newRound() {
+      // Record both players' data for this round
+      rounds.push([
+        game.pNamea, game.gameDate, round,
+        play.d1, play.d2, play.cc,
+        play.p1a, play.p2a, play.p3a, play.p4a, play.p5a, play.p6a, play.p7a,
+        play.peggedPointsa, play.handPointsa, play.cribPointsa, play.EORScorea,
+      ]);
+      rounds.push([
+        game.pNameb, game.gameDate, round,
+        play.d3, play.d4, play.cc,
+        play.p1b, play.p2b, play.p3b, play.p4b, play.p5b, play.p6b, play.p7b,
+        play.peggedPointsb, play.handPointsb, play.cribPointsb, play.EORScoreb,
+      ]);
+      round++;
+      resetPlay();
+    }
+
+    function resetPlay() {
+      // Reset all card slots and point values, preserving cumulative EOR scores
+      const keys = Object.keys(play);
+      keys.forEach((k, i) => {
+        // Preserve EORScorea (index 20) and EORScoreb (index 24)
+        if (k === 'EORScorea' || k === 'EORScoreb') return;
+        play[k] = (typeof play[k] === 'number') ? 0 : 'XX';
+      });
+
+      // Re-enable all deck buttons
+      document.querySelectorAll('.button_deck').forEach(b => b.disabled = false);
+
+      // Reset play slot buttons
+      document.querySelectorAll('[name="played"]').forEach(b => {
+        b.disabled = true;
+        b.textContent = b.id;
+        b.style.borderColor = '';
+      });
+
+      // Reset next_button slots
+      document.querySelectorAll('.next_button').forEach(b => {
+        b.disabled = true;
+        b.textContent = b.getAttribute('name') || b.id;
+        b.style.borderColor = '';
+      });
+
+      // Reset point labels
+      document.querySelectorAll('[name="pointlable"]').forEach(b => b.textContent = '0');
+
+      // Rebuild the next queue for the new round
+      next = round % 2 === 0 ? [...cardOrder2] : [...cardOrder1];
+
+      runningTotal = 0;
+      document.getElementById('runningTotal').textContent = 0;
+
+      // Highlight the first expected slot of the new round
+      if (next[0]) document.getElementById(next[0]).style.borderColor = nextCardColor;
+    }
+
+    function endGame() {
+      newRound();
+      games.push({ ...game });
+      game.gameDate = new Date();
+    }
+
+
+    // ═══════════════════════════════════════════════════════════
+    //  CARD ENTRY
+    // ═══════════════════════════════════════════════════════════
+
+    function addCard(card) {
+      const slotId   = next.shift();
+      const cardElem = document.getElementById(card);
+
+      // Update running total for play cards (not crib/cut)
+      if (!['d1','d2','d3','d4','cc'].includes(slotId)) {
+        runningTotal += Number(cardElem.getAttribute('name'));
+        document.getElementById('runningTotal').textContent = runningTotal;
+      }
+
+      // Fill the slot
+      const slotElem = document.getElementById(slotId);
+      slotElem.style.borderColor = playedCardColor;
+      slotElem.setAttribute('alt', card);
+      slotElem.innerHTML = cardElem.innerHTML;
+      slotElem.disabled  = false;
+
+      // Disable the card in the deck
+      cardElem.disabled = true;
+
+      play[slotId] = card;
+
+      // Highlight the next expected slot
+      if (next[0]) document.getElementById(next[0]).style.borderColor = nextCardColor;
+    }
+
+    function addGo(msg) {
+      const slotId  = next.shift();
+      play[slotId]  = msg;
+      const slotElem = document.getElementById(slotId);
+      slotElem.style.borderColor = playedCardColor;
+      slotElem.setAttribute('alt', msg);
+      slotElem.innerHTML = '–';
+      slotElem.disabled  = false;
+      if (next[0]) document.getElementById(next[0]).style.borderColor = nextCardColor;
+    }
+
+    function removeCard(slotId) {
+      const slotElem = document.getElementById(slotId);
+      const card     = slotElem.getAttribute('alt');
+      const cardElem = document.getElementById(card);
+
+      // Restore slot to "next expected" state
+      slotElem.style.borderColor = nextCardColor;
+      next.unshift(slotId);
+      slotElem.setAttribute('alt', slotId);
+      slotElem.textContent = slotId;
+      slotElem.disabled    = true;
+
+      // Re-enable the card in the deck
+      if (cardElem) cardElem.disabled = false;
+
+      play[slotId] = 'XX';
+
+      // The slot that was previously "next" is no longer next
+      if (next[1]) document.getElementById(next[1]).style.borderColor = playedCardColor;
+
+      // Subtract from running total for play cards
+      if (!['d1','d2','d3','d4','cc'].includes(slotId) && cardElem) {
+        runningTotal -= Number(cardElem.getAttribute('name'));
+        document.getElementById('runningTotal').textContent = runningTotal;
+      }
+    }
+
+    function endPlay() {
+      addGo('–');
+      addGo('–');
+      runningTotal = 0;
+      document.getElementById('runningTotal').textContent = 0;
+    }
+
+
+    // ═══════════════════════════════════════════════════════════
+    //  DOWNLOAD
+    // ═══════════════════════════════════════════════════════════
+
+    function download() {
+      // Build CSV with header row
+      const header = 'Name,gameDate,Round,d1,d2,cc,p1,p2,p3,p4,p5,p6,p7,peggedPoints,handPoints,cribPoints,EORScore';
+      const rows   = rounds.map(r => r.join(',')).join('\n');
+      const csv    = header + '\n' + rows;
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.setAttribute('download', 'cribbage_game.csv');
+      a.href = url;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  </script>
+
+</body>
+</html>

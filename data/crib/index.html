@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cribbage Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+
+  <style>
+    /* ── Google Fonts ─────────────────────────────────────────────────────── */
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+    /* ── Reset ────────────────────────────────────────────────────────────── */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* ── Design tokens ────────────────────────────────────────────────────── */
+    :root {
+      --bg:     #222f1e;  /* page background — dark green */
+      --bg2:    #151a14;  /* panel background */
+      --bg3:    #232018;  /* tooltip / elevated surface */
+      --border: #2e2a22;  /* subtle borders */
+      --text:   #e8dfc8;  /* primary text — warm off-white */
+      --muted:  #7a7060;  /* secondary / label text */
+      --gold:   #c8973a;  /* accent — headings, highlights */
+    }
+
+    /* ── Base ─────────────────────────────────────────────────────────────── */
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      min-height: 100vh;
+      padding: 1.4rem 1.8rem;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: .04em;
+      margin-bottom: .12rem;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: var(--muted);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+
+    /* ── Opponent filter pills ────────────────────────────────────────────── */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+
+    .filter-label {
+      font-size: 1rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .pill {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--bg2);
+      font-size: 1rem;
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+      user-select: none;
+      color: var(--muted);
+    }
+
+    /* Colour dot inside each pill */
+    .pill .pdot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+
+    .pill.active {
+      color: var(--text);
+      border-color: #5a5040;
+      background: var(--bg3);
+    }
+
+    .pill:hover {
+      border-color: var(--gold);
+    }
+
+    /* ── Page layout ──────────────────────────────────────────────────────── */
+
+    /* Top row: heatmap (2fr) | cribbage board + cards (3fr) */
+    .top-row {
+      height: 60%;
+      display: grid;
+      grid-template-columns: 2fr 3fr;
+      gap: 1rem;
+      align-items: start;
+      margin-bottom: 1rem;
+    }
+
+    /* Bottom row: 4 equal-width chart panels */
+    .bottom-row {
+      height: 30%;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 1rem;
+      align-items: start;
+    }
+
+    /* Standard panel with background + border */
+    .panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .9rem 1.1rem;
+      height: 100%;
+    }
+
+    /* Borderless panel — used for the cribbage board column */
+    .panel2 {
+      padding: .9rem 1.1rem;
+      height: 100%;
+    }
+
+    /* Section title with trailing rule line */
+    .pt {
+      font-size: 1rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: .7rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pt::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── SVG containers ───────────────────────────────────────────────────── */
+    #heatmap-svg {
+      display: block;
+      width: 100%;
+    }
+
+    #board-svg {
+      width: 100%;
+      display: block;
+    }
+
+    /* ── Score bar (shown above the cribbage board) ───────────────────────── */
+    .score-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: .55rem;
+      font-size: 1rem;
+    }
+
+    /* A single score row: dot + name + value */
+    .si { display: flex; align-items: center; gap: 7px; }
+    .sd { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }  /* colour dot */
+    .sn { color: var(--muted); min-width: 56px; }                          /* player name */
+    .sv { font-weight: 500; }                                              /* score value */
+    .sr { color: var(--muted); font-size: 1rem; margin-left: 3px; }       /* round label */
+
+    /* ── Heatmap legend (colour gradient + labels) ────────────────────────── */
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: .5rem;
+      font-size: 1rem;
+      color: var(--muted);
+    }
+
+    /* Canvas element that holds the rendered gradient */
+    .lgc {
+      width: 90px;
+      height: 7px;
+      border-radius: 3px;
+    }
+
+    /* ── Playing card display ─────────────────────────────────────────────── */
+    .cards-section  { margin-bottom: .55rem; }
+
+    .cards-label {
+      font-size: 1rem;
+      color: var(--muted);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: .3rem;
+    }
+
+    .cards-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+      min-height: 42px;
+    }
+
+    /* Individual playing card */
+    .card {
+      width: 52px;
+      height: 76px;
+      border-radius: 3px;
+      border: 1px solid #3a3020;
+      background: #f5f0e8;         /* cream — like a real card face */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 2px;
+      font-weight: 700;
+      font-family: 'IBM Plex Mono', monospace;
+      transition: transform .15s;
+    }
+
+    .card:hover { transform: translateY(-3px); }
+
+    .card .cr { font-size: 13px; line-height: 1; }  /* rank character */
+    .card .cs { font-size: 15px; line-height: 1; }  /* suit symbol */
+
+    /* Red suits (Hearts, Diamonds) */
+    .card.red .cr, .card.red .cs {
+      color: #c0392b;
+      font-size: 2rem;
+    }
+
+    /* Black suits (Clubs, Spades) */
+    .card.black .cr, .card.black .cs {
+      color: #1a1814;
+      font-size: 2rem;
+    }
+
+    /* Empty card slot — used as a placeholder */
+    .card.blank {
+      background: #1a1814;
+      border-color: #2e2a22;
+    }
+
+    /* Thin vertical rule separating crib cards from played cards */
+    .card-divider {
+      width: 1px;
+      height: 38px;
+      background: var(--border);
+      margin: 0 3px;
+      flex-shrink: 0;
+    }
+
+    /* Shown when no round is selected */
+    .no-sel {
+      color: var(--muted);
+      font-size: 1rem;
+      padding: .4rem 0;
+    }
+
+    /* ── Hover tooltip ────────────────────────────────────────────────────── */
+    .tooltip {
+      position: fixed;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: .4rem .65rem;
+      font-size: 1rem;
+      color: var(--text);
+      pointer-events: none;     /* never blocks mouse events */
+      opacity: 0;
+      transition: opacity .12s;
+      z-index: 100;
+      line-height: 1.75;
+    }
+
+    .tooltip.vis { opacity: 1; }
+
+    /* Gold heading row inside the tooltip */
+    .tth {
+      color: var(--gold);
+      font-weight: 500;
+      margin-bottom: 1px;
+    }
+    /* ── Nav ───────────────────────────────────────────────────── */
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      padding: .6rem 1.8rem;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+    }
+
+    .nav-brand {
+      font-family: 'Playfair Display', serif;
+      color: var(--gold);
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-decoration: none;
+    }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: .85rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      transition: color .15s;
+    }
+
+    nav a:hover  { color: var(--text); }
+    nav a.active { color: var(--gold); }
+
+    /* ── Page header ───────────────────────────────────────────── */
+    .page-header {
+      padding: 0 1.8rem;
+      margin-bottom: 1.5rem;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: .04em;
+      margin-bottom: .2rem;
+    }
+
+    .subtitle {
+      font-size: .85rem;
+      color: var(--muted);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    /* ── Section title ─────────────────────────────────────────── */
+    .pt {
+      font-size: .75rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: .6rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pt::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  </style>
+</head>
+
+<body>
+  <nav>
+    <a class="nav-brand" href="index.html">Cribbage</a>
+    <a href="index.html">Dashboard</a>
+    <a href="about/index.html">About Cribbage</a>
+    <a href="collect/index.html" class="active">Collect Data</a>
+  </nav>
+
+  <div class="page-header">
+    <h1>A Semesters Worth Of Cribbage</h1>
+    <div class="subtitle">Cribbage is a game of pairs, runs, sets of fifteens, mental strategy and luck, but when your playing there is plenty to be curious about...</div>
+  </div>
+
+  <!-- Opponent filter pills — populated dynamically by buildPills() -->
+  <div class="filter-bar">
+    <span class="filter-label"></span>
+  </div>
+
+  <!-- ── Top row: heatmap | board ──────────────────────────────────────── -->
+  <div class="top-row">
+
+    <!-- LEFT: game heatmap -->
+    <div class="panel" name="heatmap">
+      <div class="pt">Games</div>
+      <!-- overflow-x allows horizontal scroll if there are many rounds -->
+      <div style="overflow-x: auto">
+        <svg id="heatmap-svg"></svg>
+      </div>
+      <!-- Colour legend: opponent colour ←→ Caitlin leading -->
+      <div class="legend">
+        <span id="leg-l">Opponent</span>
+        <canvas class="lgc" id="legend-canvas"></canvas>
+        <span id="leg-r">Caitlin leading</span>
+      </div>
+    </div>
+
+    <!-- RIGHT: cribbage board + score display + played cards -->
+    <div class="panel2" name="cribbageboard">
+
+      <!-- Score bar: round number, player names, and current scores -->
+      <div class="score-bar">
+        <div class="si">
+          <span class="sr"  id="r-detail">Round 0 ·</span>
+          <span class="sd"  id="dot1"></span>
+          <span class="sn"  id="p1-label">—</span>
+          <span class="sv"  id="p1-score">0</span>
+          <span class="sr"  id="p1-detail">·</span>
+          <span class="sd"  id="dot2"></span>
+          <span class="sn"  id="p2-label">·</span>
+          <span class="sv"  id="p2-score">0</span>
+        </div>
+      </div>
+
+      <!-- Cribbage board SVG — drawn by D3 on page load -->
+      <svg id="board-svg" viewBox="-10 30 720 200"></svg>
+
+      <!-- Cards played in the selected round -->
+      <div id="cards-content"></div>
+
+    </div>
+  </div>
+
+  <!-- ── Bottom row: chart panels ──────────────────────────────────────── -->
+  <div class="bottom-row">
+
+    <!-- Win / loss record vs each opponent (always shows all games) -->
+    <div class="panel">
+      <div class="pt">Win / loss by opponent</div>
+      <svg id="bar3"></svg>
+    </div>
+
+    <!-- Round score compared to the player's average and best round -->
+    <div class="panel">
+      <div class="pt">Round score vs avg &amp; best</div>
+      <svg id="bar1"></svg>
+      <div id="bar1-empty" style="font-size: 1rem; color: var(--muted);">Select a round</div>
+    </div>
+
+    <!-- Points breakdown: pegged / hand / crib for the selected round -->
+    <div class="panel">
+      <div class="pt">Points by type</div>
+      <svg id="bar2"></svg>
+      <div id="bar2-empty" style="font-size: 1rem; color: var(--muted);">Select a round</div>
+    </div>
+
+  </div>
+
+  <!-- Floating tooltip — positioned by JS on mousemove -->
+  <div class="tooltip" id="tooltip"></div>
+
+
+  <script>
+    // ═══════════════════════════════════════════════════════════════════════
+    //  CONSTANTS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    const CAITLIN   = 'Caitlin';
+    const OPPONENTS = ['Sarah', 'James', 'Colban', 'Darren'];
+
+    // Peg colour (used on the board) and light variant (used for text labels)
+    // for each player.
+    const PCOL = {
+      Caitlin: { peg: '#c0392b', light: '#e85d4a' },
+      Sarah:   { peg: '#6113a5', light: '#a855f7' },
+      Colban:  { peg: '#918000', light: '#fffe56' },
+      James:   { peg: '#185fa5', light: '#3a8fd4' },
+      Darren:  { peg: '#0e7c55', light: '#10b981' },
+    };
+
+    const FONT = 'IBM Plex Mono, monospace';
+
+    // Map CSV suit codes → Unicode suit symbols
+    const SUIT = { H: '♥', D: '♦', C: '♣', S: '♠' };
+
+    // Suits that render in red
+    const RED = new Set(['H', 'D']);
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  HEATMAP COLOUR SCALE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Returns a diverging D3 colour scale for a given opponent.
+     * Negative values (opponent leading) → opponent's peg colour.
+     * Zero → near-black neutral.
+     * Positive values (Caitlin leading) → deep red.
+     *
+     * @param {string} opp  - Opponent name key in PCOL
+     * @param {number} max  - Maximum absolute score difference (sets domain)
+     */
+    function makeScale(opp, max) {
+      return d3.scaleDiverging()
+        .domain([-max, 0, max])
+        .interpolator(
+          d3.interpolateRgbBasis([
+            (PCOL[opp] || PCOL.Colban).peg,  // opponent leading
+            '#1a1814',                         // tied / neutral
+            '#8B1A10',                         // Caitlin leading
+          ])
+        );
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  CRIBBAGE BOARD — geometry constants
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // Internal SVG coordinate space for the board.
+    // The viewBox maps this to the actual rendered size.
+    const BVW = 680, BVH = 380;   // board viewBox dimensions
+    const PX  = 52,  PY  = 10;   // padding
+
+    const bW = BVW - PX * 2;   // usable board width
+    const bH = BVH - PY * 2;   // usable board height
+    const LS = bH / 3;         // vertical lane spacing (3 horizontal tracks)
+
+    // Y coordinates of the three track centre-lines
+    const YT = PY + LS * 0.5;  // top straight    (holes 1–35, going right)
+    const YB = PY + LS * 1.5;  // bottom straight (holes 46–80, going left)
+    const YM = PY + LS * 1;    // middle straight (holes 86–121, going right)
+
+    const XL = PX;           // left edge of the straights
+    const XR = PX + bW;      // right edge of the straights
+
+    const RB  = LS / 2;      // radius of the big right-end U-turn
+    const RS  = LS / 4;      // radius of the small left-end U-turn
+    const SEP = 15;           // lateral offset between the two player lanes
+    const HR  = 4.5;          // hole rim radius (px)
+    const PR  = 7.0;          // peg radius (px)
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  CRIBBAGE BOARD — hole position calculation
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Builds the array of {x, y} hole positions for one player's lane.
+     * The track follows this path:
+     *   Holes  1–35 : top straight, left → right
+     *   Holes 36–45 : big U-turn around the right end (10 holes)
+     *   Holes 46–80 : bottom straight, right → left
+     *   Holes 81–85 : small U-turn around the left end (5 holes)
+     *   Holes 86–121: middle straight, left → right
+     *
+     * @param {number} v - Vertical lane offset (+/- SEP/2) to separate
+     *                     the two player tracks
+     * @returns {Array<{x: number, y: number}>} 121 hole positions
+     */
+    function buildTrack(v) {
+      // Straight segment: n evenly-spaced points from (x0,y) to (x1,y)
+      const straight = (x0, x1, y, n) =>
+        Array.from({ length: n }, (_, i) => ({
+          x: x0 + (x1 - x0) * (i + 0.5) / n,
+          y,
+        }));
+
+      // Arc segment: n evenly-spaced points along a circular arc.
+      // (cx,cy) = centre, r = base radius, ro = radial offset (the lane offset),
+      // a0/a1 = start/end angle in radians.
+      const arc = (cx, cy, r, a0, a1, n, ro) => {
+        const R = r + ro;
+        return Array.from({ length: n }, (_, i) => {
+          const aa = a0 + (a1 - a0) * (i + 0.5) / n;
+          return { x: cx + Math.cos(aa) * R, y: cy + Math.sin(aa) * R };
+        });
+      };
+
+      return [
+        ...straight(XL, XR, YT + v, 35),                                     // holes  1–35
+        ...arc(XR, (YT + YB) / 2, RB, -Math.PI / 2, Math.PI / 2, 10, v),    // holes 36–45
+        ...straight(XR, XL, YB + v, 35),                                     // holes 46–80
+        ...arc(XL, (YB + YM) / 2, RS, Math.PI / 2, 3 * Math.PI / 2, 5, v),  // holes 81–85
+        ...straight(XL, XR, YM + v, 36),                                     // holes 86–121
+      ];
+    }
+
+    // Pre-compute hole positions for both player tracks.
+    // p1 is offset above centre, p2 below.
+    const p1Pts = buildTrack(-SEP / 2);
+    const p2Pts = buildTrack(+SEP / 2);
+
+
+    /**
+     * Returns the {x, y} SVG coordinate for a peg at a given score.
+     * Score 0 returns the start position (left of hole 1).
+     *
+     * @param {number} sc   - Score (0–121)
+     * @param {string} lane - 'p1' or 'p2'
+     */
+    function pegPos(sc, lane) {
+      const pts = lane === 'p1' ? p1Pts : p2Pts;
+      const v   = lane === 'p1' ? -SEP / 2 : SEP / 2;
+      if (sc <= 0) return { x: XL - 14, y: YT + v };  // before hole 1
+      return pts[Math.min(Math.round(sc) - 1, pts.length - 1)];
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  CRIBBAGE BOARD — SVG rendering (runs once on page load)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    const bsvg = d3.select('#board-svg');
+
+    // Board outline path — rounded-rectangle shape enclosing all three lanes.
+    const bR  = XR + RB + SEP + 10;   // right cap edge
+    const bT  = YT - SEP - 12;        // top edge
+    const bBt = YM + SEP + 67;        // bottom edge
+    const bRX = RB + SEP + 45;        // corner radius
+
+    bsvg.append('path')
+      .attr('d',
+        `M ${8} ${bT}
+         L ${bR - bRX} ${bT}
+         Q ${bR} ${bT} ${bR} ${bT + bRX}
+         L ${bR} ${bBt - bRX}
+         Q ${bR} ${bBt} ${bR - bRX} ${bBt}
+         L ${8} ${bBt}
+         Q ${8 - 12} ${bBt} ${8 - 12} ${bBt - 12}
+         L ${8 - 12} ${bT + 12}
+         Q ${8 - 12} ${bT} ${8} ${bT} Z`
+      )
+      .attr('fill', '#2c2010')
+      .attr('stroke', '#1c1408')
+      .attr('stroke-width', 2);
+
+    /**
+     * Builds an SVG arc path string from angle a0 to a1
+     * around centre (cx, cy) with radius r.
+     */
+    const arcPath = (cx, cy, r, a0, a1) => {
+      const x0 = cx + Math.cos(a0) * r, y0 = cy + Math.sin(a0) * r;
+      const x1 = cx + Math.cos(a1) * r, y1 = cy + Math.sin(a1) * r;
+      const largeArc = Math.abs(a1 - a0) > Math.PI ? 1 : 0;
+      const sweep    = a1 > a0 ? 1 : 0;
+      return `M ${x0} ${y0} A ${r} ${r} 0 ${largeArc} ${sweep} ${x1} ${y1}`;
+    };
+
+    // Draw the guide lines (track channels) for both player lanes.
+    const gd = bsvg.append('g')
+      .attr('stroke', '#3a2e18')
+      .attr('stroke-width', 0.6)
+      .attr('fill', 'none');
+
+    [-SEP / 2, SEP / 2].forEach(v => {
+      // Three horizontal straights
+      gd.append('line').attr('x1', XL).attr('y1', YT + v).attr('x2', XR).attr('y2', YT + v);
+      gd.append('line').attr('x1', XL).attr('y1', YB + v).attr('x2', XR).attr('y2', YB + v);
+      gd.append('line').attr('x1', XL).attr('y1', YM + v).attr('x2', XR).attr('y2', YM + v);
+      // Two U-turn arcs
+      gd.append('path').attr('d', arcPath(XR, (YT + YB) / 2, RB + v, -Math.PI / 2, Math.PI / 2));
+      gd.append('path').attr('d', arcPath(XL, (YB + YM) / 2, RS + v, Math.PI / 2, 3 * Math.PI / 2));
+    });
+
+    // Draw the holes for both player tracks.
+    // Each hole is a small dark circle with a lighter rim ring.
+    [p1Pts, p2Pts].forEach(pts => {
+      const g = bsvg.append('g');
+      // Outer rim
+      g.selectAll('.rim').data(pts).join('circle')
+        .attr('class', 'rim')
+        .attr('cx', d => d.x).attr('cy', d => d.y)
+        .attr('r', HR + 1.4)
+        .attr('fill', '#5a4020');
+      // Inner hole
+      g.selectAll('.h').data(pts).join('circle')
+        .attr('class', 'h')
+        .attr('cx', d => d.x).attr('cy', d => d.y)
+        .attr('r', HR)
+        .attr('fill', '#140e04');
+    });
+
+    // Draw score number labels at every 5th hole along the p1 track.
+    [5, 10, 15, 20, 25, 30, 35, 50, 55, 60, 65, 70, 75, 80, 90, 95, 100, 105, 110, 115, 120, 121]
+      .forEach(n => {
+        if (n < 1 || n > 121) return;
+        const p = p1Pts[n - 1];
+        if (!p) return;
+        // Offset label above the top straight, below the bottom straight,
+        // and above the middle straight.
+        const dy = n <= 35  ? -(HR + 5.5)
+                 : n <= 80  ? (HR - 15)
+                 : -(HR + 5.5);
+        bsvg.append('text')
+          .attr('x', p.x).attr('y', p.y + dy)
+          .attr('text-anchor', 'middle')
+          .attr('dominant-baseline', 'middle')
+          .attr('fill', '#f0d880')
+          .attr('font-size', 7)
+          .attr('font-family', FONT)
+          .text(n);
+      });
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  CRIBBAGE BOARD — peg elements (updated dynamically)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // Two main pegs (one per player)
+    const peg1 = bsvg.append('circle').attr('r', PR).attr('stroke', 'rgba(0,0,0,.3)').attr('stroke-width', 1);
+    const peg2 = bsvg.append('circle').attr('r', PR).attr('stroke', 'rgba(0,0,0,.3)').attr('stroke-width', 1);
+
+    // Specular highlight overlays — small bright circles to give pegs a 3-D look
+    const sh1 = bsvg.append('circle').attr('r', PR * 0.27).attr('fill', 'rgba(255,255,255,.36)').attr('pointer-events', 'none');
+    const sh2 = bsvg.append('circle').attr('r', PR * 0.27).attr('fill', 'rgba(255,255,255,.36)').attr('pointer-events', 'none');
+
+    // Player initial labels rendered on top of each peg
+    const lb1 = bsvg.append('text')
+      .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+      .attr('fill', '#fff').attr('font-size', 6.5).attr('font-weight', 'bold')
+      .attr('font-family', FONT).attr('pointer-events', 'none');
+    const lb2 = bsvg.append('text')
+      .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+      .attr('fill', '#fff').attr('font-size', 6.5).attr('font-weight', 'bold')
+      .attr('font-family', FONT).attr('pointer-events', 'none');
+
+
+    /**
+     * Updates the fill colour of both pegs and the colour dots in the score bar.
+     *
+     * @param {string} c1 - Hex colour for player 1
+     * @param {string} c2 - Hex colour for player 2
+     */
+    function setPegColors(c1, c2) {
+      peg1.attr('fill', c1);
+      peg2.attr('fill', c2);
+      document.getElementById('dot1').style.background = c1;
+      document.getElementById('dot2').style.background = c2;
+    }
+
+
+    /**
+     * Moves both pegs (and their highlights + labels) to the positions
+     * corresponding to the given scores.
+     *
+     * @param {number}  s1   - Player 1 score
+     * @param {number}  s2   - Player 2 score
+     * @param {boolean} anim - Whether to animate the transition
+     * @param {string}  i1   - Player 1 label text (usually first initial)
+     * @param {string}  i2   - Player 2 label text
+     */
+    function placePegs(s1, s2, anim, i1, i2) {
+      const pp1 = pegPos(s1, 'p1');
+      const pp2 = pegPos(s2, 'p2');
+      const dur = 240;  // animation duration in ms
+
+      // Helper: set cx/cy on a circle, optionally animated
+      const upd = (sel, x, y) => anim
+        ? sel.transition().duration(dur).ease(d3.easeCubicInOut).attr('cx', x).attr('cy', y)
+        : sel.attr('cx', x).attr('cy', y);
+
+      upd(peg1, pp1.x, pp1.y);
+      upd(peg2, pp2.x, pp2.y);
+      upd(sh1,  pp1.x - PR * 0.25, pp1.y - PR * 0.25);  // highlight offset upper-left
+      upd(sh2,  pp2.x - PR * 0.25, pp2.y - PR * 0.25);
+
+      // Helper: set x/y on a text element, optionally animated
+      const updT = (sel, x, y) => anim
+        ? sel.transition().duration(dur).ease(d3.easeCubicInOut).attr('x', x).attr('y', y)
+        : sel.attr('x', x).attr('y', y);
+
+      updT(lb1, pp1.x, pp1.y + 0.5);
+      updT(lb2, pp2.x, pp2.y + 0.5);
+
+      if (i1 !== undefined) lb1.text(i1);
+      if (i2 !== undefined) lb2.text(i2);
+    }
+
+    // Initialise both pegs at the start position with placeholder colours
+    placePegs(0, 0, false, 'C', '?');
+    setPegColors(PCOL.Caitlin.peg, '#555');
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  PLAYING CARDS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Parses a card string from the CSV (e.g. "AH", "10S", "--").
+     * Returns null for empty / no-play entries.
+     *
+     * @param {string} s - Raw CSV card string
+     * @returns {{ rank: string, suit: string, red: boolean } | null}
+     */
+    function parseCard(s) {
+      if (!s || s.trim() === '--') return null;
+      s = s.trim();
+      return {
+        rank: s.slice(0, -1),         // everything before the last character
+        suit: s.slice(-1),            // last character is the suit code
+        red:  RED.has(s.slice(-1)),   // true for Hearts and Diamonds
+      };
+    }
+
+
+    /**
+     * Returns an HTML string for a single playing card.
+     * Blank cards (null input) render as empty dark placeholders.
+     *
+     * @param {object|null} c - Card object from parseCard(), or null
+     * @returns {string} HTML string
+     */
+    function cardEl(c) {
+      if (!c) return '<div class="card blank"></div>';
+      return `<div class="card ${c.red ? 'red' : 'black'}">
+                <span class="cr">${c.rank}</span>
+                <span class="cs">${SUIT[c.suit] || c.suit}</span>
+              </div>`;
+    }
+
+
+    /**
+     * Renders the cards played in a round into #cards-content.
+     * Shows: flipped card, each player's played cards, and the crib cards.
+     *
+     * @param {object|null} rd   - Round data object (null = no selection)
+     * @param {object|null} game - Game data object
+     */
+    function renderCards(rd, game) {
+      const el = document.getElementById('cards-content');
+
+      if (!rd || !game) {
+        el.innerHTML = '<div class="no-sel">Hover or click a round</div>';
+        return;
+      }
+
+      // Pull the raw CSV rows for this specific round
+      const rawRows = game._raw.filter(r => +r.Round === rd.round);
+      const byP = Object.fromEntries(rawRows.map(r => [r.Name, r]));
+      const r1 = byP[game.p1name];
+      const r2 = byP[game.p2name];
+
+      // Extract card arrays from a player's row
+      const pCards = row => row
+        ? ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7'].map(f => parseCard(row[f])).filter(Boolean)
+        : [];
+      const cCards = row => row
+        ? [parseCard(row.d1), parseCard(row.d2)].filter(Boolean)
+        : [];
+      const fCards = row => row
+        ? [parseCard(row.cc)].filter(Boolean)
+        : [];
+
+      const c1 = (PCOL[game.p1name] || PCOL.Caitlin).light;
+      const c2 = (PCOL[game.p2name] || PCOL.Colban).light;
+
+      el.innerHTML = `
+        <div class="cards-section">
+          <div class="cards-label">Flipped Card</div>
+          <div class="cards-row">
+            ${fCards(r1).map(c => cardEl(c)).join('') || '<span style="font-size:1rem;color:var(--muted)">—</span>'}
+          </div>
+        </div>
+
+        <div class="cards-section">
+          <div class="cards-label" style="color:${c1}">${game.p1name}</div>
+          <div class="cards-row">
+            ${pCards(r1).map(c => cardEl(c)).join('') || '<span style="font-size:1rem;color:var(--muted)">—</span>'}
+          </div>
+        </div>
+
+        <div class="cards-section">
+          <div class="cards-label" style="color:${c2}">${game.p2name}</div>
+          <div class="cards-row">
+            ${pCards(r2).map(c => cardEl(c)).join('') || '<span style="font-size:1rem;color:var(--muted)">—</span>'}
+          </div>
+        </div>
+
+        <div class="cards-section">
+          <div class="cards-label">Crib</div>
+          <div class="cards-row">
+            ${cCards(r1).map(c => cardEl(c)).join('')}
+            <span style="font-size:1rem;color:${c1};margin-right:1px">|</span>
+            <div class="card-divider"></div>
+            <span style="font-size:1rem;color:${c2};margin-right:1px">|</span>
+            ${cCards(r2).map(c => cardEl(c)).join('')}
+          </div>
+        </div>`;
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  BAR CHARTS — shared utilities
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /** Removes all child elements from a chart SVG. */
+    function clearChart(id) {
+      d3.select('#' + id).selectAll('*').remove();
+    }
+
+    /**
+     * Returns layout dimensions for a chart by measuring its container element.
+     * Falls back to 240px wide if the element has not yet been laid out.
+     *
+     * @param {string} id - Element id of the SVG's parent container
+     * @returns {{ w, h, ml, mr, mt, mb }} Width, height, and margin values
+     */
+    function bDims(id) {
+      const e = document.getElementById(id);
+      const w = e.getBoundingClientRect().width || 240;
+      return { w, h: 150, ml: 28, mr: 6, mt: 10, mb: 26 };
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  BAR CHART 1 — Round score vs average vs personal best
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Draws a grouped bar chart comparing:
+     *   - Average points per round (across all filtered games)
+     *   - Points scored in the currently selected round
+     *   - Best single-round score across all filtered games
+     * for both players side by side.
+     *
+     * @param {object}   rd       - Selected round data
+     * @param {object}   game     - Game containing the selected round
+     * @param {object[]} allGames - All games currently in the filter
+     */
+    function renderBar1(rd, game, allGames) {
+      clearChart('bar1');
+      const empty = document.getElementById('bar1-empty');
+
+      if (!rd) { empty.style.display = 'block'; return; }
+      empty.style.display = 'none';
+
+      // Calculate points gained in each round (score delta from previous round)
+      function roundPts(g) {
+        return g.rounds.map(r => {
+          const prev = g.rounds.find(x => x.round === r.round - 1);
+          return {
+            round: r.round,
+            pts1: r.s1 !== null ? (r.s1 - (prev ? prev.s1 || 0 : 0)) : null,
+            pts2: r.s2 !== null ? (r.s2 - (prev ? prev.s2 || 0 : 0)) : null,
+          };
+        });
+      }
+
+      const all = allGames.flatMap(g => roundPts(g));
+
+      // Averages and bests across all games
+      const avg1  = d3.mean(all.filter(r => r.pts1 !== null), r => r.pts1) || 0;
+      const avg2  = d3.mean(all.filter(r => r.pts2 !== null), r => r.pts2) || 0;
+      const best1 = d3.max(all.filter(r => r.pts1 !== null), r => r.pts1)  || 0;
+      const best2 = d3.max(all.filter(r => r.pts2 !== null), r => r.pts2)  || 0;
+
+      // Points for the currently selected round
+      const tp = roundPts(game).find(r => r.round === rd.round) || { pts1: 0, pts2: 0 };
+      const t1 = tp.pts1 || 0;
+      const t2 = tp.pts2 || 0;
+
+      const c1 = (PCOL[game.p1name] || PCOL.Caitlin).peg;
+      const c2 = (PCOL[game.p2name] || PCOL.Colban).peg;
+
+      const { w, h, ml, mr, mt, mb } = bDims('bar1');
+      const svg = d3.select('#bar1').attr('width', w).attr('height', h + mt + mb);
+      const W = w - ml - mr, H = h;
+      const g = svg.append('g').attr('transform', `translate(${ml},${mt})`);
+
+      // Three category groups; two bars each (p1, p2)
+      const cats = ['Avg', 'This', 'Best'];
+      const v1   = [avg1, t1, best1];
+      const v2   = [avg2, t2, best2];
+      const maxV = d3.max([...v1, ...v2]) || 1;
+
+      const x0 = d3.scaleBand().domain(cats).range([0, W]).padding(0.25);
+      const xi = d3.scaleBand().domain(['p1', 'p2']).range([0, x0.bandwidth()]).padding(0.08);
+      const y  = d3.scaleLinear().domain([0, maxV * 1.15]).range([H, 0]);
+
+      // X axis (category labels)
+      g.append('g').attr('transform', `translate(0,${H})`)
+        .call(d3.axisBottom(x0).tickSize(0))
+        .call(ax => {
+          ax.select('.domain').remove();
+          ax.selectAll('text').attr('fill', '#7a7060').attr('font-size', 7.5).attr('font-family', FONT);
+        });
+
+      // Y axis with dashed grid lines
+      g.append('g')
+        .call(d3.axisLeft(y).ticks(4).tickSize(-W))
+        .call(ax => {
+          ax.select('.domain').remove();
+          ax.selectAll('.tick line').attr('stroke', '#2e2a22').attr('stroke-dasharray', '2,2');
+          ax.selectAll('text').attr('fill', '#7a7060').attr('font-size', 6.5).attr('font-family', FONT);
+        });
+
+      // Draw bars and value labels
+      cats.forEach((cat, ci) => {
+        [[v1[ci], c1, 'p1'], [v2[ci], c2, 'p2']].forEach(([val, col, key]) => {
+          if (val <= 0) return;
+          const bx = x0(cat) + xi(key);
+          const bw = xi.bandwidth();
+          const by = y(val);
+          const bh = H - by;
+          g.append('rect')
+            .attr('x', bx).attr('y', by)
+            .attr('width', bw).attr('height', Math.max(bh, 0))
+            .attr('fill', col).attr('rx', 2).attr('opacity', 0.85);
+          g.append('text')
+            .attr('x', bx + bw / 2).attr('y', by - 3)
+            .attr('text-anchor', 'middle')
+            .attr('fill', col).attr('font-size', 6).attr('font-family', FONT)
+            .text(Math.round(val * 10) / 10);
+        });
+      });
+
+      // Player legend (top-right corner of chart)
+      [[game.p1name, c1], [game.p2name, c2]].forEach(([n, col], i) => {
+        g.append('rect').attr('x', W - 65).attr('y', i * 12).attr('width', 6).attr('height', 6).attr('fill', col).attr('rx', 1);
+        g.append('text').attr('x', W - 56).attr('y', i * 12 + 5.5).attr('fill', '#7a7060').attr('font-size', 6.5).attr('font-family', FONT).text(n);
+      });
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  BAR CHART 2 — Points by type (pegged / hand / crib)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Draws a grouped bar chart showing how each player's points were earned
+     * (pegging, hand count, crib count) for the selected round.
+     *
+     * @param {object} rd   - Selected round data
+     * @param {object} game - Game containing the selected round
+     */
+    function renderBar2(rd, game) {
+      clearChart('bar2');
+      const empty = document.getElementById('bar2-empty');
+
+      if (!rd) { empty.style.display = 'block'; return; }
+      empty.style.display = 'none';
+
+      const c1 = (PCOL[game.p1name] || PCOL.Caitlin).peg;
+      const c2 = (PCOL[game.p2name] || PCOL.Colban).peg;
+
+      const cats = ['Pegged', 'Hand', 'Crib'];
+      const v1   = [rd.p1pegged, rd.p1hand, rd.p1crib];
+      const v2   = [rd.p2pegged, rd.p2hand, rd.p2crib];
+      const maxV = d3.max([...v1, ...v2]) || 1;
+
+      const { w, h, ml, mr, mt, mb } = bDims('bar2');
+      const svg = d3.select('#bar2').attr('width', w).attr('height', h + mt + mb);
+      const W = w - ml - mr, H = h;
+      const g = svg.append('g').attr('transform', `translate(${ml},${mt})`);
+
+      const x0 = d3.scaleBand().domain(cats).range([0, W]).padding(0.25);
+      const xi = d3.scaleBand().domain(['p1', 'p2']).range([0, x0.bandwidth()]).padding(0.08);
+      const y  = d3.scaleLinear().domain([0, maxV * 1.15]).range([H, 0]);
+
+      g.append('g').attr('transform', `translate(0,${H})`)
+        .call(d3.axisBottom(x0).tickSize(0))
+        .call(ax => {
+          ax.select('.domain').remove();
+          ax.selectAll('text').attr('fill', '#7a7060').attr('font-size', 7.5).attr('font-family', FONT);
+        });
+
+      g.append('g')
+        .call(d3.axisLeft(y).ticks(4).tickSize(-W))
+        .call(ax => {
+          ax.select('.domain').remove();
+          ax.selectAll('.tick line').attr('stroke', '#2e2a22').attr('stroke-dasharray', '2,2');
+          ax.selectAll('text').attr('fill', '#7a7060').attr('font-size', 6.5).attr('font-family', FONT);
+        });
+
+      cats.forEach((cat, ci) => {
+        [[v1[ci], c1, 'p1'], [v2[ci], c2, 'p2']].forEach(([val, col, key]) => {
+          if (val <= 0) return;
+          const bx = x0(cat) + xi(key);
+          const bw = xi.bandwidth();
+          const by = y(val);
+          const bh = H - by;
+          g.append('rect')
+            .attr('x', bx).attr('y', by)
+            .attr('width', bw).attr('height', Math.max(bh, 0))
+            .attr('fill', col).attr('rx', 2).attr('opacity', 0.85);
+          g.append('text')
+            .attr('x', bx + bw / 2).attr('y', by - 3)
+            .attr('text-anchor', 'middle')
+            .attr('fill', col).attr('font-size', 6).attr('font-family', FONT)
+            .text(val);
+        });
+      });
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  BAR CHART 3 — Win / loss record by opponent
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Draws a grouped bar chart showing Caitlin's win and loss counts
+     * against each opponent. Always uses allGames (ignores the active filter)
+     * so the overall record is always visible.
+     *
+     * @param {object[]} allGames - Complete game dataset
+     */
+    function renderBar3(allGames) {
+      clearChart('bar3');
+
+      const opps = [...new Set(allGames.map(g => g.p2name))];
+
+      const data = opps.map(opp => {
+        const gs   = allGames.filter(g => g.p2name === opp);
+        const wins = gs.filter(g => {
+          const l = g.rounds[g.rounds.length - 1];
+          return l && l.s1 >= 121;  // Caitlin reached 121
+        }).length;
+        return { opp, wins, losses: gs.length - wins, total: gs.length };
+      });
+
+      const { w, h, ml, mr, mt, mb } = bDims('bar3');
+      const svg = d3.select('#bar3').attr('width', w).attr('height', h + mt + mb);
+      const W = w - ml - mr, H = h;
+      const g = svg.append('g').attr('transform', `translate(${ml},${mt})`);
+
+      const maxT = d3.max(data, d => d.total) || 1;
+      const x    = d3.scaleBand().domain(opps).range([0, W]).padding(0.3);
+      const y    = d3.scaleLinear().domain([0, maxT + 0.5]).range([H, 0]);
+      const xi   = d3.scaleBand().domain(['w', 'l']).range([0, x.bandwidth()]).padding(0.06);
+
+      g.append('g').attr('transform', `translate(0,${H})`)
+        .call(d3.axisBottom(x).tickSize(0))
+        .call(ax => {
+          ax.select('.domain').remove();
+          ax.selectAll('text').attr('fill', '#7a7060').attr('font-size', 7).attr('font-family', FONT);
+        });
+
+      g.append('g')
+        .call(d3.axisLeft(y).ticks(maxT + 1).tickFormat(d => Number.isInteger(d) ? d : '').tickSize(-W))
+        .call(ax => {
+          ax.select('.domain').remove();
+          ax.selectAll('.tick line').attr('stroke', '#2e2a22').attr('stroke-dasharray', '2,2');
+          ax.selectAll('text').attr('fill', '#7a7060').attr('font-size', 6.5).attr('font-family', FONT);
+        });
+
+      data.forEach(d => {
+        const oppCol = (PCOL[d.opp] || PCOL.Colban).peg;
+        // Wins in red, losses in the opponent's colour
+        [[d.wins, '#c0392b', 'w'], [d.losses, oppCol, 'l']].forEach(([val, fill, key]) => {
+          if (val <= 0) return;
+          const bx = x(d.opp) + xi(key);
+          const bw = xi.bandwidth();
+          const by = y(val);
+          const bh = H - by;
+          g.append('rect')
+            .attr('x', bx).attr('y', by)
+            .attr('width', bw).attr('height', Math.max(bh, 0))
+            .attr('fill', fill).attr('rx', 2).attr('opacity', 0.85);
+          g.append('text')
+            .attr('x', bx + bw / 2).attr('y', by - 3)
+            .attr('text-anchor', 'middle')
+            .attr('fill', fill).attr('font-size', 6.5).attr('font-family', FONT)
+            .text(val);
+        });
+      });
+
+      // Legend
+      g.append('rect').attr('x', W - 50).attr('y', 0).attr('width', 6).attr('height', 6).attr('fill', '#c0392b').attr('rx', 1);
+      g.append('text').attr('x', W - 41).attr('y', 5.5).attr('fill', '#7a7060').attr('font-size', 6.5).attr('font-family', FONT).text('Wins');
+      g.append('rect').attr('x', W - 50).attr('y', 11).attr('width', 6).attr('height', 6).attr('fill', '#555').attr('rx', 1);
+      g.append('text').attr('x', W - 41).attr('y', 16.5).attr('fill', '#7a7060').attr('font-size', 6.5).attr('font-family', FONT).text('Loss');
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  APPLICATION STATE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    let allGames     = [];    // all parsed game objects
+    let activeFilter = null;  // opponent name string, or null for "all games"
+    let selectedCell = null;  // { gameDate, round } of the clicked heatmap cell, or null
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  DATA LOADING
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Load and parse the CSV, then render the dashboard.
+     *
+     * Expected CSV columns:
+     *   Name, gameDate, Round, d1, d2, cc, p1-p7 (played cards),
+     *   peggedPoints, handPoints, cribPoints, EORScore
+     */
+    d3.csv('edited.csv').then(raw => {
+      // Group all rows by gameDate — each unique date is one game session
+      const grouped = d3.groups(raw, d => d.gameDate);
+
+      allGames = grouped.map(([date, rows]) => {
+        const names  = [...new Set(rows.map(d => d.Name))];
+        const p1name = CAITLIN;
+        const p2name = names.find(p => p !== CAITLIN) || names[1] || 'Unknown';
+        const maxRound = d3.max(rows, d => +d.Round);
+
+        // Parse a numeric field, returning 0 for blank/missing values
+        const pv = v => v && v.trim() !== '' ? +v : 0;
+
+        const rounds = d3.range(1, maxRound + 1).map(r => {
+          const rr  = rows.filter(d => +d.Round === r);
+          const byP = Object.fromEntries(rr.map(d => [d.Name, d]));
+          const r1  = byP[p1name];
+          const r2  = byP[p2name];
+
+          return {
+            round:     r,
+            s1:        r1 ? (+r1.EORScore || 0) : null,  // Caitlin's cumulative score
+            s2:        r2 ? (+r2.EORScore || 0) : null,  // Opponent's cumulative score
+            p1pegged:  r1 ? pv(r1.peggedPoints) : 0,
+            p2pegged:  r2 ? pv(r2.peggedPoints) : 0,
+            p1hand:    r1 ? pv(r1.handPoints)   : 0,
+            p2hand:    r2 ? pv(r2.handPoints)   : 0,
+            p1crib:    r1 ? pv(r1.cribPoints)   : 0,
+            p2crib:    r2 ? pv(r2.cribPoints)   : 0,
+          };
+        });
+
+        return { date, p1name, p2name, rounds, maxRound, _raw: rows };
+      });
+
+      buildPills();
+      render();
+    });
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  FILTER PILLS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Populates the .filter-bar with one pill per opponent who appears in
+     * the data, plus an "All" pill that clears the filter.
+     */
+    function buildPills() {
+      const bar = document.querySelector('.filter-bar');
+
+      const mk = (label, opp, col) => {
+        const p = document.createElement('div');
+        p.className  = 'pill' + (opp === null ? ' active' : '');
+        p.dataset.opp = opp === null ? '__all__' : opp;
+        p.innerHTML  = `<span class="pdot" style="background:${col}"></span>${label}`;
+
+        p.addEventListener('click', () => {
+          activeFilter = opp;
+          selectedCell = null;  // clear any selected heatmap cell on filter change
+          document.querySelectorAll('.pill').forEach(el =>
+            el.classList.toggle('active', el.dataset.opp === (opp === null ? '__all__' : opp))
+          );
+          render();
+        });
+
+        bar.appendChild(p);
+      };
+
+      mk('All', null, '#5a5040');
+      OPPONENTS.forEach(opp => {
+        if (allGames.some(g => g.p2name === opp)) {
+          mk(opp, opp, (PCOL[opp] || PCOL.Colban).peg);
+        }
+      });
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  RENDER HELPERS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /** Returns the subset of allGames matching the active opponent filter. */
+    function filteredGames() {
+      return activeFilter
+        ? allGames.filter(g => g.p2name === activeFilter)
+        : allGames;
+    }
+
+
+    /**
+     * Full re-render: heatmap, win/loss chart, and board reset.
+     * Called when the filter changes or on initial load.
+     */
+    function render() {
+      const games = filteredGames();
+      renderHeatmap(games);
+      renderBar3(allGames);  // win/loss always shows all games, regardless of filter
+
+      const first = games[0];
+      if (first) {
+        const last = first.rounds[first.rounds.length - 1];
+        setPegColors(
+          (PCOL[first.p1name] || PCOL.Caitlin).peg,
+          (PCOL[first.p2name] || PCOL.Colban).peg
+        );
+        placePegs(last.s1 ?? 0, last.s2 ?? 0, false, first.p1name[0], first.p2name[0]);
+        document.getElementById('p1-label').textContent = first.p1name;
+        document.getElementById('p2-label').textContent = first.p2name;
+        document.getElementById('p1-score').textContent = last.s1 ?? 0;
+        document.getElementById('p2-score').textContent = last.s2 ?? 0;
+        document.getElementById('r-detail').textContent = '·';
+        document.getElementById('p1-detail').textContent = '·';
+        renderLegend(activeFilter || first.p2name, games);
+        document.getElementById('leg-l').textContent = activeFilter || first.p2name;
+      }
+
+      renderCards(null, null);
+
+      // Clear the round-specific charts and show their placeholder messages
+      clearChart('bar1');
+      document.getElementById('bar1-empty').style.display = 'block';
+      clearChart('bar2');
+      document.getElementById('bar2-empty').style.display = 'block';
+    }
+
+
+    /**
+     * Updates all views to reflect a newly hovered or clicked round cell.
+     * Called on heatmap hover (if no cell is selected) and on click.
+     *
+     * @param {object}  game - Game that contains the round
+     * @param {object}  rd   - Round data object
+     * @param {boolean} anim - Whether to animate the peg movement
+     */
+    function activateCell(game, rd, anim) {
+      setPegColors(
+        (PCOL[game.p1name] || PCOL.Caitlin).peg,
+        (PCOL[game.p2name] || PCOL.Colban).peg
+      );
+      placePegs(rd.s1, rd.s2, anim, game.p1name[0], game.p2name[0]);
+
+      document.getElementById('p1-label').textContent = game.p1name;
+      document.getElementById('p2-label').textContent = game.p2name;
+      document.getElementById('p1-score').textContent = rd.s1;
+      document.getElementById('p2-score').textContent = rd.s2;
+      document.getElementById('r-detail').textContent = `Round ${rd.round} · `;
+
+      renderCards(rd, game);
+      renderBar1(rd, game, filteredGames());
+      renderBar2(rd, game);
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  HEATMAP
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Renders the game heatmap into #heatmap-svg.
+     *
+     * Rows = games (date + time label on the left).
+     * Columns = rounds (numbered header across the top).
+     * Cell colour = score difference that round, using makeScale().
+     * Cell text = +/- numeric difference.
+     * Click to select/deselect; hover previews the round without locking.
+     *
+     * @param {object[]} games - Array of game objects to display
+     */
+    function renderHeatmap(games) {
+      const svg = d3.select('#heatmap-svg');
+      svg.selectAll('*').remove();
+
+      if (!games.length) {
+        svg.append('text')
+          .attr('x', 12).attr('y', 26)
+          .attr('fill', '#5a5040').attr('font-size', 10).attr('font-family', FONT)
+          .text('No games.');
+        return;
+      }
+
+      // Layout constants
+      const FIXED_H = 850;  // total SVG height — rows scale to fill this
+      const maxR    = d3.max(games, g => g.maxRound);
+      const LEFT    = 138;  // left margin reserved for date/time labels
+      const TOP     = 36;   // top margin for column headers
+      const BOT     = 16;   // bottom margin
+
+      const availH  = FIXED_H - TOP - BOT;
+      const CELL_H  = Math.floor((availH - games.length * 3) / games.length);
+      const ROW_H   = CELL_H + 3;    // row height including gap
+      const CELL_W  = 60;
+      const COL_W   = CELL_W + 3;    // column width including gap
+
+      const totalW = LEFT + maxR * COL_W + 38;
+      const totalH = TOP + games.length * ROW_H + BOT;
+
+      svg.attr('width', totalW).attr('height', Math.max(totalH, FIXED_H));
+
+      // Max absolute score difference — used to normalise the colour scale
+      const globalMax = d3.max(
+        games.flatMap(g => g.rounds.map(r =>
+          r.s1 !== null && r.s2 !== null ? Math.abs(r.s1 - r.s2) : 0
+        ))
+      ) || 1;
+
+      // Column headers: round numbers
+      d3.range(1, maxR + 1).forEach(r => {
+        svg.append('text')
+          .attr('x', LEFT + (r - 1) * COL_W + CELL_W / 2)
+          .attr('y', TOP - 10)
+          .attr('text-anchor', 'middle')
+          .attr('fill', '#5a5040').attr('font-size', 13).attr('font-family', FONT)
+          .text(r);
+      });
+
+      svg.append('text')
+        .attr('x', LEFT + (maxR / 2) * COL_W).attr('y', TOP - 23)
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#3a3020').attr('font-size', 15).attr('font-family', FONT)
+        .attr('letter-spacing', 2)
+        .text('ROUND');
+
+      const tip = document.getElementById('tooltip');
+
+      // Render one row per game
+      games.forEach((game, gi) => {
+        const gy      = TOP + gi * ROW_H;
+        const oppCol  = (PCOL[game.p2name] || PCOL.Colban).peg;
+        const cScale  = makeScale(game.p2name, globalMax);
+        const ds      = new Date(game.date).toLocaleDateString('en-CA',  { month: 'short', day: 'numeric', year: '2-digit' });
+        const ts      = new Date(game.date).toLocaleTimeString('en-CA',  { hour: '2-digit', minute: '2-digit' });
+
+        // Invisible background rect that highlights the whole row on hover
+        const rowBg = svg.append('rect')
+          .attr('x', 0).attr('y', gy - 1)
+          .attr('width', totalW).attr('height', CELL_H + 2)
+          .attr('fill', 'transparent').attr('rx', 3)
+          .style('transition', 'fill .1s');
+
+        // Date label (top line)
+        svg.append('text')
+          .attr('x', LEFT - 8).attr('y', gy + CELL_H / 2 - 7)
+          .attr('text-anchor', 'end').attr('dominant-baseline', 'middle')
+          .attr('fill', '#e8dfc8').attr('font-size', 13).attr('font-family', FONT)
+          .text(ds);
+
+        // Time label (bottom line, coloured by opponent)
+        svg.append('text')
+          .attr('x', LEFT - 8).attr('y', gy + CELL_H / 2 + 6)
+          .attr('text-anchor', 'end').attr('dominant-baseline', 'middle')
+          .attr('fill', oppCol).attr('font-size', 11).attr('font-family', FONT)
+          .text(ts);
+
+        // Render each round cell in this row
+        game.rounds.forEach(rd => {
+          const cx    = LEFT + (rd.round - 1) * COL_W;
+          const diff  = (rd.s1 !== null && rd.s2 !== null) ? (rd.s1 - rd.s2) : null;
+          const fill  = diff !== null ? cScale(diff) : '#1a1814';
+          const isSel = selectedCell
+            && selectedCell.gameDate === game.date
+            && selectedCell.round   === rd.round;
+
+          const cell = svg.append('rect')
+            .attr('x', cx).attr('y', gy)
+            .attr('width', CELL_W).attr('height', CELL_H).attr('rx', 3)
+            .attr('fill', fill)
+            .attr('stroke', isSel ? '#c8973a' : '#0f0e0c')
+            .attr('stroke-width', isSel ? 2 : 1.5)
+            .attr('cursor', diff !== null ? 'pointer' : 'default');
+
+          if (diff !== null) {
+            // Diff label inside the cell
+            svg.append('text')
+              .attr('x', cx + CELL_W / 2).attr('y', gy + CELL_H / 2 + 1)
+              .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+              .attr('fill', `rgba(255,255,255,${Math.abs(diff) > globalMax * 0.25 ? 0.58 : 0.22})`)
+              .attr('font-size', Math.min(CELL_H * 0.38, 20)).attr('font-family', FONT)
+              .attr('pointer-events', 'none')
+              .text(diff > 0 ? `+${diff}` : diff);
+
+            const node = cell.node();
+
+            // Hover: highlight row + show tooltip; preview round if nothing is selected
+            node.addEventListener('mouseenter', () => {
+              rowBg.attr('fill', 'rgba(255,255,255,.04)');
+              cell.attr('stroke', '#c8973a').attr('stroke-width', 2);
+              if (!selectedCell) activateCell(game, rd, true);
+
+              const c2l = (PCOL[game.p2name] || PCOL.Colban).light;
+              tip.innerHTML = `
+                <div class="tth">Round ${rd.round} — ${ds}</div>
+                <div style="color:${(PCOL[game.p1name] || PCOL.Caitlin).peg}">
+                  ${game.p1name}: ${rd.s1} &nbsp;(peg ${rd.p1pegged} · hand ${rd.p1hand}${rd.p1crib ? ` · crib ${rd.p1crib}` : ''})
+                </div>
+                <div style="color:${c2l}">
+                  ${game.p2name}: ${rd.s2} &nbsp;(peg ${rd.p2pegged} · hand ${rd.p2hand}${rd.p2crib ? ` · crib ${rd.p2crib}` : ''})
+                </div>
+                <div style="color:#5a5040;margin-top:1px">diff ${diff > 0 ? '+' : ''}${diff}</div>`;
+              tip.classList.add('vis');
+            });
+
+            // Track tooltip position with mouse
+            node.addEventListener('mousemove', e => {
+              tip.style.left = (e.clientX + 14) + 'px';
+              tip.style.top  = (e.clientY - 10) + 'px';
+            });
+
+            // Mouse leave: restore previous selection state
+            node.addEventListener('mouseleave', () => {
+              rowBg.attr('fill', 'transparent');
+              const iS = selectedCell
+                && selectedCell.gameDate === game.date
+                && selectedCell.round   === rd.round;
+              cell.attr('stroke', iS ? '#c8973a' : '#0f0e0c').attr('stroke-width', iS ? 2 : 1.5);
+              tip.classList.remove('vis');
+
+              // If a cell is selected, snap back to showing that round
+              if (selectedCell) {
+                const sg = allGames.find(g => g.date === selectedCell.gameDate);
+                const sr = sg && sg.rounds.find(r => r.round === selectedCell.round);
+                if (sg && sr) activateCell(sg, sr, false);
+              }
+            });
+
+            // Click: toggle selection on this cell
+            node.addEventListener('click', () => {
+              const iS = selectedCell
+                && selectedCell.gameDate === game.date
+                && selectedCell.round   === rd.round;
+
+              if (iS) {
+                selectedCell = null;  // deselect
+              } else {
+                selectedCell = { gameDate: game.date, round: rd.round };
+                activateCell(game, rd, true);
+              }
+              renderHeatmap(filteredGames());  // re-render to update gold outlines
+            });
+          }
+        });
+
+        // Winner star — shown after the last round cell of the winning game
+        const last = game.rounds[game.rounds.length - 1];
+        if (last && last.s1 !== null && last.s2 !== null) {
+          const winner = last.s1 >= 121 ? game.p1name : last.s2 >= 121 ? game.p2name : null;
+          if (winner) {
+            const wc = winner === game.p1name
+              ? (PCOL[game.p1name] || PCOL.Caitlin).light
+              : (PCOL[game.p2name] || PCOL.Colban).light;
+            svg.append('text')
+              .attr('x', LEFT + game.maxRound * COL_W + 5)
+              .attr('y', gy + CELL_H / 2 + 1)
+              .attr('dominant-baseline', 'middle')
+              .attr('fill', wc).attr('font-size', 18).attr('font-family', FONT)
+              .text('★');
+          }
+        }
+      });
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  HEATMAP LEGEND
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Draws a horizontal colour gradient on the legend <canvas>.
+     * Left = opponent leading, right = Caitlin leading.
+     *
+     * @param {string}   opp   - Opponent name (used to pick the colour scale)
+     * @param {object[]} games - Current game set (used to compute max diff)
+     */
+    function renderLegend(opp, games) {
+      const gmax = d3.max(
+        games.flatMap(g => g.rounds.map(r =>
+          r.s1 !== null && r.s2 !== null ? Math.abs(r.s1 - r.s2) : 0
+        ))
+      ) || 1;
+
+      const scale = makeScale(opp, gmax);
+      const lc    = document.getElementById('legend-canvas');
+      lc.width    = 90;
+      lc.height   = 7;
+
+      const lctx = lc.getContext('2d');
+      for (let i = 0; i < 90; i++) {
+        // Map pixel position to the [-gmax, gmax] domain
+        lctx.fillStyle = scale((i / 89) * 2 * gmax - gmax);
+        lctx.fillRect(i, 0, 1, 7);
+      }
+    }
+
+  </script>
+</body>
+</html>
