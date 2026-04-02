@@ -59,7 +59,7 @@ h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:600;color:var
 <div class="top-row">
   <div class="panel" name="heatmap">
     <div class="pt">Games</span></div>
-    <div style="overflow-x:auto"><svg id="heatmap-svg" viewBox="0 0 1000 500"></svg></div>
+    <div style="overflow-x:auto"><svg id="heatmap-svg" viewBox="0 0 1000 1000"></svg></div>
     <div class="legend"><span id="leg-l">Opponent</span><canvas class="lgc" id="legend-canvas"></canvas><span id="leg-r">Caitlin leading</span></div>
   </div>
   <div class="panel2" name="cribbageboard">
@@ -889,7 +889,7 @@ function renderHeatmap(games){
   if(!games.length){svg.append('text').attr('x',12).attr('y',26).attr('fill','#5a5040').attr('font-size',10).attr('font-family',FONT).text('No games.');return;}
 
   const FIXED_H=500,maxR=d3.max(games,g=>g.maxRound);
-  const LEFT=60,TOP=36,BOT=16;
+  const LEFT=90,TOP=10,BOT=10;
   const availH=FIXED_H-TOP-BOT;
   const CELL_H=Math.floor((availH-games.length*3)/games.length);
   const ROW_H=CELL_H+3;
