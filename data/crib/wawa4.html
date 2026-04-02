@@ -59,8 +59,9 @@ h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:600;color:var
 <div class="top-row">
   <div class="panel" name="heatmap">
     <div class="pt">Games</span></div>
-    <div style="overflow-x:auto"><svg id="heatmap-svg" viewBox="0 0 1000 1000"></svg></div>
+    <div style="overflow-x:auto"><svg id="heatmap-svg" viewBox="0 0 1000 500"></svg></div>
     <div class="legend"><span id="leg-l">Opponent</span><canvas class="lgc" id="legend-canvas"></canvas><span id="leg-r">Caitlin leading</span></div>
+    <div id="line-panel"><div class="pt">Score progression</div><svg id="linegraph" style="width:100%;display:block;overflow:hidden;"></svg><div id="line-empty" style="font-size:1rem;color:var(--muted);">Select a round</div></div>
   </div>
   <div class="panel2" name="cribbageboard">
     <!--<div class="pt">Board position</div>!-->
@@ -84,7 +85,6 @@ h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:600;color:var
 </div>
 </div>
 <div class="bottom-row">
-    <div class="panel" id="line-panel"><div class="pt">Score progression</div><svg id="linegraph" style="width:100%;display:block;overflow:hidden;"></svg><div id="line-empty" style="font-size:1rem;color:var(--muted);">Select a round</div></div>
     <div class="panel"><div class="pt">Win / loss by opponent</div><div id="pie-wrap" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;"></div></div>
     <div class="panel"><div class="pt">Round score vs avg &amp; best</div><svg id="bar1"></svg><div id="bar1-empty" style="font-size:1rem;color:var(--muted);">Select a round</div></div>
     <div class="panel"><div class="pt">Points by type</div><svg id="bar2"></svg><div id="bar2-empty" style="font-size:1rem;color:var(--muted);">Select a round</div></div>
@@ -207,12 +207,12 @@ function placePegs(s1,s2,anim,i1,i2,prev1,prev2){
     pegB2.attr('cx',pb2.x).attr('cy',pb2.y);
   } else {
     // Animated: back peg leaps past front to new score, staggered between players
-    const D=200;
+    const D=0;
 
     // Player 1 animates first, player 2 after a short delay
     // The "lesser" peg (back) overtakes the front peg to land at the new score
     const go1=()=>{
-      pegB1.transition().duration(0).ease(d3.easeCubicIn)
+      pegB1.transition().duration(D).ease(d3.easeCubicIn)
         .attr('cx',pp1.x).attr('cy',pp1.y)
         .on('end',()=>{
           // back peg is now at new score; old front becomes new back
@@ -888,8 +888,8 @@ function renderHeatmap(games){
   const svg=d3.select('#heatmap-svg');svg.selectAll('*').remove();
   if(!games.length){svg.append('text').attr('x',12).attr('y',26).attr('fill','#5a5040').attr('font-size',10).attr('font-family',FONT).text('No games.');return;}
 
-  const FIXED_H=500,maxR=d3.max(games,g=>g.maxRound);
-  const LEFT=90,TOP=10,BOT=10;
+  const FIXED_H=400,maxR=d3.max(games,g=>g.maxRound);
+  const LEFT=90,TOP=5,BOT=5;
   const availH=FIXED_H-TOP-BOT;
   const CELL_H=Math.floor((availH-games.length*3)/games.length);
   const ROW_H=CELL_H+3;
