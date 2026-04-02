@@ -24,7 +24,6 @@ h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:600;color:var
 .panel2{padding:.9rem 1.1rem;height:100%}
 .pt{font-size:1rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.7rem;display:flex;align-items:center;gap:8px;}
 .pt::after{content:'';flex:1;height:1px;background:var(--border);}
-#heatmap-svg{display:block;width:100%;}
 #board-svg{width:100%;display:block;}
 .score-bar{display:flex;flex-direction:column;gap:4px;margin-top:.55rem;font-size:1rem;}
 .si{display:flex;align-items:center;gap:7px;}
@@ -60,7 +59,7 @@ h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:600;color:var
 <div class="top-row">
   <div class="panel" name="heatmap">
     <div class="pt">Games</span></div>
-    <div style="overflow-x:auto"><svg id="heatmap-svg"></svg></div>
+    <div><svg id="heatmap-svg" style="width:100%;display:block;"></svg></div>
     <div class="legend"><span id="leg-l">Opponent</span><canvas class="lgc" id="legend-canvas"></canvas><span id="leg-r">Caitlin leading</span></div>
   </div>
   <div class="panel2" name="cribbageboard">
@@ -904,25 +903,40 @@ function activateCell(game,rd,anim){
 
 function renderHeatmap(games){
   const svg=d3.select('#heatmap-svg');svg.selectAll('*').remove();
-  if(!games.length){svg.append('text').attr('x',12).attr('y',26).attr('fill','#5a5040').attr('font-size',10).attr('font-family',FONT).text('No games.');return;}
+  if(!games.length){
+    svg.attr('viewBox','0 0 400 60').attr('preserveAspectRatio','xMidYMid meet');
+    svg.append('text').attr('x',12).attr('y',30).attr('fill','#5a5040').attr('font-size',12).attr('font-family',FONT).text('No games.');
+    return;
+  }
 
-  const FIXED_H=850,maxR=d3.max(games,g=>g.maxRound);
-  const LEFT=138,TOP=36,BOT=16;
-  const availH=FIXED_H-TOP-BOT;
-  const CELL_H=Math.floor((availH-games.length*3)/games.length);
-  const ROW_H=CELL_H+3;
-  const CELL_W=60,COL_W=CELL_W+3;
-  const totalW=LEFT+maxR*COL_W+38,totalH=TOP+games.length*ROW_H+BOT;
-  svg.attr('width',totalW).attr('height',Math.max(totalH,FIXED_H));
+  const maxR=d3.max(games,g=>g.maxRound);
+
+  // Internal coordinate space — all sizes are in these units, viewBox scales to container
+  const LEFT=112, TOP=36, BOT=16, RIGHT=28;
+  // Cell width: fit maxR columns across a comfortable internal width
+  const INNER_W=540; // internal canvas width available for cells+label
+  const CELL_W=Math.floor((INNER_W-LEFT-RIGHT)/maxR);
+  const COL_W=CELL_W; // no gap needed — stroke provides separation
+  // Row height: scale to fit all games in a fixed internal height
+  const INNER_H=Math.max(games.length*28, games.length*14+100);
+  const CELL_H=Math.floor((INNER_H-TOP-BOT)/games.length)-2;
+  const ROW_H=CELL_H+2;
+  const totalW=LEFT+maxR*COL_W+RIGHT;
+  const totalH=TOP+games.length*ROW_H+BOT;
+
+  svg
+    .attr('viewBox',`0 0 ${totalW} ${totalH}`)
+    .attr('preserveAspectRatio','xMidYMid meet');
 
   const globalMax=d3.max(games.flatMap(g=>g.rounds.map(r=>r.s1!==null&&r.s2!==null?Math.abs(r.s1-r.s2):0)))||1;
 
+  // Column headers
   d3.range(1,maxR+1).forEach(r=>{
-    svg.append('text').attr('x',LEFT+(r-1)*COL_W+CELL_W/2).attr('y',TOP-10)
-      .attr('text-anchor','middle').attr('fill','#5a5040').attr('font-size',13).attr('font-family',FONT).text(r);
+    svg.append('text').attr('x',LEFT+(r-.5)*COL_W).attr('y',TOP-10)
+      .attr('text-anchor','middle').attr('fill','#5a5040').attr('font-size',10).attr('font-family',FONT).text(r);
   });
-  svg.append('text').attr('x',LEFT+(maxR/2)*COL_W).attr('y',TOP-23)
-    .attr('text-anchor','middle').attr('fill','#3a3020').attr('font-size',15).attr('font-family',FONT).attr('letter-spacing',2).text('ROUND');
+  svg.append('text').attr('x',LEFT+(maxR/2)*COL_W).attr('y',TOP-22)
+    .attr('text-anchor','middle').attr('fill','#3a3020').attr('font-size',9).attr('font-family',FONT).attr('letter-spacing',2).text('ROUND');
 
   const tip=document.getElementById('tooltip');
 
@@ -930,40 +944,42 @@ function renderHeatmap(games){
     const gy=TOP+gi*ROW_H;
     const oppCol=(PCOL[game.p2name]||PCOL.Colban).peg;
     const cScale=makeScale(game.p2name,globalMax);
-    const ds=new Date(game.date).toLocaleDateString('en-CA',{month:'short',day:'numeric',year:"2-digit"});
+    const ds=new Date(game.date).toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'2-digit'});
     const ts=new Date(game.date).toLocaleTimeString('en-CA',{hour:'2-digit',minute:'2-digit'});
 
-    // Row highlight background
     const rowBg=svg.append('rect').attr('x',0).attr('y',gy-1).attr('width',totalW).attr('height',CELL_H+2)
       .attr('fill','transparent').attr('rx',3).style('transition','fill .1s');
 
-    svg.append('text').attr('x',LEFT-8).attr('y',gy+CELL_H/2-7).attr('text-anchor','end').attr('dominant-baseline','middle')
-      .attr('fill','#e8dfc8').attr('font-size',13).attr('font-family',FONT).text(ds);
-    svg.append('text').attr('x',LEFT-8).attr('y',gy+CELL_H/2+6).attr('text-anchor','end').attr('dominant-baseline','middle')
-      .attr('fill','#e8dfc8').attr('fill',oppCol).attr('font-size',11).attr('font-family',FONT).text(ts);
-    //svg.append('text').attr('x',LEFT-8).attr('y',gy+CELL_H/2+6).attr('text-anchor','end').attr('dominant-baseline','middle')
-    //  .attr('fill',oppCol).attr('font-size',10).attr('font-family',FONT).text('vs '+game.p2name);
+    svg.append('text').attr('x',LEFT-5).attr('y',gy+CELL_H/2-5)
+      .attr('text-anchor','end').attr('dominant-baseline','middle')
+      .attr('fill','#e8dfc8').attr('font-size',9).attr('font-family',FONT).text(ds);
+    svg.append('text').attr('x',LEFT-5).attr('y',gy+CELL_H/2+6)
+      .attr('text-anchor','end').attr('dominant-baseline','middle')
+      .attr('fill',oppCol).attr('font-size',8).attr('font-family',FONT).text(ts);
+
     game.rounds.forEach(rd=>{
       const cx=LEFT+(rd.round-1)*COL_W;
       const diff=(rd.s1!==null&&rd.s2!==null)?(rd.s1-rd.s2):null;
       const fill=diff!==null?cScale(diff):'#1a1814';
       const isSel=selectedCell&&selectedCell.gameDate===game.date&&selectedCell.round===rd.round;
 
-      const cell=svg.append('rect').attr('x',cx).attr('y',gy).attr('width',CELL_W).attr('height',CELL_H).attr('rx',3)
-        .attr('fill',fill).attr('stroke',isSel?'#c8973a':'#0f0e0c').attr('stroke-width',isSel?2:1.5)
+      const cell=svg.append('rect')
+        .attr('x',cx+1).attr('y',gy).attr('width',CELL_W-2).attr('height',CELL_H).attr('rx',3)
+        .attr('fill',fill).attr('stroke',isSel?'#c8973a':'#0f0e0c').attr('stroke-width',isSel?1.5:1)
         .attr('cursor',diff!==null?'pointer':'default');
 
       if(diff!==null){
+        const fontSize=Math.min(CELL_H*.42, CELL_W*.28, 13);
         svg.append('text').attr('x',cx+CELL_W/2).attr('y',gy+CELL_H/2+1)
           .attr('text-anchor','middle').attr('dominant-baseline','middle')
-          .attr('fill',`rgba(255,255,255,${Math.abs(diff)>globalMax*.25?.58:.22})`)
-          .attr('font-size',Math.min(CELL_H*.38,20)).attr('font-family',FONT).attr('pointer-events','none')
+          .attr('fill',`rgba(255,255,255,${Math.abs(diff)>globalMax*.25?.62:.25})`)
+          .attr('font-size',fontSize).attr('font-family',FONT).attr('pointer-events','none')
           .text(diff>0?`+${diff}`:diff);
 
         const node=cell.node();
         node.addEventListener('mouseenter',()=>{
           rowBg.attr('fill','rgba(255,255,255,.04)');
-          cell.attr('stroke','#c8973a').attr('stroke-width',2);
+          cell.attr('stroke','#c8973a').attr('stroke-width',1.5);
           if(!selectedCell) activateCell(game,rd,true);
           const c2l=(PCOL[game.p2name]||PCOL.Colban).light;
           tip.innerHTML=`<div class="tth">Round ${rd.round} — ${ds}</div>
@@ -976,7 +992,7 @@ function renderHeatmap(games){
         node.addEventListener('mouseleave',()=>{
           rowBg.attr('fill','transparent');
           const iS=selectedCell&&selectedCell.gameDate===game.date&&selectedCell.round===rd.round;
-          cell.attr('stroke',iS?'#c8973a':'#0f0e0c').attr('stroke-width',iS?2:1.5);
+          cell.attr('stroke',iS?'#c8973a':'#0f0e0c').attr('stroke-width',iS?1.5:1);
           tip.classList.remove('vis');
           if(selectedCell){
             const sg=allGames.find(g=>g.date===selectedCell.gameDate);
@@ -998,8 +1014,8 @@ function renderHeatmap(games){
       const winner=last.s1>=121?game.p1name:last.s2>=121?game.p2name:null;
       if(winner){
         const wc=winner===game.p1name?(PCOL[game.p1name]||PCOL.Caitlin).light:(PCOL[game.p2name]||PCOL.Colban).light;
-        svg.append('text').attr('x',LEFT+game.maxRound*COL_W+5).attr('y',gy+CELL_H/2+1)
-          .attr('dominant-baseline','middle').attr('fill',wc).attr('font-size',18).attr('font-family',FONT).text('★');
+        svg.append('text').attr('x',LEFT+game.maxRound*COL_W+10).attr('y',gy+CELL_H/2+1)
+          .attr('dominant-baseline','middle').attr('fill',wc).attr('font-size',12).attr('font-family',FONT).text('★');
       }
     }
   });
