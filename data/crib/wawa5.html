@@ -1260,6 +1260,51 @@
         </div>`;
       }
 
+      // Score breakdown tooltip data stored on element via data attributes
+      // Returns HTML for the hand score pill, with miscount badge if needed
+      function handPill(recorded, scored, color, pillId) {
+        const pct = Math.round((recorded / barMax) * 100);
+        const hasMiscount = scored && scored.total !== recorded;
+        const diff = scored ? recorded - scored.total : 0;
+
+        // Serialise breakdown for the tooltip
+        const tipData = scored ? JSON.stringify({
+          fifteens: scored.fifteens,
+          pairs:    scored.pairs,
+          runs:     scored.runs,
+          flush:    scored.flush,
+          nob:      scored.nob,
+          calc:     scored.total,
+          recorded,
+          color,
+        }) : null;
+
+        const badgeColor = diff > 0 ? '#d4a030' : '#8888cc';
+        const badgeSign  = diff > 0 ? `+${diff}` : `${diff}`;
+        const badge = hasMiscount
+          ? `<span class="miscount-badge"
+               style="border-color:${badgeColor};color:${badgeColor};"
+               data-tip='${tipData}'
+               id="${pillId}-badge">⚠ ${badgeSign}</span>`
+          : '';
+
+        if (recorded <= 0 && !hasMiscount) return `
+          <div class="sc-pill sc-pill--zero">
+            <span class="sc-pill-label">hand</span>
+            <div class="sc-pill-bar"><div class="sc-pill-fill" style="width:0%"></div></div>
+            <span class="sc-pill-val" style="color:var(--muted)">0</span>
+          </div>`;
+
+        return `
+          <div class="sc-pill ${hasMiscount ? 'sc-pill--miscount' : ''}"
+               style="--pill-color:${color};"
+               ${tipData ? `data-tip='${tipData}' id="${pillId}"` : ''}>
+            <span class="sc-pill-label">hand${badge}</span>
+            <div class="sc-pill-bar"><div class="sc-pill-fill" style="width:${pct}%"></div></div>
+            <span class="sc-pill-val">${recorded}</span>
+          </div>`;
+      }
+
       function scorePill(label, value, color) {
         const pct = Math.round((value / barMax) * 100);
         if (value <= 0) return `
@@ -1296,7 +1341,7 @@
         // Miscount indicator shown inline next to the total
         const hasMiscount = scored && scored.total !== hand;
         const diff = hasMiscount ? hand - scored.total : 0;
-        const badgeColor = diff > 0 ? colorLite : '#FFFFFF';
+        const badgeColor = diff > 0 ? '#color' : '#8888cc';
         const badgeSign  = diff > 0 ? `+${diff}` : `${diff}`;
         const tipData = scored ? JSON.stringify({
           fifteens: scored.fifteens,
@@ -1315,7 +1360,6 @@
                data-tip='${tipData}'
                id="${pillId}-badge">⚠ ${badgeSign}</span>`
           : '';
-          
         return `
           <div class="rd-player">
             <div class="rd-player-name-row">
@@ -1325,6 +1369,7 @@
             </div>
             <div class="rd-scores">
               ${scorePill('peg',  peg,  colorPeg)}
+              ${handPill(hand, scored, colorPeg, pillId)}
               ${crib > 0 ? scorePill('crib', crib, colorPeg) : ''}
             </div>
             <div class="rd-section-label">hand + cut</div>
