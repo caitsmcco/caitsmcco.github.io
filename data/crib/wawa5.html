@@ -1594,12 +1594,10 @@
             .attr('font-size', 6).attr('font-family', FONT).text(val);
         });
       });
-
-      // Legend
-      g.append('rect').attr('x', ViW - 40).attr('y', 0).attr('width', 6).attr('height', 6).attr('fill', '#888').attr('opacity', 1).attr('rx', 1);
-      g.append('text').attr('x', ViW - 31).attr('y', 5.5).attr('fill', '#7a7060').attr('font-size', 6).attr('font-family', FONT).text('Wins');
-      g.append('rect').attr('x', ViW - 40).attr('y', 10).attr('width', 6).attr('height', 6).attr('fill', '#888').attr('opacity', 0.3).attr('rx', 1);
-      g.append('text').attr('x', ViW - 31).attr('y', 15.5).attr('fill', '#7a7060').attr('font-size', 6).attr('font-family', FONT).text('Losses');
+      [['Wins', 1], ['Losses', 0.3]].forEach(([lbl, op], i) => {
+        g.append('rect').attr('x', i * 38).attr('y', ViH + 14).attr('width', 5).attr('height', 5).attr('fill', '#888').attr('opacity', op).attr('rx', 1);
+        g.append('text').attr('x', i * 38 + 7).attr('y', ViH + 18.5).attr('fill', '#7a7060').attr('font-size', 6).attr('font-family', FONT).text(lbl);
+      });
     }
 
 
@@ -1691,11 +1689,6 @@
         });
       });
 
-      // Category colour dots as legend
-      types.forEach((t, i) => {
-        g.append('rect').attr('x', i * 40).attr('y', ViH + 14).attr('width', 5).attr('height', 5).attr('fill', t.col).attr('rx', 1);
-        g.append('text').attr('x', i * 40 + 7).attr('y', ViH + 18.5).attr('fill', '#7a7060').attr('font-size', 6).attr('font-family', FONT).text(t.label);
-      });
     }
 
 
@@ -1836,8 +1829,7 @@
 
       // Explanation note
       note.innerHTML = accuracy.map(a => {
-        const dir = Math.abs(a.avgDiff) < 0.1 ? '' : a.avgDiff > 0 ? ' (over-counting)' : ' (under-counting)';
-        return `<span style="color:${(PCOL[a.player]||PCOL.Caitlin).light}">${a.player}</span>: ${Math.round(a.pct)}% exact on ${a.n} rounds${dir}`;
+        return `<span style="padding-top:3px;color:${(PCOL[a.player]||PCOL.Caitlin).light}">${a.player}</span>: ${Math.round(a.pct)}% exact on ${a.n} rounds`;
       }).join(' &nbsp;·&nbsp; ');
     }
 
