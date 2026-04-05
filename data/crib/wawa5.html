@@ -389,8 +389,8 @@
 
     /* All four crib cards shown with a dashed border to distinguish from hand */
     .card--crib {
-      border-style: dashed;
-      opacity: .85;
+      border-style: double;
+      opacity: .95;
     }
 
     .rd-empty {
@@ -1170,7 +1170,7 @@
 
       function card(c, extra = '', outlineColor = '') {
         if (!c) return '';
-        const outline = outlineColor ? `style="box-shadow:0 0 0 2px ${outlineColor}"` : '';
+        const outline = outlineColor ? `style="box-shadow:0 0 0 3px ${outlineColor}"` : '';
         return `<div class="card ${c.red ? 'red' : 'black'} ${extra}" ${outline}>
           <span class="cr">${c.rank}</span>
           <span class="cs">${SUIT[c.suit]}</span>
@@ -1821,7 +1821,7 @@
         const diffLabel = a.avgDiff > 0 ? '+' + Math.round(a.avgDiff * 10) / 10
                         : Math.round(a.avgDiff * 10) / 10;
         const diffCol = a.avgDiff > 0.2 ? '#c0a030' : a.avgDiff < -0.2 ? '#8888cc' : '#7a7060';
-        g.append('text').attr('x', bx + bw/2).attr('y', ViH + 11)
+        g.append('text').attr('x', bx + bw/2).attr('y', ViH + 14)
           .attr('text-anchor', 'middle')
           .attr('fill', diffCol).attr('font-size', 6.5).attr('font-family', FONT)
           .text('avg ' + diffLabel);
@@ -1829,7 +1829,7 @@
 
       // Explanation note
       note.innerHTML = accuracy.map(a => {
-        return `<span style="padding-top:3px;color:${(PCOL[a.player]||PCOL.Caitlin).light}">${a.player}</span>: ${Math.round(a.pct)}% exact on ${a.n} rounds`;
+        return `<span style="color:${(PCOL[a.player]||PCOL.Caitlin).light}">${a.player}</span>: ${Math.round(a.pct)}% exact on ${a.n} rounds`;
       }).join(' &nbsp;·&nbsp; ');
     }
 
@@ -2037,16 +2037,16 @@
       }
 
       // Layout constants
-      const FIXED_H = 850;
+      const FIXED_H = 500;
       const maxR    = d3.max(games, g => g.maxRound);
-      const LEFT    = 138;
+      const LEFT    = 20;
       const TOP     = 36;
       const BOT     = 16;
 
       const availH  = FIXED_H - TOP - BOT;
       const CELL_H  = Math.floor((availH - games.length * 3) / games.length);
       const ROW_H   = CELL_H + 3;
-      const CELL_W  = 60;
+      const CELL_W  = 40;
       const COL_W   = CELL_W + 3;
 
       const totalW = LEFT + maxR * COL_W + 38;
