@@ -1133,7 +1133,10 @@
       const c2     = (PCOL[game.p2name] || PCOL.Colban).peg;
       const c2lite = (PCOL[game.p2name] || PCOL.Colban).light;
 
-      const p1IsDealer = rd.round % 2 === 1;
+      // Dealer is whoever actually earned crib points this round.
+      // If neither has crib points (e.g. 0–0 round) fall back to round parity,
+      // but crib > 0 is the reliable signal.
+      const p1IsDealer = crib1 > 0 ? true : crib2 > 0 ? false : rd.round % 2 === 1;
 
       const handCards = row => row
         ? ['p1','p2','p3','p4','p5','p6','p7'].map(f => parseCard(row[f])).filter(Boolean)
