@@ -779,8 +779,6 @@
       <!-- Cards played in the selected round -->
       <div id="cards-content"></div>
 
-      <div id="explination"></div>
-
     </div>
   </div>
 
@@ -1317,7 +1315,6 @@
                data-tip='${tipData}'
                id="${pillId}-badge">⚠ ${badgeSign}</span>`
           : '';
-          
           
         return `
           <div class="rd-player">
@@ -1896,9 +1893,55 @@
      * Shows cards, recorded vs calculated, and full breakdown for every
      * hand where the recorded points don't match the scored value.
      */
-    function renderMiscountExplorer() {
+    function renderMiscountExplorer(games) {
+      const section = document.getElementById('miscount-section');
+      const list    = document.getElementById('miscount-list');
+      list.innerHTML = '';
+
+      const rows = [];
+
+      games.forEach(game => {
+        if (!game._raw) return;
+        game.rounds.forEach(rd => {
+          const rawRows = game._raw.filter(r => +r.Round === rd.round);
+          const byP = Object.fromEntries(rawRows.map(r => [r.Name, r]));
+
+          [
+            [game.p1name, byP[game.p1name], rd.p1hand, (PCOL[game.p1name]||PCOL.Caitlin)],
+            [game.p2name, byP[game.p2name], rd.p2hand, (PCOL[game.p2name]||PCOL.Colban)],
+          ].forEach(([name, row, recorded, pcol]) => {
+            const hc = extractHandAndCut(row);
+            if (!hc) return;
+
+            const scored = scoreHand(hc.hand, hc.cut);
+            if (!scored || scored.total === (recorded || 0)) return;
+
+            const diff = (recorded || 0) - scored.total;
+            rows.push({ name, pcol, date: game.date, round: rd.round, handCards: hc.hand, cut: hc.cut, recorded: recorded || 0, scored, diff });
+          });
+        });
+      });
+
+      section.style.display = rows.length ? 'block' : 'none';
+      if (!rows.length) return;
+
+      // Sort: largest absolute miscount first
+      rows.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
+
+      function miniCard(c) {
+        if (!c) return '';
+        const suitSym = { H:'♥', D:'♦', C:'♣', S:'♠' };
+        const isRed = c.suit === 'H' || c.suit === 'D';
+        return `<div class="card ${isRed ? 'red' : 'black'}" style="width:40px;height:58px;font-size:.7rem;">
+          <span class="cr" style="font-size:.65rem">${c.rank}</span>
+          <span class="cs" style="font-size:1.1rem">${suitSym[c.suit]}</span>
+        </div>`;
+      }
+
+      rows.forEach(r => {
         const accentColor = r.diff > 0 ? '#d4a030' : '#8888cc';
         const diffLabel   = r.diff > 0 ? `+${r.diff} over` : `${r.diff} under`;
+        const ds = new Date(r.date).toLocaleDateString('en-CA', { month:'short', day:'numeric', year:'2-digit' });
 
         // Build the scoring breakdown text
         const parts = [];
@@ -1913,6 +1956,18 @@
         div.className = 'mc-row';
         div.style.borderLeftColor = accentColor;
         div.innerHTML = `
+          <div class="mc-meta">
+            <span class="mc-player" style="color:${r.pcol.light}">${r.name}</span>
+            <span class="mc-date">${ds}</span>
+            <span class="mc-round">Round ${r.round}</span>
+          </div>
+
+          <div class="mc-cards">
+            ${r.handCards.map(c => miniCard(c)).join('')}
+            <div style="width:1px;height:38px;background:var(--border);margin:0 4px;align-self:flex-end;flex-shrink:0;"></div>
+            ${miniCard(r.cut)}
+          </div>
+
           <div class="mc-verdict">
             <div class="mc-diff-row">
               <span class="mc-recorded">Recorded <strong style="color:var(--text)">${r.recorded}</strong></span>
@@ -1925,9 +1980,8 @@
             </div>
           </div>
         `;
-        document.getElementById('explination').empty();
-        document.getElementById('explination').appendChild(div);
-      ;
+        list.appendChild(div);
+      });
     }
 
 
@@ -2054,6 +2108,7 @@
       renderBarAvg(allGames);
       renderBarMax(allGames);
       renderBarAcc(allGames);
+      renderMiscountExplorer(allGames);
 
       const first = games[0];
       if (first) {
@@ -2097,8 +2152,8 @@
       document.getElementById('p1-score').textContent = rd.s1;
       document.getElementById('p2-score').textContent = rd.s2;
       document.getElementById('r-detail').textContent = `Round ${rd.round} · `;
+
       renderCards(rd, game);
-      renderMiscountExplorer();
     }
 
 
