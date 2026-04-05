@@ -476,7 +476,6 @@
     }
 
     .rd-section-label {
-      padding-top: .58rem;
       font-size: .58rem;
       letter-spacing: .1em;
       text-transform: uppercase;
@@ -1341,25 +1340,12 @@
         // Miscount indicator shown inline next to the total
         const hasMiscount = scored && scored.total !== hand;
         const diff = hasMiscount ? hand - scored.total : 0;
-        const badgeColor = diff > 0 ? '#color' : '#8888cc';
+        const badgeColor = diff > 0 ? '#d4a030' : '#8888cc';
         const badgeSign  = diff > 0 ? `+${diff}` : `${diff}`;
-        const tipData = scored ? JSON.stringify({
-          fifteens: scored.fifteens,
-          pairs:    scored.pairs,
-          runs:     scored.runs,
-          flush:    scored.flush,
-          nob:      scored.nob,
-          calc:     scored.total,
-          recorded,
-          color,
-        }) : null;
-
         const miscountInline = hasMiscount
-          ? `<span class="miscount-badge"
-               style="border-color:${badgeColor};color:${badgeColor};"
-               data-tip='${tipData}'
-               id="${pillId}-badge">⚠ ${badgeSign}</span>`
+          ? `<span class="miscount-badge" style="border-color:${badgeColor};color:${badgeColor};">⚠ ${badgeSign}</span>`
           : '';
+
         return `
           <div class="rd-player">
             <div class="rd-player-name-row">
