@@ -444,13 +444,35 @@
       margin: 0 .15rem;
     }
 
-    /* One player column */
-    .rd-player { display: flex; flex-direction: column; gap: .38rem; }
+    /* Player name row: name | total | miscount indicator */
+    .rd-player-name-row {
+      display: flex;
+      align-items: baseline;
+      gap: .4rem;
+      flex-wrap: wrap;
+      margin-bottom: .1rem;
+    }
 
     .rd-player-name {
       font-size: .82rem;
       font-weight: 500;
       letter-spacing: .02em;
+    }
+
+    .rd-player-total {
+      font-size: .78rem;
+      font-weight: 600;
+      font-family: 'Playfair Display', serif;
+    }
+
+    /* Inline miscount indicator next to total */
+    .name-miscount {
+      font-size: .6rem;
+      font-weight: 600;
+      padding: 1px 5px;
+      border-radius: 3px;
+      border: 1px solid;
+      white-space: nowrap;
     }
 
     .rd-section-label {
@@ -1307,15 +1329,27 @@
       }
 
       function playerColumn(name, colorPeg, colorLite, h, peg, hand, crib, total, isDealer, scored, pillId) {
+        // Miscount indicator shown inline next to the total
+        const hasMiscount = scored && scored.total !== hand;
+        const diff = hasMiscount ? hand - scored.total : 0;
+        const badgeColor = diff > 0 ? '#d4a030' : '#8888cc';
+        const badgeSign  = diff > 0 ? `+${diff}` : `${diff}`;
+        const miscountInline = hasMiscount
+          ? `<span class="name-miscount" style="border-color:${badgeColor};color:${badgeColor};">⚠ ${badgeSign}</span>`
+          : '';
+
         return `
           <div class="rd-player">
-            <div class="rd-player-name" style="color:${colorLite}">${name}</div>
+            <div class="rd-player-name-row">
+              <span class="rd-player-name" style="color:${colorLite}">${name}</span>
+              <span class="rd-player-total" style="color:${colorPeg}">${total} pts</span>
+              ${miscountInline}
+            </div>
             <div class="rd-scores">
               ${scorePill('peg',  peg,  colorPeg)}
               ${handPill(hand, scored, colorPeg, pillId)}
               ${crib > 0 ? scorePill('crib', crib, colorPeg) : ''}
             </div>
-            ${totalBadge(total, colorPeg)}
             <div class="rd-section-label">hand + cut</div>
             <div class="rd-cards">
               ${h.slice(0,4).map(c => card(c)).join('')}
@@ -2183,17 +2217,17 @@
       }
 
       // Layout constants
-      const FIXED_H = 850;  // total SVG height — rows scale to fill this
+      const FIXED_H = 850;
       const maxR    = d3.max(games, g => g.maxRound);
-      const LEFT    = 138;  // left margin reserved for date/time labels
-      const TOP     = 36;   // top margin for column headers
-      const BOT     = 16;   // bottom margin
+      const LEFT    = 138;
+      const TOP     = 36;
+      const BOT     = 16;
 
       const availH  = FIXED_H - TOP - BOT;
       const CELL_H  = Math.floor((availH - games.length * 3) / games.length);
-      const ROW_H   = CELL_H + 3;    // row height including gap
+      const ROW_H   = CELL_H + 3;
       const CELL_W  = 60;
-      const COL_W   = CELL_W + 3;    // column width including gap
+      const COL_W   = CELL_W + 3;
 
       const totalW = LEFT + maxR * COL_W + 38;
       const totalH = TOP + games.length * ROW_H + BOT;
@@ -2206,6 +2240,29 @@
           r.s1 !== null && r.s2 !== null ? Math.abs(r.s1 - r.s2) : 0
         ))
       ) || 1;
+
+      // ── Pre-compute which (gameDate, round) pairs have a miscount ──────────
+      // Returns a Set of "date|round" strings for O(1) lookup during cell render.
+      const miscountKeys = new Set();
+      games.forEach(game => {
+        if (!game._raw) return;
+        game.rounds.forEach(rd => {
+          const rawRows = game._raw.filter(r => +r.Round === rd.round);
+          const byP = Object.fromEntries(rawRows.map(r => [r.Name, r]));
+          const hasMiscount = [
+            [game.p1name, byP[game.p1name], rd.p1hand],
+            [game.p2name, byP[game.p2name], rd.p2hand],
+          ].some(([, row, recorded]) => {
+            if (!row) return false;
+            const hc = ['p1','p2','p3','p4'].map(f => parseCard(row[f])).filter(Boolean);
+            const cut = parseCard(row.cc);
+            if (hc.length < 4 || !cut) return false;
+            const sc = scoreHand(hc, cut);
+            return sc && sc.total !== (recorded || 0);
+          });
+          if (hasMiscount) miscountKeys.add(`${game.date}|${rd.round}`);
+        });
+      });
 
       // Column headers: round numbers
       d3.range(1, maxR + 1).forEach(r => {
@@ -2273,7 +2330,7 @@
             .attr('cursor', diff !== null ? 'pointer' : 'default');
 
           if (diff !== null) {
-            // Diff label inside the cell
+            // Score diff label inside the cell
             svg.append('text')
               .attr('x', cx + CELL_W / 2).attr('y', gy + CELL_H / 2 + 1)
               .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
@@ -2281,6 +2338,21 @@
               .attr('font-size', Math.min(CELL_H * 0.38, 20)).attr('font-family', FONT)
               .attr('pointer-events', 'none')
               .text(diff > 0 ? `+${diff}` : diff);
+
+            // ── Miscount hazard sign ───────────────────────────────────────
+            if (miscountKeys.has(`${game.date}|${rd.round}`)) {
+              svg.append('text')
+                .attr('x', cx + CELL_W - 4)
+                .attr('y', gy + 5)
+                .attr('text-anchor', 'end')
+                .attr('dominant-baseline', 'hanging')
+                .attr('font-size', Math.min(CELL_H * 0.28, 12))
+                .attr('font-family', FONT)
+                .attr('fill', '#d4a030')
+                .attr('pointer-events', 'none')
+                .attr('opacity', 0.9)
+                .text('⚠');
+            }
 
             const node = cell.node();
 
@@ -2291,6 +2363,7 @@
               if (!selectedCell) activateCell(game, rd, true);
 
               const c2l = (PCOL[game.p2name] || PCOL.Colban).light;
+              const hasMC = miscountKeys.has(`${game.date}|${rd.round}`);
               tip.innerHTML = `
                 <div class="tth">Round ${rd.round} — ${ds}</div>
                 <div style="color:${(PCOL[game.p1name] || PCOL.Caitlin).peg}">
@@ -2299,7 +2372,8 @@
                 <div style="color:${c2l}">
                   ${game.p2name}: ${rd.s2} &nbsp;(peg ${rd.p2pegged} · hand ${rd.p2hand}${rd.p2crib ? ` · crib ${rd.p2crib}` : ''})
                 </div>
-                <div style="color:#5a5040;margin-top:1px">diff ${diff > 0 ? '+' : ''}${diff}</div>`;
+                <div style="color:#5a5040;margin-top:1px">diff ${diff > 0 ? '+' : ''}${diff}</div>
+                ${hasMC ? `<div style="color:#d4a030;margin-top:3px;font-size:.85em">⚠ hand miscount this round</div>` : ''}`;
               tip.classList.add('vis');
             });
 
@@ -2333,12 +2407,12 @@
                 && selectedCell.round   === rd.round;
 
               if (iS) {
-                selectedCell = null;  // deselect
+                selectedCell = null;
               } else {
                 selectedCell = { gameDate: game.date, round: rd.round };
                 activateCell(game, rd, true);
               }
-              renderHeatmap(filteredGames());  // re-render to update gold outlines
+              renderHeatmap(filteredGames());
             });
           }
         });
