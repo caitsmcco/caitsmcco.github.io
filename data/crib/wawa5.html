@@ -637,6 +637,31 @@
 
     .mc-breakdown span { color: var(--text); }
 
+    /* ── Heatmap sort bar ─────────────────────────────────────────────────── */
+    .sort-bar {
+      display: flex;
+      align-items: center;
+      gap: .3rem;
+    }
+
+    .sort-pill {
+      padding: 2px 8px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--bg2);
+      font-size: .65rem;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      color: var(--muted);
+      transition: border-color .15s, color .15s, background .15s;
+      user-select: none;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .sort-pill:hover  { border-color: var(--gold); color: var(--text); }
+    .sort-pill.active { border-color: #5a5040; background: var(--bg3); color: var(--text); }
+
   </style>
 </head>
 
@@ -663,7 +688,10 @@
 
     <!-- LEFT: game heatmap -->
     <div class="panel" name="heatmap">
-      <div class="pt">Games</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.7rem;">
+        <div class="pt" style="margin-bottom:0;">Games</div>
+        <div class="sort-bar" id="sort-bar"></div>
+      </div>
       <!-- overflow-x allows horizontal scroll if there are many rounds -->
       <div style="overflow-x: auto">
         <svg id="heatmap-svg"></svg>
@@ -1936,6 +1964,7 @@
     let allGames     = [];    // all parsed game objects
     let activeFilter = null;  // opponent name string, or null for "all games"
     let selectedCell = null;  // { gameDate, round } of the clicked heatmap cell, or null
+    let sortOrder    = 'gameNum'; // current heatmap row sort: gameNum | rounds | diff | opponent
 
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1986,13 +2015,41 @@
       });
 
       buildPills();
+      buildSortBar();
       render();
     });
 
 
     // ═══════════════════════════════════════════════════════════════════════
-    //  FILTER PILLS
+    //  SORT BAR
     // ═══════════════════════════════════════════════════════════════════════
+
+    const SORT_OPTIONS = [
+      { key: 'gameNum',  label: 'Game #' },
+      { key: 'rounds',   label: 'Rounds' },
+      { key: 'diff',     label: 'Margin' },
+      { key: 'opponent', label: 'Opponent' },
+    ];
+
+    function buildSortBar() {
+      const bar = document.getElementById('sort-bar');
+      bar.innerHTML = '';
+      SORT_OPTIONS.forEach(opt => {
+        const el = document.createElement('span');
+        el.className = 'sort-pill' + (opt.key === sortOrder ? ' active' : '');
+        el.textContent = opt.label;
+        el.addEventListener('click', () => {
+          if (sortOrder === opt.key) return;
+          sortOrder = opt.key;
+          selectedCell = null;
+          bar.querySelectorAll('.sort-pill').forEach(p =>
+            p.classList.toggle('active', p.textContent === opt.label)
+          );
+          render();
+        });
+        bar.appendChild(el);
+      });
+    }
 
     /**
      * Populates the .filter-bar with one pill per opponent who appears in
@@ -2039,13 +2096,41 @@
         : allGames;
     }
 
+    /**
+     * Returns filtered games sorted according to sortOrder.
+     * gameNum    — chronological (default)
+     * rounds     — most rounds first
+     * diff       — largest absolute final score gap first
+     * opponent   — alphabetical by opponent name
+     */
+    function sortedGames() {
+      const games = filteredGames();
+      switch (sortOrder) {
+        case 'rounds':
+          return [...games].sort((a, b) => b.maxRound - a.maxRound);
+        case 'diff': {
+          const finalDiff = g => {
+            const last = g.rounds[g.rounds.length - 1];
+            return last && last.s1 !== null && last.s2 !== null
+              ? Math.abs(last.s1 - last.s2) : 0;
+          };
+          return [...games].sort((a, b) => b.maxRound - a.maxRound)  // secondary
+            .sort((a, b) => finalDiff(b) - finalDiff(a));
+        }
+        case 'opponent':
+          return [...games].sort((a, b) => a.p2name.localeCompare(b.p2name));
+        default: // 'gameNum'
+          return [...games].sort((a, b) => a.gameNum - b.gameNum);
+      }
+    }
+
 
     /**
      * Full re-render: heatmap, win/loss chart, and board reset.
      * Called when the filter changes or on initial load.
      */
     function render() {
-      const games = filteredGames();
+      const games = sortedGames();
       renderHeatmap(games);
 
       // Trend charts always show all games so overall patterns are visible
@@ -2312,7 +2397,7 @@
                 selectedCell = { gameDate: game.date, round: rd.round };
                 activateCell(game, rd, true);
               }
-              renderHeatmap(filteredGames());
+              renderHeatmap(sortedGames());
             });
           }
         });
