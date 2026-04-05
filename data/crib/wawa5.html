@@ -727,7 +727,7 @@
     <div class="panel">
       <div class="pt">Hand counting accuracy</div>
       <svg id="bar-acc"></svg>
-      <div id="bar-acc-note" style="font-size:.72rem;color:var(--muted);margin-top:.4rem;line-height:1.5;"></div>
+      <div id="bar-acc-note" style="font-size:.62rem;color:var(--muted);margin-top:.2rem;line-height:1.5;"></div>
     </div>
 
   </div>
@@ -1170,7 +1170,7 @@
 
       function card(c, extra = '', outlineColor = '') {
         if (!c) return '';
-        const outline = outlineColor ? `style="box-shadow:0 0 0 3px ${outlineColor}"` : '';
+        const outline = outlineColor ? `style="box-shadow:0 0 0 2px ${outlineColor}"` : '';
         return `<div class="card ${c.red ? 'red' : 'black'} ${extra}" ${outline}>
           <span class="cr">${c.rank}</span>
           <span class="cs">${SUIT[c.suit]}</span>
@@ -1232,9 +1232,6 @@
 
       function cribSection(dealerColor) {
         return `
-          <div class="rd-section-label rd-crib-label">
-            crib <span class="rd-dealer-tag" style="border-color:${dealerColor};color:${dealerColor};">dealer</span>
-          </div>
           <div class="rd-cards">
             ${d1.map(c => card(c, 'card--crib', c1)).join('')}
             ${d2.map(c => card(c, 'card--crib', c2)).join('')}
@@ -1821,7 +1818,7 @@
         const diffLabel = a.avgDiff > 0 ? '+' + Math.round(a.avgDiff * 10) / 10
                         : Math.round(a.avgDiff * 10) / 10;
         const diffCol = a.avgDiff > 0.2 ? '#c0a030' : a.avgDiff < -0.2 ? '#8888cc' : '#7a7060';
-        g.append('text').attr('x', bx + bw/2).attr('y', ViH + 14)
+        g.append('text').attr('x', bx + bw/2).attr('y', ViH + 15)
           .attr('text-anchor', 'middle')
           .attr('fill', diffCol).attr('font-size', 6.5).attr('font-family', FONT)
           .text('avg ' + diffLabel);
@@ -2046,7 +2043,7 @@
       const availH  = FIXED_H - TOP - BOT;
       const CELL_H  = Math.floor((availH - games.length * 3) / games.length);
       const ROW_H   = CELL_H + 3;
-      const CELL_W  = 40;
+      const CELL_W  = 35;
       const COL_W   = CELL_W + 3;
 
       const totalW = LEFT + maxR * COL_W + 38;
@@ -2153,7 +2150,7 @@
               .attr('x', cx + CELL_W / 2).attr('y', gy + CELL_H / 2 + 1)
               .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
               .attr('fill', `rgba(255,255,255,${Math.abs(diff) > globalMax * 0.25 ? 0.58 : 0.22})`)
-              .attr('font-size', Math.min(CELL_H * 0.38, 20)).attr('font-family', FONT)
+              .attr('font-size', Math.min(CELL_H * 0.38, 10)).attr('font-family', FONT)
               .attr('pointer-events', 'none')
               .text(diff > 0 ? `+${diff}` : diff);
 
@@ -2183,14 +2180,9 @@
               const c2l = (PCOL[game.p2name] || PCOL.Colban).light;
               const hasMC = miscountKeys.has(`${game.date}|${rd.round}`);
               tip.innerHTML = `
-                <div class="tth">Round ${rd.round} — ${ds}</div>
-                <div style="color:${(PCOL[game.p1name] || PCOL.Caitlin).peg}">
-                  ${game.p1name}: ${rd.s1} &nbsp;(peg ${rd.p1pegged} · hand ${rd.p1hand}${rd.p1crib ? ` · crib ${rd.p1crib}` : ''})
-                </div>
-                <div style="color:${c2l}">
-                  ${game.p2name}: ${rd.s2} &nbsp;(peg ${rd.p2pegged} · hand ${rd.p2hand}${rd.p2crib ? ` · crib ${rd.p2crib}` : ''})
-                </div>
-                <div style="color:#5a5040;margin-top:1px">diff ${diff > 0 ? '+' : ''}${diff}</div>
+                <div class="tth">Round ${rd.round}</div>
+                <div class="tth">${ds}</div>
+                <div class="tth">${ts}</div>
                 ${hasMC ? `<div style="color:#d4a030;margin-top:3px;font-size:.85em">⚠ hand miscount this round</div>` : ''}`;
               tip.classList.add('vis');
             });
