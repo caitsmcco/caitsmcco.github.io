@@ -1855,6 +1855,7 @@
       // ── Per-player beeswarm (miscounts only) ─────────────────────────────
       accuracy.forEach(a => {
         const col = (PCOL[a.player] || PCOL.Caitlin).peg;
+        const light = (PCOL[a.player] || PCOL.Caitlin).light;
         const cx  = x(a.player) + x.bandwidth() / 2;
         const bw  = x.bandwidth();
         const halfMax = bw * 0.44;
@@ -1904,7 +1905,7 @@
         g.append('text')
           .attr('x', cx).attr('y', y(0))
           .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
-          .attr('fill', col).attr('font-size', 6.5).attr('font-weight', '500')
+          .attr('fill', light).attr('font-size', 6.5).attr('font-weight', '600')
           .attr('font-family', FONT)
           .text(`${Math.round(a.pct)}%`);
 
@@ -2095,7 +2096,7 @@
       document.getElementById('p2-label').textContent = game.p2name;
       document.getElementById('p1-score').textContent = rd.s1;
       document.getElementById('p2-score').textContent = rd.s2;
-      document.getElementById('game-label').textContent = `${ordinal(game.gameNum)} game ·`;
+      document.getElementById('game-label').textContent = `Game ${game.gameNum} ·`;
       document.getElementById('r-detail').textContent = `Round ${rd.round} · `;
 
       renderCards(rd, game);
@@ -2197,7 +2198,7 @@
       // Render one row per game
       games.forEach((game, gi) => {
         const gy      = TOP + gi * ROW_H;
-        const oppCol  = (PCOL[game.p2name] || PCOL.Colban).peg;
+        const oppCol  = (PCOL[game.p2name] || PCOL.Colban).light;
         const cScale  = makeScale(game.p2name, globalMax);
         const ds      = new Date(game.date).toLocaleDateString('en-CA',  { month: 'short', day: 'numeric', year: '2-digit' });
         const ts      = new Date(game.date).toLocaleTimeString('en-CA',  { hour: '2-digit', minute: '2-digit' });
@@ -2214,7 +2215,7 @@
           .attr('x', LEFT - 4).attr('y', gy + CELL_H / 2 + 1)
           .attr('text-anchor', 'end').attr('dominant-baseline', 'middle')
           .attr('fill', oppCol).attr('font-size', 9).attr('font-family', FONT)
-          .text(ordinal(game.gameNum));
+          .text(game.gameNum);
 
         // Render each round cell in this row
         game.rounds.forEach(rd => {
