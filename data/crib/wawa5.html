@@ -610,27 +610,32 @@
     </div>
   </div>
 
-  <!-- ── Bottom row: chart panels ──────────────────────────────────────── -->
-  <div class="bottom-row">
+  <!-- ── Bottom row: overall trend panels ─────────────────────────────── -->
+  <div class="bottom-row" style="grid-template-columns: 1fr 1fr 1fr 1fr; margin-top: 1rem;">
 
-    <!-- Win / loss record vs each opponent (always shows all games) -->
+    <!-- Win / loss record vs each opponent -->
     <div class="panel">
-      <div class="pt">Win / loss by opponent</div>
+      <div class="pt">Win / loss by player</div>
       <svg id="bar3"></svg>
     </div>
 
-    <!-- Round score compared to the player's average and best round -->
+    <!-- Average points by category per player -->
     <div class="panel">
-      <div class="pt">Round score vs avg &amp; best</div>
-      <svg id="bar1"></svg>
-      <div id="bar1-empty" style="font-size: 1rem; color: var(--muted);">Select a round</div>
+      <div class="pt">Avg points by type</div>
+      <svg id="bar-avg"></svg>
     </div>
 
-    <!-- Points breakdown: pegged / hand / crib for the selected round -->
+    <!-- Maximum single-round points per player -->
     <div class="panel">
-      <div class="pt">Points by type</div>
-      <svg id="bar2"></svg>
-      <div id="bar2-empty" style="font-size: 1rem; color: var(--muted);">Select a round</div>
+      <div class="pt">Best round</div>
+      <svg id="bar-max"></svg>
+    </div>
+
+    <!-- Hand counting accuracy -->
+    <div class="panel">
+      <div class="pt">Hand counting accuracy</div>
+      <svg id="bar-acc"></svg>
+      <div id="bar-acc-note" style="font-size:.72rem;color:var(--muted);margin-top:.4rem;line-height:1.5;"></div>
     </div>
 
   </div>
@@ -1145,285 +1150,506 @@
 
 
     // ═══════════════════════════════════════════════════════════════════════
-    //  BAR CHARTS — shared utilities
+    //  HAND SCORER — calculates the correct point value of a cribbage hand
+    //  given 4 hand cards + 1 cut card, following official rules.
     // ═══════════════════════════════════════════════════════════════════════
 
-    /** Removes all child elements from a chart SVG. */
+    /**
+     * Returns the pip value of a card for counting towards 15s and 31.
+     * Face cards = 10, Ace = 1, others = face value.
+     */
+    function pipVal(rank) {
+      if (['J','Q','K'].includes(rank)) return 10;
+      if (rank === 'A') return 1;
+      return parseInt(rank, 10);
+    }
+
+    /**
+     * Returns the rank order value for run detection.
+     * A=1, 2-9 face value, 10/J/Q/K = 10/11/12/13.
+     */
+    function rankOrder(rank) {
+      if (rank === 'A') return 1;
+      if (rank === 'J') return 11;
+      if (rank === 'Q') return 12;
+      if (rank === 'K') return 13;
+      return parseInt(rank, 10);
+    }
+
+    /**
+     * Scores a cribbage hand: 4 hand cards + 1 cut card.
+     * Returns { fifteens, pairs, runs, flush, nob, total }.
+     *
+     * @param {object[]} hand - Array of 4 card objects { rank, suit, red }
+     * @param {object}   cut  - Cut card object
+     * @param {boolean}  isCrib - Whether this is the crib (flush needs all 5)
+     */
+    function scoreHand(hand, cut, isCrib = false) {
+      if (!hand || hand.length < 4 || !cut) return null;
+
+      const five = [...hand, cut];
+
+      // ── Fifteens ──────────────────────────────────────────────────────────
+      let fifteens = 0;
+      // All subsets of size 2–5
+      for (let mask = 1; mask < (1 << 5); mask++) {
+        const subset = five.filter((_, i) => mask & (1 << i));
+        if (subset.length >= 2 && subset.reduce((s, c) => s + pipVal(c.rank), 0) === 15) {
+          fifteens += 2;
+        }
+      }
+
+      // ── Pairs ─────────────────────────────────────────────────────────────
+      let pairs = 0;
+      for (let i = 0; i < 5; i++) {
+        for (let j = i + 1; j < 5; j++) {
+          if (five[i].rank === five[j].rank) pairs += 2;
+        }
+      }
+
+      // ── Runs ─────────────────────────────────────────────────────────────
+      // Find the longest run(s). Use subset enumeration: for each subset
+      // of size >= 3, check if it forms a consecutive sequence.
+      let runs = 0;
+      let bestRunLen = 0;
+      for (let mask = 1; mask < (1 << 5); mask++) {
+        const subset = five.filter((_, i) => mask & (1 << i));
+        if (subset.length < 3) continue;
+        const orders = subset.map(c => rankOrder(c.rank)).sort((a, b) => a - b);
+        const isRun = orders.every((v, i) => i === 0 || v === orders[i - 1] + 1);
+        if (isRun) {
+          if (subset.length > bestRunLen) { bestRunLen = subset.length; runs = 0; }
+          if (subset.length === bestRunLen) runs += subset.length;
+        }
+      }
+
+      // ── Flush ─────────────────────────────────────────────────────────────
+      let flush = 0;
+      const handSuits = hand.map(c => c.suit);
+      const allHandSame = handSuits.every(s => s === handSuits[0]);
+      if (allHandSame) {
+        if (cut.suit === handSuits[0]) {
+          flush = 5;  // all 5 match
+        } else if (!isCrib) {
+          flush = 4;  // 4-card flush (only counts in hand, not crib)
+        }
+      }
+
+      // ── Nob ───────────────────────────────────────────────────────────────
+      let nob = 0;
+      if (hand.some(c => c.rank === 'J' && c.suit === cut.suit)) nob = 1;
+
+      const total = fifteens + pairs + runs + flush + nob;
+      return { fifteens, pairs, runs, flush, nob, total };
+    }
+
+    /**
+     * For all rounds across all games, compute the theoretical hand score
+     * from the card data and compare it to the recorded handPoints.
+     * Returns per-player accuracy stats.
+     *
+     * A "round" is excluded from accuracy if card data is missing/incomplete.
+     */
+    function computeAccuracy(games) {
+      // Collect { playerName, recorded, calculated } per round
+      const records = [];
+
+      games.forEach(game => {
+        game._raw && game.rounds.forEach(rd => {
+          const rawRows = game._raw.filter(r => +r.Round === rd.round);
+          const byP = Object.fromEntries(rawRows.map(r => [r.Name, r]));
+
+          [
+            [game.p1name, byP[game.p1name], rd.p1hand],
+            [game.p2name, byP[game.p2name], rd.p2hand],
+          ].forEach(([name, row, recorded]) => {
+            if (!row) return;
+
+            // Parse their hand (first 4 played cards) and cut card
+            const handStrs = ['p1','p2','p3','p4'].map(f => row[f]);
+            const hand = handStrs.map(s => parseCard(s)).filter(Boolean);
+            const cut  = parseCard(row.cc);
+
+            if (hand.length < 4 || !cut) return;  // incomplete data, skip
+
+            const isDealerRound = rd.round % 2 === (name === game.p1name ? 1 : 0);
+            const scored = scoreHand(hand, cut, false);
+            if (!scored) return;
+
+            records.push({
+              player:     name,
+              recorded:   recorded || 0,
+              calculated: scored.total,
+              diff:       (recorded || 0) - scored.total,
+            });
+          });
+        });
+      });
+
+      // Aggregate per player
+      const players = [...new Set(records.map(r => r.player))];
+      return players.map(player => {
+        const recs = records.filter(r => r.player === player);
+        const avgDiff = d3.mean(recs, r => r.diff) || 0;
+        const pct = recs.length
+          ? (recs.filter(r => r.diff === 0).length / recs.length) * 100
+          : 0;
+        const overCount = recs.filter(r => r.diff > 0).length;
+        const underCount = recs.filter(r => r.diff < 0).length;
+        return { player, avgDiff, pct, n: recs.length, overCount, underCount };
+      });
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  SHARED CHART HELPERS
+    // ═══════════════════════════════════════════════════════════════════════
+
     function clearChart(id) {
       d3.select('#' + id).selectAll('*').remove();
     }
 
-    /**
-     * Returns layout dimensions for a chart by measuring its container element.
-     * Falls back to 240px wide if the element has not yet been laid out.
-     *
-     * @param {string} id - Element id of the SVG's parent container
-     * @returns {{ w, h, ml, mr, mt, mb }} Width, height, and margin values
-     */
-    function bDims(id) {
-      const e = document.getElementById(id);
-      const w = e.getBoundingClientRect().width || 240;
-      return { w, h: 150, ml: 28, mr: 6, mt: 10, mb: 26 };
+    // Fixed internal viewBox dimensions for all trend charts
+    const VW = 260, VH = 170, VML = 28, VMR = 8, VMT = 14, VMB = 28;
+    const ViW = VW - VML - VMR, ViH = VH - VMT - VMB;
+
+    function trendSvg(id) {
+      return d3.select('#' + id)
+        .attr('viewBox', `0 0 ${VW} ${VH}`)
+        .attr('preserveAspectRatio', 'xMidYMid meet')
+        .attr('width', '100%')
+        .attr('height', null);
     }
 
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  BAR CHART 1 — Round score vs average vs personal best
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /**
-     * Draws a grouped bar chart comparing:
-     *   - Average points per round (across all filtered games)
-     *   - Points scored in the currently selected round
-     *   - Best single-round score across all filtered games
-     * for both players side by side.
-     *
-     * @param {object}   rd       - Selected round data
-     * @param {object}   game     - Game containing the selected round
-     * @param {object[]} allGames - All games currently in the filter
-     */
-    function renderBar1(rd, game, allGames) {
-      clearChart('bar1');
-      const empty = document.getElementById('bar1-empty');
-
-      if (!rd) { empty.style.display = 'block'; return; }
-      empty.style.display = 'none';
-
-      // Calculate points gained in each round (score delta from previous round)
-      function roundPts(g) {
-        return g.rounds.map(r => {
-          const prev = g.rounds.find(x => x.round === r.round - 1);
-          return {
-            round: r.round,
-            pts1: r.s1 !== null ? (r.s1 - (prev ? prev.s1 || 0 : 0)) : null,
-            pts2: r.s2 !== null ? (r.s2 - (prev ? prev.s2 || 0 : 0)) : null,
-          };
-        });
+    function axisStyle(ax, isLeft = false) {
+      ax.select('.domain').remove();
+      if (isLeft) {
+        ax.selectAll('.tick line').attr('stroke', '#2e2a22').attr('stroke-dasharray', '2,2');
       }
+      ax.selectAll('text').attr('fill', '#7a7060').attr('font-size', 7).attr('font-family', FONT);
+    }
 
-      const all = allGames.flatMap(g => roundPts(g));
-
-      // Averages and bests across all games
-      const avg1  = d3.mean(all.filter(r => r.pts1 !== null), r => r.pts1) || 0;
-      const avg2  = d3.mean(all.filter(r => r.pts2 !== null), r => r.pts2) || 0;
-      const best1 = d3.max(all.filter(r => r.pts1 !== null), r => r.pts1)  || 0;
-      const best2 = d3.max(all.filter(r => r.pts2 !== null), r => r.pts2)  || 0;
-
-      // Points for the currently selected round
-      const tp = roundPts(game).find(r => r.round === rd.round) || { pts1: 0, pts2: 0 };
-      const t1 = tp.pts1 || 0;
-      const t2 = tp.pts2 || 0;
-
-      const c1 = (PCOL[game.p1name] || PCOL.Caitlin).peg;
-      const c2 = (PCOL[game.p2name] || PCOL.Colban).peg;
-
-      const { w, h, ml, mr, mt, mb } = bDims('bar1');
-      const svg = d3.select('#bar1').attr('width', w).attr('height', h + mt + mb);
-      const W = w - ml - mr, H = h;
-      const g = svg.append('g').attr('transform', `translate(${ml},${mt})`);
-
-      // Three category groups; two bars each (p1, p2)
-      const cats = ['Avg', 'This', 'Best'];
-      const v1   = [avg1, t1, best1];
-      const v2   = [avg2, t2, best2];
-      const maxV = d3.max([...v1, ...v2]) || 1;
-
-      const x0 = d3.scaleBand().domain(cats).range([0, W]).padding(0.25);
-      const xi = d3.scaleBand().domain(['p1', 'p2']).range([0, x0.bandwidth()]).padding(0.08);
-      const y  = d3.scaleLinear().domain([0, maxV * 1.15]).range([H, 0]);
-
-      // X axis (category labels)
-      g.append('g').attr('transform', `translate(0,${H})`)
-        .call(d3.axisBottom(x0).tickSize(0))
-        .call(ax => {
-          ax.select('.domain').remove();
-          ax.selectAll('text').attr('fill', '#7a7060').attr('font-size', 7.5).attr('font-family', FONT);
-        });
-
-      // Y axis with dashed grid lines
-      g.append('g')
-        .call(d3.axisLeft(y).ticks(4).tickSize(-W))
-        .call(ax => {
-          ax.select('.domain').remove();
-          ax.selectAll('.tick line').attr('stroke', '#2e2a22').attr('stroke-dasharray', '2,2');
-          ax.selectAll('text').attr('fill', '#7a7060').attr('font-size', 6.5).attr('font-family', FONT);
-        });
-
-      // Draw bars and value labels
-      cats.forEach((cat, ci) => {
-        [[v1[ci], c1, 'p1'], [v2[ci], c2, 'p2']].forEach(([val, col, key]) => {
-          if (val <= 0) return;
-          const bx = x0(cat) + xi(key);
-          const bw = xi.bandwidth();
-          const by = y(val);
-          const bh = H - by;
-          g.append('rect')
-            .attr('x', bx).attr('y', by)
-            .attr('width', bw).attr('height', Math.max(bh, 0))
-            .attr('fill', col).attr('rx', 2).attr('opacity', 0.85);
-          g.append('text')
-            .attr('x', bx + bw / 2).attr('y', by - 3)
-            .attr('text-anchor', 'middle')
-            .attr('fill', col).attr('font-size', 6).attr('font-family', FONT)
-            .text(Math.round(val * 10) / 10);
-        });
+    function drawBars(g, data, x, y, H, labelFn) {
+      data.forEach(d => {
+        if (d.val <= 0) return;
+        const by = y(d.val), bh = H - by;
+        g.append('rect')
+          .attr('x', d.x).attr('y', by)
+          .attr('width', d.bw).attr('height', Math.max(bh, 0))
+          .attr('fill', d.col).attr('rx', 2).attr('opacity', 0.85);
+        g.append('text')
+          .attr('x', d.x + d.bw / 2).attr('y', by - 2)
+          .attr('text-anchor', 'middle')
+          .attr('fill', d.col).attr('font-size', 6).attr('font-family', FONT)
+          .text(labelFn ? labelFn(d.val) : Math.round(d.val * 10) / 10);
       });
+    }
 
-      // Player legend (top-right corner of chart)
-      [[game.p1name, c1], [game.p2name, c2]].forEach(([n, col], i) => {
-        g.append('rect').attr('x', W - 65).attr('y', i * 12).attr('width', 6).attr('height', 6).attr('fill', col).attr('rx', 1);
-        g.append('text').attr('x', W - 56).attr('y', i * 12 + 5.5).attr('fill', '#7a7060').attr('font-size', 6.5).attr('font-family', FONT).text(n);
+    // All unique players who appear in the dataset (for consistent ordering)
+    function allPlayers(games) {
+      const seen = new Set();
+      const order = [];
+      games.forEach(g => {
+        [g.p1name, g.p2name].forEach(n => { if (!seen.has(n)) { seen.add(n); order.push(n); } });
       });
+      return order;
     }
 
 
     // ═══════════════════════════════════════════════════════════════════════
-    //  BAR CHART 2 — Points by type (pegged / hand / crib)
+    //  TREND CHART 1 — Win / loss by player
     // ═══════════════════════════════════════════════════════════════════════
 
-    /**
-     * Draws a grouped bar chart showing how each player's points were earned
-     * (pegging, hand count, crib count) for the selected round.
-     *
-     * @param {object} rd   - Selected round data
-     * @param {object} game - Game containing the selected round
-     */
-    function renderBar2(rd, game) {
-      clearChart('bar2');
-      const empty = document.getElementById('bar2-empty');
-
-      if (!rd) { empty.style.display = 'block'; return; }
-      empty.style.display = 'none';
-
-      const c1 = (PCOL[game.p1name] || PCOL.Caitlin).peg;
-      const c2 = (PCOL[game.p2name] || PCOL.Colban).peg;
-
-      const cats = ['Pegged', 'Hand', 'Crib'];
-      const v1   = [rd.p1pegged, rd.p1hand, rd.p1crib];
-      const v2   = [rd.p2pegged, rd.p2hand, rd.p2crib];
-      const maxV = d3.max([...v1, ...v2]) || 1;
-
-      const { w, h, ml, mr, mt, mb } = bDims('bar2');
-      const svg = d3.select('#bar2').attr('width', w).attr('height', h + mt + mb);
-      const W = w - ml - mr, H = h;
-      const g = svg.append('g').attr('transform', `translate(${ml},${mt})`);
-
-      const x0 = d3.scaleBand().domain(cats).range([0, W]).padding(0.25);
-      const xi = d3.scaleBand().domain(['p1', 'p2']).range([0, x0.bandwidth()]).padding(0.08);
-      const y  = d3.scaleLinear().domain([0, maxV * 1.15]).range([H, 0]);
-
-      g.append('g').attr('transform', `translate(0,${H})`)
-        .call(d3.axisBottom(x0).tickSize(0))
-        .call(ax => {
-          ax.select('.domain').remove();
-          ax.selectAll('text').attr('fill', '#7a7060').attr('font-size', 7.5).attr('font-family', FONT);
-        });
-
-      g.append('g')
-        .call(d3.axisLeft(y).ticks(4).tickSize(-W))
-        .call(ax => {
-          ax.select('.domain').remove();
-          ax.selectAll('.tick line').attr('stroke', '#2e2a22').attr('stroke-dasharray', '2,2');
-          ax.selectAll('text').attr('fill', '#7a7060').attr('font-size', 6.5).attr('font-family', FONT);
-        });
-
-      cats.forEach((cat, ci) => {
-        [[v1[ci], c1, 'p1'], [v2[ci], c2, 'p2']].forEach(([val, col, key]) => {
-          if (val <= 0) return;
-          const bx = x0(cat) + xi(key);
-          const bw = xi.bandwidth();
-          const by = y(val);
-          const bh = H - by;
-          g.append('rect')
-            .attr('x', bx).attr('y', by)
-            .attr('width', bw).attr('height', Math.max(bh, 0))
-            .attr('fill', col).attr('rx', 2).attr('opacity', 0.85);
-          g.append('text')
-            .attr('x', bx + bw / 2).attr('y', by - 3)
-            .attr('text-anchor', 'middle')
-            .attr('fill', col).attr('font-size', 6).attr('font-family', FONT)
-            .text(val);
-        });
-      });
-    }
-
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  BAR CHART 3 — Win / loss record by opponent
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /**
-     * Draws a grouped bar chart showing Caitlin's win and loss counts
-     * against each opponent. Always uses allGames (ignores the active filter)
-     * so the overall record is always visible.
-     *
-     * @param {object[]} allGames - Complete game dataset
-     */
-    function renderBar3(allGames) {
+    function renderBar3(games) {
       clearChart('bar3');
+      const svg = trendSvg('bar3');
+      const g = svg.append('g').attr('transform', `translate(${VML},${VMT})`);
 
-      const opps = [...new Set(allGames.map(g => g.p2name))];
-
-      const data = opps.map(opp => {
-        const gs   = allGames.filter(g => g.p2name === opp);
-        const wins = gs.filter(g => {
-          const l = g.rounds[g.rounds.length - 1];
-          return l && l.s1 >= 121;  // Caitlin reached 121
-        }).length;
-        return { opp, wins, losses: gs.length - wins, total: gs.length };
-      });
-
-      const { w, h, ml, mr, mt, mb } = bDims('bar3');
-      const svg = d3.select('#bar3').attr('width', w).attr('height', h + mt + mb);
-      const W = w - ml - mr, H = h;
-      const g = svg.append('g').attr('transform', `translate(${ml},${mt})`);
+      // Collect wins/losses for every player in every game they played
+      const players = allPlayers(games);
+      const data = players.map(player => {
+        const asP1 = games.filter(gm => gm.p1name === player);
+        const asP2 = games.filter(gm => gm.p2name === player);
+        const wins = [
+          ...asP1.filter(gm => { const l = gm.rounds[gm.rounds.length-1]; return l && l.s1 >= 121; }),
+          ...asP2.filter(gm => { const l = gm.rounds[gm.rounds.length-1]; return l && l.s2 >= 121; }),
+        ].length;
+        const total = asP1.length + asP2.length;
+        return { player, wins, losses: total - wins, total };
+      }).filter(d => d.total > 0);
 
       const maxT = d3.max(data, d => d.total) || 1;
-      const x    = d3.scaleBand().domain(opps).range([0, W]).padding(0.3);
-      const y    = d3.scaleLinear().domain([0, maxT + 0.5]).range([H, 0]);
-      const xi   = d3.scaleBand().domain(['w', 'l']).range([0, x.bandwidth()]).padding(0.06);
+      const x  = d3.scaleBand().domain(data.map(d => d.player)).range([0, ViW]).padding(0.28);
+      const xi = d3.scaleBand().domain(['w', 'l']).range([0, x.bandwidth()]).padding(0.06);
+      const y  = d3.scaleLinear().domain([0, maxT + 0.5]).range([ViH, 0]);
 
-      g.append('g').attr('transform', `translate(0,${H})`)
+      g.append('g').attr('transform', `translate(0,${ViH})`)
         .call(d3.axisBottom(x).tickSize(0))
-        .call(ax => {
-          ax.select('.domain').remove();
-          ax.selectAll('text').attr('fill', '#7a7060').attr('font-size', 7).attr('font-family', FONT);
-        });
+        .call(ax => axisStyle(ax));
 
       g.append('g')
-        .call(d3.axisLeft(y).ticks(maxT + 1).tickFormat(d => Number.isInteger(d) ? d : '').tickSize(-W))
-        .call(ax => {
-          ax.select('.domain').remove();
-          ax.selectAll('.tick line').attr('stroke', '#2e2a22').attr('stroke-dasharray', '2,2');
-          ax.selectAll('text').attr('fill', '#7a7060').attr('font-size', 6.5).attr('font-family', FONT);
-        });
+        .call(d3.axisLeft(y).ticks(Math.min(maxT, 6)).tickFormat(d => Number.isInteger(d) ? d : '').tickSize(-ViW))
+        .call(ax => axisStyle(ax, true));
 
       data.forEach(d => {
-        const oppCol = (PCOL[d.opp] || PCOL.Colban).peg;
-        // Wins in red, losses in the opponent's colour
-        [[d.wins, '#c0392b', 'w'], [d.losses, oppCol, 'l']].forEach(([val, fill, key]) => {
+        const col = (PCOL[d.player] || PCOL.Caitlin).peg;
+        [[d.wins, col, 'w', 1], [d.losses, col, 'l', 0.3]].forEach(([val, c, key, op]) => {
           if (val <= 0) return;
-          const bx = x(d.opp) + xi(key);
-          const bw = xi.bandwidth();
-          const by = y(val);
-          const bh = H - by;
-          g.append('rect')
-            .attr('x', bx).attr('y', by)
+          const bx = x(d.player) + xi(key), bw = xi.bandwidth();
+          const by = y(val), bh = ViH - by;
+          g.append('rect').attr('x', bx).attr('y', by)
             .attr('width', bw).attr('height', Math.max(bh, 0))
-            .attr('fill', fill).attr('rx', 2).attr('opacity', 0.85);
-          g.append('text')
-            .attr('x', bx + bw / 2).attr('y', by - 3)
-            .attr('text-anchor', 'middle')
-            .attr('fill', fill).attr('font-size', 6.5).attr('font-family', FONT)
-            .text(val);
+            .attr('fill', c).attr('rx', 2).attr('opacity', op);
+          g.append('text').attr('x', bx + bw/2).attr('y', by - 2)
+            .attr('text-anchor', 'middle').attr('fill', c)
+            .attr('font-size', 6).attr('font-family', FONT).text(val);
         });
       });
 
       // Legend
-      g.append('rect').attr('x', W - 50).attr('y', 0).attr('width', 6).attr('height', 6).attr('fill', '#c0392b').attr('rx', 1);
-      g.append('text').attr('x', W - 41).attr('y', 5.5).attr('fill', '#7a7060').attr('font-size', 6.5).attr('font-family', FONT).text('Wins');
-      g.append('rect').attr('x', W - 50).attr('y', 11).attr('width', 6).attr('height', 6).attr('fill', '#555').attr('rx', 1);
-      g.append('text').attr('x', W - 41).attr('y', 16.5).attr('fill', '#7a7060').attr('font-size', 6.5).attr('font-family', FONT).text('Loss');
+      g.append('rect').attr('x', ViW - 40).attr('y', 0).attr('width', 6).attr('height', 6).attr('fill', '#888').attr('opacity', 1).attr('rx', 1);
+      g.append('text').attr('x', ViW - 31).attr('y', 5.5).attr('fill', '#7a7060').attr('font-size', 6).attr('font-family', FONT).text('Wins');
+      g.append('rect').attr('x', ViW - 40).attr('y', 10).attr('width', 6).attr('height', 6).attr('fill', '#888').attr('opacity', 0.3).attr('rx', 1);
+      g.append('text').attr('x', ViW - 31).attr('y', 15.5).attr('fill', '#7a7060').attr('font-size', 6).attr('font-family', FONT).text('Losses');
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  TREND CHART 2 — Average points by type per player
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function renderBarAvg(games) {
+      clearChart('bar-avg');
+      const svg = trendSvg('bar-avg');
+      const g = svg.append('g').attr('transform', `translate(${VML},${VMT})`);
+
+      const players = allPlayers(games);
+
+      // Average peg, hand, crib per round per player
+      function avgFor(player, field) {
+        const vals = games.flatMap(gm => {
+          const isP1 = gm.p1name === player;
+          const isP2 = gm.p2name === player;
+          if (!isP1 && !isP2) return [];
+          return gm.rounds.map(r => isP1 ? r[field + '1'] : r[field + '2']).filter(v => v != null);
+        });
+        return d3.mean(vals) || 0;
+      }
+
+      const types = [
+        { key: 'peg',  field: 'p1pegged'.replace('p1',''), label: 'Peg',  col: '#c8973a' },
+        { key: 'hand', field: 'hand',  label: 'Hand', col: '#5a9e7a' },
+        { key: 'crib', field: 'crib',  label: 'Crib', col: '#7B6FBE' },
+      ];
+
+      // Build grouped band: outer = type, inner = player
+      const cats = types.map(t => t.label);
+      const x0 = d3.scaleBand().domain(cats).range([0, ViW]).padding(0.22);
+      const xi = d3.scaleBand().domain(players).range([0, x0.bandwidth()]).padding(0.06);
+
+      const allVals = types.flatMap(t =>
+        players.map(p => avgFor(p, t.key === 'peg' ? 'p' : '') )
+      );
+
+      // Compute actual averages
+      const dataset = types.map(t => ({
+        ...t,
+        vals: players.map(p => ({
+          player: p,
+          val: t.key === 'peg'
+            ? d3.mean(games.flatMap(gm => {
+                const isP1 = gm.p1name === p, isP2 = gm.p2name === p;
+                if (!isP1 && !isP2) return [];
+                return gm.rounds.map(r => isP1 ? r.p1pegged : r.p2pegged).filter(v => v != null);
+              })) || 0
+            : t.key === 'hand'
+            ? d3.mean(games.flatMap(gm => {
+                const isP1 = gm.p1name === p, isP2 = gm.p2name === p;
+                if (!isP1 && !isP2) return [];
+                return gm.rounds.map(r => isP1 ? r.p1hand : r.p2hand).filter(v => v != null);
+              })) || 0
+            : d3.mean(games.flatMap(gm => {
+                const isP1 = gm.p1name === p, isP2 = gm.p2name === p;
+                if (!isP1 && !isP2) return [];
+                return gm.rounds.map(r => isP1 ? r.p1crib : r.p2crib).filter(v => v != null);
+              })) || 0,
+        })),
+      }));
+
+      const maxV = d3.max(dataset.flatMap(t => t.vals.map(v => v.val))) || 1;
+      const y = d3.scaleLinear().domain([0, maxV * 1.15]).range([ViH, 0]);
+
+      g.append('g').attr('transform', `translate(0,${ViH})`)
+        .call(d3.axisBottom(x0).tickSize(0))
+        .call(ax => axisStyle(ax));
+      g.append('g')
+        .call(d3.axisLeft(y).ticks(4).tickSize(-ViW))
+        .call(ax => axisStyle(ax, true));
+
+      dataset.forEach(t => {
+        t.vals.forEach(v => {
+          if (v.val <= 0) return;
+          const col = (PCOL[v.player] || PCOL.Caitlin).peg;
+          const bx = x0(t.label) + xi(v.player), bw = xi.bandwidth();
+          const by = y(v.val), bh = ViH - by;
+          g.append('rect').attr('x', bx).attr('y', by)
+            .attr('width', bw).attr('height', Math.max(bh, 0))
+            .attr('fill', col).attr('rx', 2).attr('opacity', 0.85);
+          g.append('text').attr('x', bx + bw/2).attr('y', by - 2)
+            .attr('text-anchor', 'middle').attr('fill', col)
+            .attr('font-size', 5.5).attr('font-family', FONT)
+            .text(Math.round(v.val * 10) / 10);
+        });
+      });
+
+      // Category colour dots as legend
+      types.forEach((t, i) => {
+        g.append('rect').attr('x', i * 40).attr('y', ViH + 14).attr('width', 5).attr('height', 5).attr('fill', t.col).attr('rx', 1);
+        g.append('text').attr('x', i * 40 + 7).attr('y', ViH + 18.5).attr('fill', '#7a7060').attr('font-size', 6).attr('font-family', FONT).text(t.label);
+      });
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  TREND CHART 3 — Best single round per player (peg / hand / crib)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function renderBarMax(games) {
+      clearChart('bar-max');
+      const svg = trendSvg('bar-max');
+      const g = svg.append('g').attr('transform', `translate(${VML},${VMT})`);
+
+      const players = allPlayers(games);
+
+      const data = players.map(player => {
+        const rounds = games.flatMap(gm => {
+          const isP1 = gm.p1name === player, isP2 = gm.p2name === player;
+          if (!isP1 && !isP2) return [];
+          return gm.rounds.map(r => ({
+            peg:  isP1 ? r.p1pegged : r.p2pegged,
+            hand: isP1 ? r.p1hand   : r.p2hand,
+            crib: isP1 ? r.p1crib   : r.p2crib,
+            total: (isP1 ? r.p1pegged : r.p2pegged)
+                 + (isP1 ? r.p1hand   : r.p2hand)
+                 + (isP1 ? r.p1crib   : r.p2crib),
+          }));
+        });
+        const best = rounds.reduce((b, r) => r.total > b.total ? r : b, { peg:0, hand:0, crib:0, total:0 });
+        return { player, ...best };
+      }).filter(d => d.total > 0);
+
+      const x = d3.scaleBand().domain(players).range([0, ViW]).padding(0.28);
+      const maxV = d3.max(data, d => d.total) || 1;
+      const y = d3.scaleLinear().domain([0, maxV * 1.15]).range([ViH, 0]);
+
+      g.append('g').attr('transform', `translate(0,${ViH})`)
+        .call(d3.axisBottom(x).tickSize(0))
+        .call(ax => axisStyle(ax));
+      g.append('g')
+        .call(d3.axisLeft(y).ticks(4).tickSize(-ViW))
+        .call(ax => axisStyle(ax, true));
+
+      // Stacked bars: peg (bottom) → hand → crib (top)
+      data.forEach(d => {
+        const col = (PCOL[d.player] || PCOL.Caitlin).peg;
+        const bx = x(d.player), bw = x.bandwidth();
+        let yOff = ViH;
+
+        [['peg', d.peg, 0.5], ['hand', d.hand, 0.75], ['crib', d.crib, 1]].forEach(([lbl, val, op]) => {
+          if (!val) return;
+          const bh = ViH - y(val);
+          g.append('rect').attr('x', bx).attr('y', yOff - bh)
+            .attr('width', bw).attr('height', bh)
+            .attr('fill', col).attr('rx', lbl === 'crib' ? 2 : 0).attr('opacity', op);
+          if (bh > 8) {
+            g.append('text').attr('x', bx + bw/2).attr('y', yOff - bh/2)
+              .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+              .attr('fill', 'rgba(255,255,255,.7)').attr('font-size', 6).attr('font-family', FONT)
+              .text(val);
+          }
+          yOff -= bh;
+        });
+
+        // Total label above bar
+        g.append('text').attr('x', bx + bw/2).attr('y', y(d.total) - 3)
+          .attr('text-anchor', 'middle').attr('fill', col)
+          .attr('font-size', 6.5).attr('font-weight', '500').attr('font-family', FONT)
+          .text(d.total);
+      });
+
+      // Legend
+      [['Peg', 0.5], ['Hand', 0.75], ['Crib', 1]].forEach(([lbl, op], i) => {
+        g.append('rect').attr('x', i * 38).attr('y', ViH + 14).attr('width', 5).attr('height', 5).attr('fill', '#888').attr('opacity', op).attr('rx', 1);
+        g.append('text').attr('x', i * 38 + 7).attr('y', ViH + 18.5).attr('fill', '#7a7060').attr('font-size', 6).attr('font-family', FONT).text(lbl);
+      });
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  TREND CHART 4 — Hand counting accuracy
+    //  Compares recorded handPoints vs the calculated score from card data.
+    //  Shows % of rounds counted exactly correctly, with avg over/undercount.
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function renderBarAcc(games) {
+      clearChart('bar-acc');
+      const note = document.getElementById('bar-acc-note');
+      const svg = trendSvg('bar-acc');
+      const g = svg.append('g').attr('transform', `translate(${VML},${VMT})`);
+
+      const accuracy = computeAccuracy(games);
+
+      if (!accuracy.length) {
+        note.textContent = 'Not enough card data to compute accuracy.';
+        return;
+      }
+
+      const players = accuracy.map(a => a.player);
+      const x = d3.scaleBand().domain(players).range([0, ViW]).padding(0.35);
+      const y = d3.scaleLinear().domain([0, 100]).range([ViH, 0]);
+
+      g.append('g').attr('transform', `translate(0,${ViH})`)
+        .call(d3.axisBottom(x).tickSize(0))
+        .call(ax => axisStyle(ax));
+      g.append('g')
+        .call(d3.axisLeft(y).ticks(5).tickFormat(d => d + '%').tickSize(-ViW))
+        .call(ax => axisStyle(ax, true));
+
+      // Target line at 100%
+      g.append('line').attr('x1', 0).attr('x2', ViW).attr('y1', y(100)).attr('y2', y(100))
+        .attr('stroke', '#5a5040').attr('stroke-width', 0.8).attr('stroke-dasharray', '4,3');
+
+      accuracy.forEach(a => {
+        const col = (PCOL[a.player] || PCOL.Caitlin).peg;
+        const bx = x(a.player), bw = x.bandwidth();
+        const by = y(a.pct), bh = ViH - by;
+
+        // Accuracy bar
+        g.append('rect').attr('x', bx).attr('y', by)
+          .attr('width', bw).attr('height', Math.max(bh, 0))
+          .attr('fill', col).attr('rx', 2).attr('opacity', 0.85);
+
+        // Pct label
+        g.append('text').attr('x', bx + bw/2).attr('y', by - 3)
+          .attr('text-anchor', 'middle').attr('fill', col)
+          .attr('font-size', 7).attr('font-weight', '500').attr('font-family', FONT)
+          .text(Math.round(a.pct) + '%');
+
+        // Avg diff indicator (small +/- below bar)
+        const diffLabel = a.avgDiff > 0 ? '+' + Math.round(a.avgDiff * 10) / 10
+                        : Math.round(a.avgDiff * 10) / 10;
+        const diffCol = a.avgDiff > 0.2 ? '#c0a030' : a.avgDiff < -0.2 ? '#8888cc' : '#7a7060';
+        g.append('text').attr('x', bx + bw/2).attr('y', ViH + 11)
+          .attr('text-anchor', 'middle')
+          .attr('fill', diffCol).attr('font-size', 6.5).attr('font-family', FONT)
+          .text('avg ' + diffLabel);
+      });
+
+      // Explanation note
+      note.innerHTML = accuracy.map(a => {
+        const dir = Math.abs(a.avgDiff) < 0.1 ? '' : a.avgDiff > 0 ? ' (over-counting)' : ' (under-counting)';
+        return `<span style="color:${(PCOL[a.player]||PCOL.Caitlin).light}">${a.player}</span>: ${Math.round(a.pct)}% exact on ${a.n} rounds${dir}`;
+      }).join(' &nbsp;·&nbsp; ');
     }
 
 
@@ -1544,7 +1770,12 @@
     function render() {
       const games = filteredGames();
       renderHeatmap(games);
-      renderBar3(allGames);  // win/loss always shows all games, regardless of filter
+
+      // Trend charts always show all games so overall patterns are visible
+      renderBar3(allGames);
+      renderBarAvg(allGames);
+      renderBarMax(allGames);
+      renderBarAcc(allGames);
 
       const first = games[0];
       if (first) {
@@ -1565,12 +1796,6 @@
       }
 
       renderCards(null, null);
-
-      // Clear the round-specific charts and show their placeholder messages
-      clearChart('bar1');
-      document.getElementById('bar1-empty').style.display = 'block';
-      clearChart('bar2');
-      document.getElementById('bar2-empty').style.display = 'block';
     }
 
 
@@ -1596,8 +1821,6 @@
       document.getElementById('r-detail').textContent = `Round ${rd.round} · `;
 
       renderCards(rd, game);
-      renderBar1(rd, game, filteredGames());
-      renderBar2(rd, game);
     }
 
 
