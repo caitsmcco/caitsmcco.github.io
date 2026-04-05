@@ -1161,29 +1161,36 @@
      * @returns {{ rank: string, suit: string, red: boolean } | null}
      */
     function parseCard(s) {
-      if (!s || s.trim() === '--') return null;
+      if (!s) return null;
       s = s.trim();
-      return {
-        rank: s.slice(0, -1),         // everything before the last character
-        suit: s.slice(-1),            // last character is the suit code
-        red:  RED.has(s.slice(-1)),   // true for Hearts and Diamonds
-      };
+      // Reject placeholder values written by the collect page
+      if (s === '--' || s === 'XX' || s === '') return null;
+      // Must end in a valid suit letter
+      const suit = s.slice(-1).toUpperCase();
+      if (!['H','D','C','S'].includes(suit)) return null;
+      const rank = s.slice(0, -1).toUpperCase();
+      // Valid ranks: A 2-9 10 J Q K
+      if (!['A','2','3','4','5','6','7','8','9','10','J','Q','K'].includes(rank)) return null;
+      return { rank, suit, red: suit === 'H' || suit === 'D' };
     }
 
-
     /**
-     * Returns an HTML string for a single playing card.
-     * Blank cards (null input) render as empty dark placeholders.
+     * Shared helper used by renderCards, computeAccuracy, the heatmap
+     * pre-computation, and renderMiscountExplorer — all go through here
+     * so card parsing is identical everywhere.
      *
-     * @param {object|null} c - Card object from parseCard(), or null
-     * @returns {string} HTML string
+     * Given a raw CSV row, returns the player's kept hand (first 4 valid
+     * cards from p1-p7) and the cut card. Returns null if data is incomplete.
      */
-    function cardEl(c) {
-      if (!c) return '<div class="card blank"></div>';
-      return `<div class="card ${c.red ? 'red' : 'black'}">
-                <span class="cr">${c.rank}</span>
-                <span class="cs">${SUIT[c.suit] || c.suit}</span>
-              </div>`;
+    function extractHandAndCut(row) {
+      if (!row) return null;
+      const cards = ['p1','p2','p3','p4','p5','p6','p7']
+        .map(f => parseCard(row[f]))
+        .filter(Boolean);
+      const cut = parseCard(row.cc);
+      const hand = cards.slice(0, 4);
+      if (hand.length < 4 || !cut) return null;
+      return { hand, cut };
     }
 
 
@@ -1230,11 +1237,11 @@
       const d1 = cribCards(r1);
       const d2 = cribCards(r2);
 
-      // Score the hand if we have enough cards
-      const hand1Cards = h1.slice(0, 4);
-      const hand2Cards = h2.slice(0, 4);
-      const scored1 = (hand1Cards.length === 4 && cutCard) ? scoreHand(hand1Cards, cutCard) : null;
-      const scored2 = (hand2Cards.length === 4 && cutCard) ? scoreHand(hand2Cards, cutCard) : null;
+      // Score the hand using the shared helper — same path as all other scorers
+      const hc1 = extractHandAndCut(r1);
+      const hc2 = extractHandAndCut(r2);
+      const scored1 = hc1 ? scoreHand(hc1.hand, hc1.cut) : null;
+      const scored2 = hc2 ? scoreHand(hc2.hand, hc2.cut) : null;
 
       const peg1   = rd.p1pegged, hand1 = rd.p1hand, crib1 = rd.p1crib;
       const peg2   = rd.p2pegged, hand2 = rd.p2hand, crib2 = rd.p2crib;
@@ -1524,17 +1531,10 @@
             [game.p1name, byP[game.p1name], rd.p1hand],
             [game.p2name, byP[game.p2name], rd.p2hand],
           ].forEach(([name, row, recorded]) => {
-            if (!row) return;
+            const hc = extractHandAndCut(row);
+            if (!hc) return;
 
-            // Parse their hand (first 4 played cards) and cut card
-            const handStrs = ['p1','p2','p3','p4'].map(f => row[f]);
-            const hand = handStrs.map(s => parseCard(s)).filter(Boolean);
-            const cut  = parseCard(row.cc);
-
-            if (hand.length < 4 || !cut) return;  // incomplete data, skip
-
-            const isDealerRound = rd.round % 2 === (name === game.p1name ? 1 : 0);
-            const scored = scoreHand(hand, cut, false);
+            const scored = scoreHand(hc.hand, hc.cut);
             if (!scored) return;
 
             records.push({
@@ -1940,16 +1940,14 @@
             [game.p1name, byP[game.p1name], rd.p1hand, (PCOL[game.p1name]||PCOL.Caitlin)],
             [game.p2name, byP[game.p2name], rd.p2hand, (PCOL[game.p2name]||PCOL.Colban)],
           ].forEach(([name, row, recorded, pcol]) => {
-            if (!row) return;
-            const handCards = ['p1','p2','p3','p4'].map(f => parseCard(row[f])).filter(Boolean);
-            const cut = parseCard(row.cc);
-            if (handCards.length < 4 || !cut) return;
+            const hc = extractHandAndCut(row);
+            if (!hc) return;
 
-            const scored = scoreHand(handCards, cut);
+            const scored = scoreHand(hc.hand, hc.cut);
             if (!scored || scored.total === (recorded || 0)) return;
 
             const diff = (recorded || 0) - scored.total;
-            rows.push({ name, pcol, date: game.date, round: rd.round, handCards, cut, recorded: recorded || 0, scored, diff });
+            rows.push({ name, pcol, date: game.date, round: rd.round, handCards: hc.hand, cut: hc.cut, recorded: recorded || 0, scored, diff });
           });
         });
       });
@@ -2250,14 +2248,12 @@
           const rawRows = game._raw.filter(r => +r.Round === rd.round);
           const byP = Object.fromEntries(rawRows.map(r => [r.Name, r]));
           const hasMiscount = [
-            [game.p1name, byP[game.p1name], rd.p1hand],
-            [game.p2name, byP[game.p2name], rd.p2hand],
-          ].some(([, row, recorded]) => {
-            if (!row) return false;
-            const hc = ['p1','p2','p3','p4'].map(f => parseCard(row[f])).filter(Boolean);
-            const cut = parseCard(row.cc);
-            if (hc.length < 4 || !cut) return false;
-            const sc = scoreHand(hc, cut);
+            [byP[game.p1name], rd.p1hand],
+            [byP[game.p2name], rd.p2hand],
+          ].some(([row, recorded]) => {
+            const hc = extractHandAndCut(row);
+            if (!hc) return false;
+            const sc = scoreHand(hc.hand, hc.cut);
             return sc && sc.total !== (recorded || 0);
           });
           if (hasMiscount) miscountKeys.add(`${game.date}|${rd.round}`);
