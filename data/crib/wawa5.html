@@ -1158,9 +1158,15 @@
       const total2 = peg2 + hand2 + crib2;
       const barMax = Math.max(total1, total2, 1);
 
-      // Dealer is whoever actually earned crib points this round.
-      // Falls back to round parity only when neither has crib points (crib scored 0).
-      const p1IsDealer = crib1 > 0 ? true : crib2 > 0 ? false : rd.round % 2 === 1;
+      // Determine who dealt first in this game by reading round 1's crib points,
+      // which always scores at least something. That establishes the alternating
+      // pattern: if p1 dealt round 1 (odd), p1 deals all odd rounds; if p2 dealt
+      // round 1, p2 deals all odd rounds (i.e. p1 deals even rounds).
+      const round1 = game.rounds.find(r => r.round === 1);
+      const p1DealtFirst = round1
+        ? (round1.p1crib > 0 ? true : round1.p2crib > 0 ? false : true)
+        : true;
+      const p1IsDealer = (rd.round % 2 === 1) === p1DealtFirst;
 
       function card(c, extra = '', outlineColor = '') {
         if (!c) return '';
