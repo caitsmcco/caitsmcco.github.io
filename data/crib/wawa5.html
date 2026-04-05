@@ -721,9 +721,10 @@
 <body>
   <nav>
     <a class="nav-brand">Cribbage</a>
-    <a href="..\crib" class="active">Dashboard</a>
+    <a href="..\crib">Dashboard</a>
     <a href="about/">About Cribbage</a>
     <a href="collect/" >Collect Data</a>
+    <a href="wawa5.html"  class="active">Testing New Things</a>
   </nav>
 
   <div class="page-header">
@@ -1342,7 +1343,7 @@
         const badgeColor = diff > 0 ? '#d4a030' : '#8888cc';
         const badgeSign  = diff > 0 ? `+${diff}` : `${diff}`;
         const miscountInline = hasMiscount
-          ? `<span class="name-miscount" style="border-color:${badgeColor};color:${badgeColor};">⚠ ${badgeSign}</span>`
+          ? `<span class="miscount-badge" style="border-color:${badgeColor};color:${badgeColor};">⚠ ${badgeSign}</span>`
           : '';
 
         return `
