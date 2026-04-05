@@ -545,6 +545,154 @@
     }
     .rd-dash { color: var(--muted); font-size: .85rem; }
 
+    /* ── Miscount badge on the hand score pill ────────────────────────────── */
+    .sc-pill--miscount {
+      cursor: pointer;
+      position: relative;
+    }
+
+    /* The ⚠ badge sitting on the pill */
+    .miscount-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      font-size: .58rem;
+      font-weight: 600;
+      padding: 1px 5px;
+      border-radius: 3px;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      border: 1px solid;
+      margin-left: 3px;
+      transition: opacity .1s;
+    }
+
+    .miscount-badge:hover { opacity: .75; }
+
+    /* ── Score breakdown floating tooltip ────────────────────────────────── */
+    .score-tip {
+      position: fixed;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: .55rem .8rem;
+      font-size: .75rem;
+      color: var(--text);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .12s;
+      z-index: 200;
+      line-height: 1.8;
+      min-width: 180px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.4);
+    }
+
+    .score-tip.vis { opacity: 1; }
+
+    .score-tip-title {
+      font-size: .7rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: .3rem;
+      font-weight: 500;
+    }
+
+    .score-tip-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 1.5rem;
+    }
+
+    .score-tip-row.total {
+      border-top: 1px solid var(--border);
+      margin-top: .25rem;
+      padding-top: .25rem;
+      font-weight: 600;
+    }
+
+    .score-tip-row.mismatch {
+      color: #e0a030;
+      border-top: 1px solid var(--border);
+      margin-top: .25rem;
+      padding-top: .25rem;
+    }
+
+    .score-tip-key { color: var(--muted); }
+
+    /* ── Miscount explorer ────────────────────────────────────────────────── */
+    #miscount-list {
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+    }
+
+    .mc-row {
+      display: grid;
+      grid-template-columns: 110px auto 1fr;
+      align-items: center;
+      gap: 1rem;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: .7rem 1rem;
+      border-left: 3px solid;
+    }
+
+    .mc-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .mc-player {
+      font-size: .82rem;
+      font-weight: 500;
+    }
+
+    .mc-date {
+      font-size: .68rem;
+      color: var(--muted);
+    }
+
+    .mc-round {
+      font-size: .65rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .mc-cards {
+      display: flex;
+      gap: 3px;
+      align-items: flex-end;
+    }
+
+    .mc-verdict {
+      display: flex;
+      flex-direction: column;
+      gap: .35rem;
+    }
+
+    .mc-diff-row {
+      display: flex;
+      align-items: baseline;
+      gap: .4rem;
+      font-size: .8rem;
+    }
+
+    .mc-recorded { color: var(--muted); }
+    .mc-arrow    { color: var(--muted); font-size: .65rem; }
+
+    .mc-breakdown {
+      font-size: .68rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .mc-breakdown span { color: var(--text); }
+
   </style>
 </head>
 
@@ -640,8 +788,21 @@
 
   </div>
 
+  <!-- ── Miscount explorer ────────────────────────────────────────────── -->
+  <div id="miscount-section" style="display:none; margin-top:1.2rem; padding:0 0 2rem;">
+    <div style="padding: 0 0 .7rem;">
+      <div class="pt">Miscount explorer</div>
+      <p style="font-size:.78rem;color:var(--muted);line-height:1.6;max-width:640px;">
+        Every hand where the recorded points differ from the calculated value. Cards shown are the 4 kept cards + cut card.
+      </p>
+    </div>
+    <div id="miscount-list"></div>
+  </div>
+
   <!-- Floating tooltip — positioned by JS on mousemove -->
   <div class="tooltip" id="tooltip"></div>
+  <!-- Score breakdown tooltip — triggered by hovering the hand score pill -->
+  <div class="score-tip" id="score-tip"></div>
 
 
   <script>
@@ -1022,7 +1183,6 @@
         return;
       }
 
-      // Pull raw CSV rows for this round
       const rawRows = game._raw.filter(r => +r.Round === rd.round);
       const byP     = Object.fromEntries(rawRows.map(r => [r.Name, r]));
       const r1      = byP[game.p1name];
@@ -1033,10 +1193,8 @@
       const c2     = (PCOL[game.p2name] || PCOL.Colban).peg;
       const c2lite = (PCOL[game.p2name] || PCOL.Colban).light;
 
-      // p1 deals on odd rounds, p2 deals on even rounds
       const p1IsDealer = rd.round % 2 === 1;
 
-      // Card extraction
       const handCards = row => row
         ? ['p1','p2','p3','p4','p5','p6','p7'].map(f => parseCard(row[f])).filter(Boolean)
         : [];
@@ -1047,30 +1205,75 @@
 
       const h1 = handCards(r1);
       const h2 = handCards(r2);
-      const d1 = cribCards(r1);  // p1's discards into the crib
-      const d2 = cribCards(r2);  // p2's discards into the crib
+      const d1 = cribCards(r1);
+      const d2 = cribCards(r2);
 
-      // Score values
+      // Score the hand if we have enough cards
+      const hand1Cards = h1.slice(0, 4);
+      const hand2Cards = h2.slice(0, 4);
+      const scored1 = (hand1Cards.length === 4 && cutCard) ? scoreHand(hand1Cards, cutCard) : null;
+      const scored2 = (hand2Cards.length === 4 && cutCard) ? scoreHand(hand2Cards, cutCard) : null;
+
       const peg1   = rd.p1pegged, hand1 = rd.p1hand, crib1 = rd.p1crib;
       const peg2   = rd.p2pegged, hand2 = rd.p2hand, crib2 = rd.p2crib;
       const total1 = peg1 + hand1 + crib1;
       const total2 = peg2 + hand2 + crib2;
       const barMax = Math.max(total1, total2, 1);
 
-      // Render a card element inline.
-      // extra = additional CSS classes, outlineColor = optional box-shadow colour (crib cards)
       function card(c, extra = '', outlineColor = '') {
         if (!c) return '';
-        const outline = outlineColor
-          ? `style="box-shadow:0 0 0 2px ${outlineColor}"`
-          : '';
+        const outline = outlineColor ? `style="box-shadow:0 0 0 2px ${outlineColor}"` : '';
         return `<div class="card ${c.red ? 'red' : 'black'} ${extra}" ${outline}>
           <span class="cr">${c.rank}</span>
           <span class="cs">${SUIT[c.suit]}</span>
         </div>`;
       }
 
-      // Render a score pill: label | proportional bar | value
+      // Score breakdown tooltip data stored on element via data attributes
+      // Returns HTML for the hand score pill, with miscount badge if needed
+      function handPill(recorded, scored, color, pillId) {
+        const pct = Math.round((recorded / barMax) * 100);
+        const hasMiscount = scored && scored.total !== recorded;
+        const diff = scored ? recorded - scored.total : 0;
+
+        // Serialise breakdown for the tooltip
+        const tipData = scored ? JSON.stringify({
+          fifteens: scored.fifteens,
+          pairs:    scored.pairs,
+          runs:     scored.runs,
+          flush:    scored.flush,
+          nob:      scored.nob,
+          calc:     scored.total,
+          recorded,
+          color,
+        }) : null;
+
+        const badgeColor = diff > 0 ? '#d4a030' : '#8888cc';
+        const badgeSign  = diff > 0 ? `+${diff}` : `${diff}`;
+        const badge = hasMiscount
+          ? `<span class="miscount-badge"
+               style="border-color:${badgeColor};color:${badgeColor};"
+               data-tip='${tipData}'
+               id="${pillId}-badge">⚠ ${badgeSign}</span>`
+          : '';
+
+        if (recorded <= 0 && !hasMiscount) return `
+          <div class="sc-pill sc-pill--zero">
+            <span class="sc-pill-label">hand</span>
+            <div class="sc-pill-bar"><div class="sc-pill-fill" style="width:0%"></div></div>
+            <span class="sc-pill-val" style="color:var(--muted)">0</span>
+          </div>`;
+
+        return `
+          <div class="sc-pill ${hasMiscount ? 'sc-pill--miscount' : ''}"
+               style="--pill-color:${color};"
+               ${tipData ? `data-tip='${tipData}' id="${pillId}"` : ''}>
+            <span class="sc-pill-label">hand${badge}</span>
+            <div class="sc-pill-bar"><div class="sc-pill-fill" style="width:${pct}%"></div></div>
+            <span class="sc-pill-val">${recorded}</span>
+          </div>`;
+      }
+
       function scorePill(label, value, color) {
         const pct = Math.round((value / barMax) * 100);
         if (value <= 0) return `
@@ -1091,8 +1294,6 @@
         return `<div class="sc-total" style="border-color:${color};color:${color};">${total} pts</div>`;
       }
 
-      // Crib section — shown inside the dealer's column.
-      // d1/d2 are kept separate so each card can be outlined by its discarder.
       function cribSection(dealerColor) {
         return `
           <div class="rd-section-label rd-crib-label">
@@ -1105,26 +1306,21 @@
           </div>`;
       }
 
-      // Build each player's column HTML.
-      // Order: scores → hand → played → crib (dealer only)
-      function playerColumn(name, colorPeg, colorLite, h, peg, hand, crib, total, isDealer) {
+      function playerColumn(name, colorPeg, colorLite, h, peg, hand, crib, total, isDealer, scored, pillId) {
         return `
           <div class="rd-player">
             <div class="rd-player-name" style="color:${colorLite}">${name}</div>
-
             <div class="rd-scores">
               ${scorePill('peg',  peg,  colorPeg)}
-              ${scorePill('hand', hand, colorPeg)}
+              ${handPill(hand, scored, colorPeg, pillId)}
               ${crib > 0 ? scorePill('crib', crib, colorPeg) : ''}
             </div>
             ${totalBadge(total, colorPeg)}
-
             <div class="rd-section-label">hand + cut</div>
             <div class="rd-cards">
               ${h.slice(0,4).map(c => card(c)).join('')}
               ${cutCard ? card(cutCard, 'card--cut-mini') : ''}
             </div>
-
             ${h.length > 4 ? `
             <div class="rd-section-label">played</div>
             <div class="rd-cards rd-cards--played">
@@ -1132,7 +1328,6 @@
                 <span class="rd-play-num">${i+1}</span>${card(c)}
               </div>`).join('')}
             </div>` : ''}
-
             ${isDealer ? cribSection(colorPeg) : ''}
           </div>`;
       }
@@ -1140,12 +1335,44 @@
       el.innerHTML = `
         <div class="rd-wrap">
           <div class="rd-players">
-            ${playerColumn(game.p1name, c1, c1lite, h1, peg1, hand1, crib1, total1, p1IsDealer)}
+            ${playerColumn(game.p1name, c1, c1lite, h1, peg1, hand1, crib1, total1, p1IsDealer, scored1, 'pill-p1')}
             <div class="rd-divider"></div>
-            ${playerColumn(game.p2name, c2, c2lite, h2, peg2, hand2, crib2, total2, !p1IsDealer)}
+            ${playerColumn(game.p2name, c2, c2lite, h2, peg2, hand2, crib2, total2, !p1IsDealer, scored2, 'pill-p2')}
           </div>
         </div>
       `;
+
+      // Attach hover listeners for the score breakdown tooltip
+      const tip = document.getElementById('score-tip');
+      el.querySelectorAll('[data-tip]').forEach(elem => {
+        elem.addEventListener('mouseenter', e => {
+          const d = JSON.parse(elem.dataset.tip);
+          const hasMiscount = d.calc !== d.recorded;
+          const diffLabel = d.recorded - d.calc;
+
+          tip.innerHTML = `
+            <div class="score-tip-title">Hand breakdown</div>
+            ${d.fifteens ? `<div class="score-tip-row"><span class="score-tip-key">Fifteens</span><span>${d.fifteens}</span></div>` : ''}
+            ${d.pairs     ? `<div class="score-tip-row"><span class="score-tip-key">Pairs</span><span>${d.pairs}</span></div>` : ''}
+            ${d.runs      ? `<div class="score-tip-row"><span class="score-tip-key">Runs</span><span>${d.runs}</span></div>` : ''}
+            ${d.flush     ? `<div class="score-tip-row"><span class="score-tip-key">Flush</span><span>${d.flush}</span></div>` : ''}
+            ${d.nob       ? `<div class="score-tip-row"><span class="score-tip-key">Nob</span><span>${d.nob}</span></div>` : ''}
+            ${(!d.fifteens && !d.pairs && !d.runs && !d.flush && !d.nob)
+              ? `<div class="score-tip-row"><span class="score-tip-key">No scoring combos</span><span>0</span></div>` : ''}
+            <div class="score-tip-row total"><span class="score-tip-key">Calculated</span><span style="color:${d.color}">${d.calc}</span></div>
+            ${hasMiscount ? `<div class="score-tip-row mismatch">
+              <span class="score-tip-key">Recorded</span>
+              <span>${d.recorded} (${diffLabel > 0 ? '+' : ''}${diffLabel})</span>
+            </div>` : ''}
+          `;
+          tip.classList.add('vis');
+        });
+        elem.addEventListener('mousemove', e => {
+          tip.style.left = (e.clientX + 14) + 'px';
+          tip.style.top  = (e.clientY - 10) + 'px';
+        });
+        elem.addEventListener('mouseleave', () => tip.classList.remove('vis'));
+      });
     }
 
 
@@ -1654,6 +1881,109 @@
 
 
     // ═══════════════════════════════════════════════════════════════════════
+    //  MISCOUNT EXPLORER — full list of miscounted hands below the dashboard
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Builds a row-per-miscount panel below the trend charts.
+     * Shows cards, recorded vs calculated, and full breakdown for every
+     * hand where the recorded points don't match the scored value.
+     */
+    function renderMiscountExplorer(games) {
+      const section = document.getElementById('miscount-section');
+      const list    = document.getElementById('miscount-list');
+      list.innerHTML = '';
+
+      const rows = [];
+
+      games.forEach(game => {
+        if (!game._raw) return;
+        game.rounds.forEach(rd => {
+          const rawRows = game._raw.filter(r => +r.Round === rd.round);
+          const byP = Object.fromEntries(rawRows.map(r => [r.Name, r]));
+
+          [
+            [game.p1name, byP[game.p1name], rd.p1hand, (PCOL[game.p1name]||PCOL.Caitlin)],
+            [game.p2name, byP[game.p2name], rd.p2hand, (PCOL[game.p2name]||PCOL.Colban)],
+          ].forEach(([name, row, recorded, pcol]) => {
+            if (!row) return;
+            const handCards = ['p1','p2','p3','p4'].map(f => parseCard(row[f])).filter(Boolean);
+            const cut = parseCard(row.cc);
+            if (handCards.length < 4 || !cut) return;
+
+            const scored = scoreHand(handCards, cut);
+            if (!scored || scored.total === (recorded || 0)) return;
+
+            const diff = (recorded || 0) - scored.total;
+            rows.push({ name, pcol, date: game.date, round: rd.round, handCards, cut, recorded: recorded || 0, scored, diff });
+          });
+        });
+      });
+
+      section.style.display = rows.length ? 'block' : 'none';
+      if (!rows.length) return;
+
+      // Sort: largest absolute miscount first
+      rows.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
+
+      function miniCard(c) {
+        if (!c) return '';
+        const suitSym = { H:'♥', D:'♦', C:'♣', S:'♠' };
+        const isRed = c.suit === 'H' || c.suit === 'D';
+        return `<div class="card ${isRed ? 'red' : 'black'}" style="width:40px;height:58px;font-size:.7rem;">
+          <span class="cr" style="font-size:.65rem">${c.rank}</span>
+          <span class="cs" style="font-size:1.1rem">${suitSym[c.suit]}</span>
+        </div>`;
+      }
+
+      rows.forEach(r => {
+        const accentColor = r.diff > 0 ? '#d4a030' : '#8888cc';
+        const diffLabel   = r.diff > 0 ? `+${r.diff} over` : `${r.diff} under`;
+        const ds = new Date(r.date).toLocaleDateString('en-CA', { month:'short', day:'numeric', year:'2-digit' });
+
+        // Build the scoring breakdown text
+        const parts = [];
+        if (r.scored.fifteens) parts.push(`${r.scored.fifteens} from fifteens`);
+        if (r.scored.pairs)    parts.push(`${r.scored.pairs} from pairs`);
+        if (r.scored.runs)     parts.push(`${r.scored.runs} from runs`);
+        if (r.scored.flush)    parts.push(`${r.scored.flush} flush`);
+        if (r.scored.nob)      parts.push(`${r.scored.nob} nob`);
+        if (!parts.length)     parts.push('no scoring combinations');
+
+        const div = document.createElement('div');
+        div.className = 'mc-row';
+        div.style.borderLeftColor = accentColor;
+        div.innerHTML = `
+          <div class="mc-meta">
+            <span class="mc-player" style="color:${r.pcol.light}">${r.name}</span>
+            <span class="mc-date">${ds}</span>
+            <span class="mc-round">Round ${r.round}</span>
+          </div>
+
+          <div class="mc-cards">
+            ${r.handCards.map(c => miniCard(c)).join('')}
+            <div style="width:1px;height:38px;background:var(--border);margin:0 4px;align-self:flex-end;flex-shrink:0;"></div>
+            ${miniCard(r.cut)}
+          </div>
+
+          <div class="mc-verdict">
+            <div class="mc-diff-row">
+              <span class="mc-recorded">Recorded <strong style="color:var(--text)">${r.recorded}</strong></span>
+              <span class="mc-arrow">→</span>
+              <span>Should be <strong style="color:${accentColor}">${r.scored.total}</strong></span>
+              <span style="font-size:.7rem;color:${accentColor};margin-left:.2rem">(${diffLabel})</span>
+            </div>
+            <div class="mc-breakdown">
+              Correct count: <span>${parts.join(' · ')}</span> = <span>${r.scored.total}</span>
+            </div>
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
     //  APPLICATION STATE
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -1776,6 +2106,7 @@
       renderBarAvg(allGames);
       renderBarMax(allGames);
       renderBarAcc(allGames);
+      renderMiscountExplorer(allGames);
 
       const first = games[0];
       if (first) {
