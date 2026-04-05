@@ -369,6 +369,30 @@
 
     /* ── Round breakdown panel ────────────────────────────────────────────── */
 
+    /* Crib section sits inside the dealer's column */
+    .rd-crib-label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* Small "dealer" badge next to the crib label */
+    .rd-dealer-tag {
+      font-size: .52rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      border: 1px solid;
+      border-radius: 3px;
+      padding: 0 4px;
+      line-height: 1.5;
+    }
+
+    /* All four crib cards shown with a dashed border to distinguish from hand */
+    .card--crib {
+      border-style: dashed;
+      opacity: .85;
+    }
+
     .rd-empty {
       color: var(--muted);
       font-size: .85rem;
@@ -978,6 +1002,12 @@
     /**
      * Renders the round breakdown into #cards-content.
      * Shows: cut card, both players' hands + score bars, crib discards.
+     *
+     * Dealer logic:
+     *   - p1 (the player who appears first in the data) deals on odd rounds
+     *   - p2 deals on even rounds
+     *   - The dealer earns the crib points and their crib discards are shown
+     *     inside their own column, directly under their score bars.
      */
     function renderCards(rd, game) {
       const el = document.getElementById('cards-content');
@@ -998,6 +1028,9 @@
       const c2     = (PCOL[game.p2name] || PCOL.Colban).peg;
       const c2lite = (PCOL[game.p2name] || PCOL.Colban).light;
 
+      // p1 deals on odd rounds, p2 deals on even rounds
+      const p1IsDealer = rd.round % 2 === 1;
+
       // Card extraction
       const handCards = row => row
         ? ['p1','p2','p3','p4','p5','p6','p7'].map(f => parseCard(row[f])).filter(Boolean)
@@ -1009,12 +1042,14 @@
 
       const h1 = handCards(r1);
       const h2 = handCards(r2);
-      const d1 = cribCards(r1);
-      const d2 = cribCards(r2);
+      const d1 = cribCards(r1);  // p1's discards into the crib
+      const d2 = cribCards(r2);  // p2's discards into the crib
+      // All four crib cards together, dealer collects them
+      const allCribCards = [...d1, ...d2];
 
       // Score values
-      const peg1  = rd.p1pegged, hand1 = rd.p1hand, crib1 = rd.p1crib;
-      const peg2  = rd.p2pegged, hand2 = rd.p2hand, crib2 = rd.p2crib;
+      const peg1   = rd.p1pegged, hand1 = rd.p1hand, crib1 = rd.p1crib;
+      const peg2   = rd.p2pegged, hand2 = rd.p2hand, crib2 = rd.p2crib;
       const total1 = peg1 + hand1 + crib1;
       const total2 = peg2 + hand2 + crib2;
       const barMax = Math.max(total1, total2, 1);
@@ -1049,6 +1084,50 @@
         return `<div class="sc-total" style="border-color:${color};color:${color};">${total} pts</div>`;
       }
 
+      // Crib section — shown inside the dealer's column
+      function cribSection(color) {
+        return `
+          <div class="rd-section-label rd-crib-label">
+            crib <span class="rd-dealer-tag" style="border-color:${color};color:${color};">dealer</span>
+          </div>
+          <div class="rd-cards">
+            ${allCribCards.map(c => card(c, 'card--crib')).join('') || '<span class="rd-dash">—</span>'}
+          </div>`;
+      }
+
+      // Build each player's column HTML
+      function playerColumn(name, colorPeg, colorLite, h, peg, hand, crib, total, isDealer) {
+        return `
+          <div class="rd-player">
+            <div class="rd-player-name" style="color:${colorLite}">
+              ${name}
+            </div>
+
+            <div class="rd-section-label">hand + cut</div>
+            <div class="rd-cards">
+              ${h.slice(0,4).map(c => card(c)).join('')}
+              ${cutCard ? card(cutCard, 'card--cut-mini') : ''}
+            </div>
+
+            ${h.length > 4 ? `
+            <div class="rd-section-label">played</div>
+            <div class="rd-cards rd-cards--played">
+              ${h.slice(4).map((c,i) => `<div class="rd-play-slot">
+                <span class="rd-play-num">${i+1}</span>${card(c)}
+              </div>`).join('')}
+            </div>` : ''}
+
+            ${isDealer ? cribSection(colorPeg) : ''}
+
+            <div class="rd-scores">
+              ${scorePill('peg',  peg,  colorPeg)}
+              ${scorePill('hand', hand, colorPeg)}
+              ${crib > 0 ? scorePill('crib', crib, colorPeg) : ''}
+            </div>
+            ${totalBadge(total, colorPeg)}
+          </div>`;
+      }
+
       el.innerHTML = `
         <div class="rd-wrap">
 
@@ -1060,69 +1139,9 @@
 
           <!-- Two-player columns -->
           <div class="rd-players">
-
-            <div class="rd-player">
-              <div class="rd-player-name" style="color:${c1lite}">${game.p1name}</div>
-              <div class="rd-section-label">hand + cut</div>
-              <div class="rd-cards">
-                ${h1.slice(0,4).map(c => card(c)).join('')}
-                ${cutCard ? card(cutCard, 'card--cut-mini') : ''}
-              </div>
-              ${h1.length > 4 ? `
-              <div class="rd-section-label">played</div>
-              <div class="rd-cards rd-cards--played">
-                ${h1.slice(4).map((c,i) => `<div class="rd-play-slot">
-                  <span class="rd-play-num">${i+1}</span>${card(c)}
-                </div>`).join('')}
-              </div>` : ''}
-              <div class="rd-scores">
-                ${scorePill('peg',  peg1,  c1)}
-                ${scorePill('hand', hand1, c1)}
-                ${crib1 > 0 ? scorePill('crib', crib1, c1) : ''}
-              </div>
-              ${totalBadge(total1, c1)}
-            </div>
-
+            ${playerColumn(game.p1name, c1, c1lite, h1, peg1, hand1, crib1, total1, p1IsDealer)}
             <div class="rd-divider"></div>
-
-            <div class="rd-player">
-              <div class="rd-player-name" style="color:${c2lite}">${game.p2name}</div>
-              <div class="rd-section-label">hand + cut</div>
-              <div class="rd-cards">
-                ${h2.slice(0,4).map(c => card(c)).join('')}
-                ${cutCard ? card(cutCard, 'card--cut-mini') : ''}
-              </div>
-              ${h2.length > 4 ? `
-              <div class="rd-section-label">played</div>
-              <div class="rd-cards rd-cards--played">
-                ${h2.slice(4).map((c,i) => `<div class="rd-play-slot">
-                  <span class="rd-play-num">${i+1}</span>${card(c)}
-                </div>`).join('')}
-              </div>` : ''}
-              <div class="rd-scores">
-                ${scorePill('peg',  peg2,  c2)}
-                ${scorePill('hand', hand2, c2)}
-                ${crib2 > 0 ? scorePill('crib', crib2, c2) : ''}
-              </div>
-              ${totalBadge(total2, c2)}
-            </div>
-
-          </div>
-
-          <!-- Crib discards -->
-          <div class="rd-crib">
-            <span class="rd-section-label">crib discards</span>
-            <div class="rd-crib-cards">
-              <div class="rd-crib-group">
-                <span class="rd-crib-player" style="color:${c1lite}">${game.p1name}</span>
-                <div class="rd-cards">${d1.map(c => card(c)).join('') || '<span class="rd-dash">—</span>'}</div>
-              </div>
-              <div class="rd-crib-sep"></div>
-              <div class="rd-crib-group">
-                <span class="rd-crib-player" style="color:${c2lite}">${game.p2name}</span>
-                <div class="rd-cards">${d2.map(c => card(c)).join('') || '<span class="rd-dash">—</span>'}</div>
-              </div>
-            </div>
+            ${playerColumn(game.p2name, c2, c2lite, h2, peg2, hand2, crib2, total2, !p1IsDealer)}
           </div>
 
         </div>
@@ -1433,7 +1452,7 @@
      *   Name, gameDate, Round, d1, d2, cc, p1-p7 (played cards),
      *   peggedPoints, handPoints, cribPoints, EORScore
      */
-    d3.csv('dataedit.csv').then(raw => {
+    d3.csv('edited.csv').then(raw => {
       // Group all rows by gameDate — each unique date is one game session
       const grouped = d3.groups(raw, d => d.gameDate);
 
