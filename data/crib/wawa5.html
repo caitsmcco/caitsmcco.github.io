@@ -57,37 +57,32 @@
     .filter-bar {
       display: flex;
       align-items: center;
-      gap: .45rem;
+      gap: .3rem;
       flex-wrap: wrap;
-      margin-bottom: 1rem;
-    }
-
-    .filter-label {
-      font-size: 1rem;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      color: var(--muted);
     }
 
     .pill {
       display: flex;
       align-items: center;
-      gap: 5px;
-      padding: 3px 10px;
+      gap: 4px;
+      padding: 2px 8px;
       border-radius: 20px;
       border: 1px solid var(--border);
       background: var(--bg2);
-      font-size: 1rem;
+      font-size: .65rem;
+      letter-spacing: .06em;
+      text-transform: uppercase;
       cursor: pointer;
-      transition: border-color .15s, background .15s;
+      transition: border-color .15s, background .15s, color .15s;
       user-select: none;
       color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
     }
 
     /* Colour dot inside each pill */
     .pill .pdot {
-      width: 7px;
-      height: 7px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
     }
 
@@ -99,6 +94,7 @@
 
     .pill:hover {
       border-color: var(--gold);
+      color: var(--text);
     }
 
     /* ── Page layout ──────────────────────────────────────────────────────── */
@@ -678,19 +674,18 @@
     <div class="subtitle">Cribbage is a game of pairs, runs, sets of fifteens, mental strategy and luck. <br> When you're playing there is plenty to be curious about...</div>
   </div>
 
-  <!-- Opponent filter pills — populated dynamically by buildPills() -->
-  <div class="filter-bar">
-    <span class="filter-label"></span>
-  </div>
-
   <!-- ── Top row: heatmap | board ──────────────────────────────────────── -->
   <div class="top-row">
 
     <!-- LEFT: game heatmap -->
     <div class="panel" name="heatmap">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.7rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;">
         <div class="pt" style="margin-bottom:0;">Games</div>
         <div class="sort-bar" id="sort-bar"></div>
+      </div>
+      <!-- Opponent filter pills — populated dynamically by buildPills() -->
+      <div class="filter-bar" id="filter-bar" style="margin-bottom:.6rem;">
+        <span class="filter-label"></span>
       </div>
       <!-- overflow-x allows horizontal scroll if there are many rounds -->
       <div style="overflow-x: auto">
@@ -2056,7 +2051,7 @@
      * the data, plus an "All" pill that clears the filter.
      */
     function buildPills() {
-      const bar = document.querySelector('.filter-bar');
+      const bar = document.getElementById('filter-bar');
 
       const mk = (label, opp, col) => {
         const p = document.createElement('div');
