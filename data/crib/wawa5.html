@@ -682,6 +682,7 @@
       <!-- Score bar: round number, player names, and current scores -->
       <div class="score-bar">
         <div class="si">
+          <span class="sr" id="game-label"></span>
           <span class="sr"  id="r-detail">Round 0 ·</span>
           <span class="sd"  id="dot1"></span>
           <span class="sn"  id="p1-label">—</span>
@@ -757,6 +758,13 @@
     };
 
     const FONT = 'IBM Plex Mono, monospace';
+
+    // Ordinal suffix: 1→"1st", 2→"2nd", 3→"3rd", 4→"4th" …
+    function ordinal(n) {
+      const s = ['th','st','nd','rd'];
+      const v = n % 100;
+      return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    }
 
     // Map CSV suit codes → Unicode suit symbols
     const SUIT = { H: '♥', D: '♦', C: '♣', S: '♠' };
@@ -1799,7 +1807,7 @@
         return;
       }
 
-      const W = 260, H = 195, ML = 26, MR = 8, MT = 12, MB = 34;
+      const W = 260, H = 170, ML = 26, MR = 8, MT = 12, MB = 20;
       const iW = W - ML - MR, iH = H - MT - MB;
 
       const svg = d3.select('#bar-acc')
@@ -1855,6 +1863,9 @@
         const miscounts = a.records.filter(r => r.diff !== 0);
 
         // ── Beeswarm collision pass ──────────────────────────────────────
+        // Sort by diff, then place each dot as close to centre as possible
+        // without overlapping. Offsets alternate left/right so the swarm
+        // grows symmetrically rather than clustering to one side.
         const placed = [];
         const sorted = [...miscounts].sort((a, b) => a.diff - b.diff);
 
@@ -1862,16 +1873,19 @@
           const cy = y(r.diff);
           const nearby = placed.filter(p => Math.abs(p.cy - cy) < DOT_R * 2);
 
-          let offsets = [0];
-          for (let s = DOT_R * 2.2; s <= halfMax; s += DOT_R * 2.2) {
+          // Build offsets alternating left/right: 0, +step, -step, +2step, -2step …
+          const step = DOT_R * 2.2;
+          const offsets = [0];
+          for (let s = step; s <= halfMax; s += step) {
             offsets.push(s, -s);
           }
 
-          let chosen = halfMax;
+          let chosen = offsets[offsets.length - 1]; // fallback to edge
           for (const offset of offsets) {
             if (Math.abs(offset) > halfMax) continue;
+            const tx = cx + offset;
             const collision = nearby.some(p => {
-              const dx = p.cx - (cx + offset), dy = p.cy - cy;
+              const dx = p.cx - tx, dy = p.cy - cy;
               return Math.sqrt(dx * dx + dy * dy) < DOT_R * 2.1;
             });
             if (!collision) { chosen = offset; break; }
@@ -1938,11 +1952,12 @@
       // Group all rows by gameDate — each unique date is one game session
       const grouped = d3.groups(raw, d => d.gameDate);
 
-      allGames = grouped.map(([date, rows]) => {
+      allGames = grouped.map(([date, rows], idx) => {
         const names  = [...new Set(rows.map(d => d.Name))];
         const p1name = CAITLIN;
         const p2name = names.find(p => p !== CAITLIN) || names[1] || 'Unknown';
         const maxRound = d3.max(rows, d => +d.Round);
+        const gameNum  = idx + 1;  // 1-based ordinal game number
 
         // Parse a numeric field, returning 0 for blank/missing values
         const pv = v => v && v.trim() !== '' ? +v : 0;
@@ -1955,8 +1970,8 @@
 
           return {
             round:     r,
-            s1:        r1 ? (+r1.EORScore || 0) : null,  // Caitlin's cumulative score
-            s2:        r2 ? (+r2.EORScore || 0) : null,  // Opponent's cumulative score
+            s1:        r1 ? (+r1.EORScore || 0) : null,
+            s2:        r2 ? (+r2.EORScore || 0) : null,
             p1pegged:  r1 ? pv(r1.peggedPoints) : 0,
             p2pegged:  r2 ? pv(r2.peggedPoints) : 0,
             p1hand:    r1 ? pv(r1.handPoints)   : 0,
@@ -1966,7 +1981,7 @@
           };
         });
 
-        return { date, p1name, p2name, rounds, maxRound, _raw: rows };
+        return { date, gameNum, p1name, p2name, rounds, maxRound, _raw: rows };
       });
 
       buildPills();
@@ -2051,6 +2066,7 @@
         document.getElementById('p1-score').textContent = last.s1 ?? 0;
         document.getElementById('p2-score').textContent = last.s2 ?? 0;
         document.getElementById('r-detail').textContent = '·';
+        document.getElementById('game-label').textContent = '';
         document.getElementById('p1-detail').textContent = '·';
         renderLegend(activeFilter || first.p2name, games);
         document.getElementById('leg-l').textContent = activeFilter || first.p2name;
@@ -2079,6 +2095,7 @@
       document.getElementById('p2-label').textContent = game.p2name;
       document.getElementById('p1-score').textContent = rd.s1;
       document.getElementById('p2-score').textContent = rd.s2;
+      document.getElementById('game-label').textContent = `${ordinal(game.gameNum)} game ·`;
       document.getElementById('r-detail').textContent = `Round ${rd.round} · `;
 
       renderCards(rd, game);
@@ -2115,7 +2132,7 @@
       // Layout constants
       const FIXED_H = 500;
       const maxR    = d3.max(games, g => g.maxRound);
-      const LEFT    = 20;
+      const LEFT    = 30;   // wider to fit ordinal label
       const TOP     = 36;
       const BOT     = 16;
 
@@ -2192,19 +2209,12 @@
           .attr('fill', 'transparent').attr('rx', 3)
           .style('transition', 'fill .1s');
 
-        // Date label (top line)
-        //svg.append('text')
-        //  .attr('x', LEFT - 8).attr('y', gy + CELL_H / 2 - 7)
-        //  .attr('text-anchor', 'end').attr('dominant-baseline', 'middle')
-        //  .attr('fill', '#e8dfc8').attr('font-size', 13).attr('font-family', FONT)
-        //  .text(ds);
-
-        // Time label (bottom line, coloured by opponent)
-        //svg.append('text')
-        //  .attr('x', LEFT - 8).attr('y', gy + CELL_H / 2 + 6)
-        //  .attr('text-anchor', 'end').attr('dominant-baseline', 'middle')
-        //  .attr('fill', oppCol).attr('font-size', 11).attr('font-family', FONT)
-        //  .text(ts);
+        // Game number label (ordinal, left of cells)
+        svg.append('text')
+          .attr('x', LEFT - 4).attr('y', gy + CELL_H / 2 + 1)
+          .attr('text-anchor', 'end').attr('dominant-baseline', 'middle')
+          .attr('fill', oppCol).attr('font-size', 9).attr('font-family', FONT)
+          .text(ordinal(game.gameNum));
 
         // Render each round cell in this row
         game.rounds.forEach(rd => {
