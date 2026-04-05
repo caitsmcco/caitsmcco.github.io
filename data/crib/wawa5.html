@@ -1232,6 +1232,9 @@
 
       function cribSection(dealerColor) {
         return `
+          <div class="rd-section-label rd-crib-label">
+            crib
+          </div>
           <div class="rd-cards">
             ${d1.map(c => card(c, 'card--crib', c1)).join('')}
             ${d2.map(c => card(c, 'card--crib', c2)).join('')}
@@ -2114,18 +2117,18 @@
           .style('transition', 'fill .1s');
 
         // Date label (top line)
-        svg.append('text')
-          .attr('x', LEFT - 8).attr('y', gy + CELL_H / 2 - 7)
-          .attr('text-anchor', 'end').attr('dominant-baseline', 'middle')
-          .attr('fill', '#e8dfc8').attr('font-size', 13).attr('font-family', FONT)
-          .text(ds);
+        //svg.append('text')
+        //  .attr('x', LEFT - 8).attr('y', gy + CELL_H / 2 - 7)
+        //  .attr('text-anchor', 'end').attr('dominant-baseline', 'middle')
+        //  .attr('fill', '#e8dfc8').attr('font-size', 13).attr('font-family', FONT)
+        //  .text(ds);
 
         // Time label (bottom line, coloured by opponent)
-        svg.append('text')
-          .attr('x', LEFT - 8).attr('y', gy + CELL_H / 2 + 6)
-          .attr('text-anchor', 'end').attr('dominant-baseline', 'middle')
-          .attr('fill', oppCol).attr('font-size', 11).attr('font-family', FONT)
-          .text(ts);
+        //svg.append('text')
+        //  .attr('x', LEFT - 8).attr('y', gy + CELL_H / 2 + 6)
+        //  .attr('text-anchor', 'end').attr('dominant-baseline', 'middle')
+        //  .attr('fill', oppCol).attr('font-size', 11).attr('font-family', FONT)
+        //  .text(ts);
 
         // Render each round cell in this row
         game.rounds.forEach(rd => {
@@ -2161,7 +2164,7 @@
                 .attr('y', gy + 5)
                 .attr('text-anchor', 'end')
                 .attr('dominant-baseline', 'hanging')
-                .attr('font-size', Math.min(CELL_H * 0.28, 12))
+                .attr('font-size', Math.min(CELL_H * 0.28, 7))
                 .attr('font-family', FONT)
                 .attr('fill', '#d4a030')
                 .attr('pointer-events', 'none')
@@ -2173,18 +2176,18 @@
 
             // Hover: highlight row + show tooltip; preview round if nothing is selected
             node.addEventListener('mouseenter', () => {
-              rowBg.attr('fill', 'rgba(255,255,255,.04)');
+              rowBg.attr('fill', 'rgba(255,255,255,.05)');
               cell.attr('stroke', '#c8973a').attr('stroke-width', 2);
               if (!selectedCell) activateCell(game, rd, true);
 
-              const c2l = (PCOL[game.p2name] || PCOL.Colban).light;
-              const hasMC = miscountKeys.has(`${game.date}|${rd.round}`);
-              tip.innerHTML = `
-                <div class="tth">Round ${rd.round}</div>
-                <div class="tth">${ds}</div>
-                <div class="tth">${ts}</div>
-                ${hasMC ? `<div style="color:#d4a030;margin-top:3px;font-size:.85em">⚠ hand miscount this round</div>` : ''}`;
-              tip.classList.add('vis');
+              //const c2l = (PCOL[game.p2name] || PCOL.Colban).light;
+              //const hasMC = miscountKeys.has(`${game.date}|${rd.round}`);
+              //tip.innerHTML = `
+              //  <div class="tth">Round ${rd.round}</div>
+              //  <div class="tth">${ds}</div>
+              //  <div class="tth">${ts}</div>
+              //  ${hasMC ? `<div style="color:#d4a030;margin-top:3px;font-size:.85em">⚠ hand miscount this round</div>` : ''}`;
+              //tip.classList.add('vis');
             });
 
             // Track tooltip position with mouse
@@ -2239,7 +2242,7 @@
               .attr('x', LEFT + game.maxRound * COL_W + 5)
               .attr('y', gy + CELL_H / 2 + 1)
               .attr('dominant-baseline', 'middle')
-              .attr('fill', wc).attr('font-size', 18).attr('font-family', FONT)
+              .attr('fill', wc).attr('font-size', 10).attr('font-family', FONT)
               .text('★');
           }
         }
