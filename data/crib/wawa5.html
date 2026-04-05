@@ -2088,14 +2088,14 @@
           .attr('x', LEFT + (r - 1) * COL_W + CELL_W / 2)
           .attr('y', TOP - 10)
           .attr('text-anchor', 'middle')
-          .attr('fill', '#5a5040').attr('font-size', 13).attr('font-family', FONT)
+          .attr('fill', '#5a5040').attr('font-size', 10).attr('font-family', FONT)
           .text(r);
       });
 
       svg.append('text')
-        .attr('x', LEFT + (maxR / 2) * COL_W).attr('y', TOP - 23)
+        .attr('x', LEFT + (maxR / 2) * COL_W).attr('y', TOP - 22)
         .attr('text-anchor', 'middle')
-        .attr('fill', '#3a3020').attr('font-size', 15).attr('font-family', FONT)
+        .attr('fill', '#3a3020').attr('font-size', 12).attr('font-family', FONT)
         .attr('letter-spacing', 2)
         .text('ROUND');
 
