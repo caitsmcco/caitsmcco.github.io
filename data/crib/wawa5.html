@@ -389,8 +389,8 @@
 
     /* All four crib cards shown with a dashed border to distinguish from hand */
     .card--crib {
-      border-style: dashed;
-      opacity: .85;
+      border-style: double;
+      opacity: .95;
     }
 
     .rd-empty {
@@ -727,7 +727,7 @@
     <div class="panel">
       <div class="pt">Hand counting accuracy</div>
       <svg id="bar-acc"></svg>
-      <div id="bar-acc-note" style="font-size:.72rem;color:var(--muted);margin-top:.4rem;line-height:1.5;"></div>
+      <div id="bar-acc-note" style="font-size:.62rem;color:var(--muted);margin-top:.2rem;line-height:1.5;"></div>
     </div>
 
   </div>
@@ -1090,21 +1090,16 @@
      * pre-computation, and the heatmap — all go through here
      * so card parsing is identical everywhere.
      *
-     * A player keeps 4 cards and plays all 4 during pegging. p1-p7 stores
-     * the pegging sequence; Go markers and blanks parse to null and are
-     * filtered out. We collect ALL valid cards across p1-p7 (not just
-     * the first 4 positionally) so that a hand is correctly assembled
-     * even when a Go marker occupies an early slot (e.g. p3='-' shifts
-     * the 3rd and 4th hand cards to p4 and p5). The flush check then
-     * sees the true 4-card hand regardless of pegging order.
+     * Given a raw CSV row, returns the player's kept hand (first 4 valid
+     * cards from p1-p7) and the cut card. Returns null if data is incomplete.
      */
     function extractHandAndCut(row) {
       if (!row) return null;
-      const hand = ['p1','p2','p3','p4','p5','p6','p7']
+      const cards = ['p1','p2','p3','p4','p5','p6','p7']
         .map(f => parseCard(row[f]))
-        .filter(Boolean)   // drops nulls, '--', 'XX', Go markers
-        .slice(0, 4);      // exactly 4 kept cards
+        .filter(Boolean);
       const cut = parseCard(row.cc);
+      const hand = cards.slice(0, 4);
       if (hand.length < 4 || !cut) return null;
       return { hand, cut };
     }
@@ -1238,7 +1233,7 @@
       function cribSection(dealerColor) {
         return `
           <div class="rd-section-label rd-crib-label">
-            crib <span class="rd-dealer-tag" style="border-color:${dealerColor};color:${dealerColor};">dealer</span>
+            crib
           </div>
           <div class="rd-cards">
             ${d1.map(c => card(c, 'card--crib', c1)).join('')}
@@ -1608,12 +1603,10 @@
             .attr('font-size', 6).attr('font-family', FONT).text(val);
         });
       });
-
-      // Legend
-      g.append('rect').attr('x', ViW - 40).attr('y', 0).attr('width', 6).attr('height', 6).attr('fill', '#888').attr('opacity', 1).attr('rx', 1);
-      g.append('text').attr('x', ViW - 31).attr('y', 5.5).attr('fill', '#7a7060').attr('font-size', 6).attr('font-family', FONT).text('Wins');
-      g.append('rect').attr('x', ViW - 40).attr('y', 10).attr('width', 6).attr('height', 6).attr('fill', '#888').attr('opacity', 0.3).attr('rx', 1);
-      g.append('text').attr('x', ViW - 31).attr('y', 15.5).attr('fill', '#7a7060').attr('font-size', 6).attr('font-family', FONT).text('Losses');
+      [['Wins', 1], ['Losses', 0.3]].forEach(([lbl, op], i) => {
+        g.append('rect').attr('x', i * 38).attr('y', ViH + 14).attr('width', 5).attr('height', 5).attr('fill', '#888').attr('opacity', op).attr('rx', 1);
+        g.append('text').attr('x', i * 38 + 7).attr('y', ViH + 18.5).attr('fill', '#7a7060').attr('font-size', 6).attr('font-family', FONT).text(lbl);
+      });
     }
 
 
@@ -1705,11 +1698,6 @@
         });
       });
 
-      // Category colour dots as legend
-      types.forEach((t, i) => {
-        g.append('rect').attr('x', i * 40).attr('y', ViH + 14).attr('width', 5).attr('height', 5).attr('fill', t.col).attr('rx', 1);
-        g.append('text').attr('x', i * 40 + 7).attr('y', ViH + 18.5).attr('fill', '#7a7060').attr('font-size', 6).attr('font-family', FONT).text(t.label);
-      });
     }
 
 
@@ -1842,7 +1830,7 @@
         const diffLabel = a.avgDiff > 0 ? '+' + Math.round(a.avgDiff * 10) / 10
                         : Math.round(a.avgDiff * 10) / 10;
         const diffCol = a.avgDiff > 0.2 ? '#c0a030' : a.avgDiff < -0.2 ? '#8888cc' : '#7a7060';
-        g.append('text').attr('x', bx + bw/2).attr('y', ViH + 11)
+        g.append('text').attr('x', bx + bw/2).attr('y', ViH + 15)
           .attr('text-anchor', 'middle')
           .attr('fill', diffCol).attr('font-size', 6.5).attr('font-family', FONT)
           .text('avg ' + diffLabel);
@@ -1850,8 +1838,7 @@
 
       // Explanation note
       note.innerHTML = accuracy.map(a => {
-        const dir = Math.abs(a.avgDiff) < 0.1 ? '' : a.avgDiff > 0 ? ' (over-counting)' : ' (under-counting)';
-        return `<span style="color:${(PCOL[a.player]||PCOL.Caitlin).light}">${a.player}</span>: ${Math.round(a.pct)}% exact on ${a.n} rounds${dir}`;
+        return `<span style="color:${(PCOL[a.player]||PCOL.Caitlin).light}">${a.player}</span>: ${Math.round(a.pct)}% exact on ${a.n} rounds`;
       }).join(' &nbsp;·&nbsp; ');
     }
 
@@ -2059,16 +2046,16 @@
       }
 
       // Layout constants
-      const FIXED_H = 850;
+      const FIXED_H = 500;
       const maxR    = d3.max(games, g => g.maxRound);
-      const LEFT    = 138;
+      const LEFT    = 20;
       const TOP     = 36;
       const BOT     = 16;
 
       const availH  = FIXED_H - TOP - BOT;
       const CELL_H  = Math.floor((availH - games.length * 3) / games.length);
       const ROW_H   = CELL_H + 3;
-      const CELL_W  = 60;
+      const CELL_W  = 35;
       const COL_W   = CELL_W + 3;
 
       const totalW = LEFT + maxR * COL_W + 38;
@@ -2110,14 +2097,14 @@
           .attr('x', LEFT + (r - 1) * COL_W + CELL_W / 2)
           .attr('y', TOP - 10)
           .attr('text-anchor', 'middle')
-          .attr('fill', '#5a5040').attr('font-size', 13).attr('font-family', FONT)
+          .attr('fill', '#5a5040').attr('font-size', 10).attr('font-family', FONT)
           .text(r);
       });
 
       svg.append('text')
-        .attr('x', LEFT + (maxR / 2) * COL_W).attr('y', TOP - 23)
+        .attr('x', LEFT + (maxR / 2) * COL_W).attr('y', TOP - 22)
         .attr('text-anchor', 'middle')
-        .attr('fill', '#3a3020').attr('font-size', 15).attr('font-family', FONT)
+        .attr('fill', '#3a3020').attr('font-size', 12).attr('font-family', FONT)
         .attr('letter-spacing', 2)
         .text('ROUND');
 
@@ -2139,18 +2126,18 @@
           .style('transition', 'fill .1s');
 
         // Date label (top line)
-        svg.append('text')
-          .attr('x', LEFT - 8).attr('y', gy + CELL_H / 2 - 7)
-          .attr('text-anchor', 'end').attr('dominant-baseline', 'middle')
-          .attr('fill', '#e8dfc8').attr('font-size', 13).attr('font-family', FONT)
-          .text(ds);
+        //svg.append('text')
+        //  .attr('x', LEFT - 8).attr('y', gy + CELL_H / 2 - 7)
+        //  .attr('text-anchor', 'end').attr('dominant-baseline', 'middle')
+        //  .attr('fill', '#e8dfc8').attr('font-size', 13).attr('font-family', FONT)
+        //  .text(ds);
 
         // Time label (bottom line, coloured by opponent)
-        svg.append('text')
-          .attr('x', LEFT - 8).attr('y', gy + CELL_H / 2 + 6)
-          .attr('text-anchor', 'end').attr('dominant-baseline', 'middle')
-          .attr('fill', oppCol).attr('font-size', 11).attr('font-family', FONT)
-          .text(ts);
+        //svg.append('text')
+        //  .attr('x', LEFT - 8).attr('y', gy + CELL_H / 2 + 6)
+        //  .attr('text-anchor', 'end').attr('dominant-baseline', 'middle')
+        //  .attr('fill', oppCol).attr('font-size', 11).attr('font-family', FONT)
+        //  .text(ts);
 
         // Render each round cell in this row
         game.rounds.forEach(rd => {
@@ -2175,7 +2162,7 @@
               .attr('x', cx + CELL_W / 2).attr('y', gy + CELL_H / 2 + 1)
               .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
               .attr('fill', `rgba(255,255,255,${Math.abs(diff) > globalMax * 0.25 ? 0.58 : 0.22})`)
-              .attr('font-size', Math.min(CELL_H * 0.38, 20)).attr('font-family', FONT)
+              .attr('font-size', Math.min(CELL_H * 0.38, 10)).attr('font-family', FONT)
               .attr('pointer-events', 'none')
               .text(diff > 0 ? `+${diff}` : diff);
 
@@ -2186,7 +2173,7 @@
                 .attr('y', gy + 5)
                 .attr('text-anchor', 'end')
                 .attr('dominant-baseline', 'hanging')
-                .attr('font-size', Math.min(CELL_H * 0.28, 12))
+                .attr('font-size', Math.min(CELL_H * 0.28, 7))
                 .attr('font-family', FONT)
                 .attr('fill', '#d4a030')
                 .attr('pointer-events', 'none')
@@ -2198,23 +2185,18 @@
 
             // Hover: highlight row + show tooltip; preview round if nothing is selected
             node.addEventListener('mouseenter', () => {
-              rowBg.attr('fill', 'rgba(255,255,255,.04)');
+              rowBg.attr('fill', 'rgba(255,255,255,.05)');
               cell.attr('stroke', '#c8973a').attr('stroke-width', 2);
               if (!selectedCell) activateCell(game, rd, true);
 
-              const c2l = (PCOL[game.p2name] || PCOL.Colban).light;
-              const hasMC = miscountKeys.has(`${game.date}|${rd.round}`);
-              tip.innerHTML = `
-                <div class="tth">Round ${rd.round} — ${ds}</div>
-                <div style="color:${(PCOL[game.p1name] || PCOL.Caitlin).peg}">
-                  ${game.p1name}: ${rd.s1} &nbsp;(peg ${rd.p1pegged} · hand ${rd.p1hand}${rd.p1crib ? ` · crib ${rd.p1crib}` : ''})
-                </div>
-                <div style="color:${c2l}">
-                  ${game.p2name}: ${rd.s2} &nbsp;(peg ${rd.p2pegged} · hand ${rd.p2hand}${rd.p2crib ? ` · crib ${rd.p2crib}` : ''})
-                </div>
-                <div style="color:#5a5040;margin-top:1px">diff ${diff > 0 ? '+' : ''}${diff}</div>
-                ${hasMC ? `<div style="color:#d4a030;margin-top:3px;font-size:.85em">⚠ hand miscount this round</div>` : ''}`;
-              tip.classList.add('vis');
+              //const c2l = (PCOL[game.p2name] || PCOL.Colban).light;
+              //const hasMC = miscountKeys.has(`${game.date}|${rd.round}`);
+              //tip.innerHTML = `
+              //  <div class="tth">Round ${rd.round}</div>
+              //  <div class="tth">${ds}</div>
+              //  <div class="tth">${ts}</div>
+              //  ${hasMC ? `<div style="color:#d4a030;margin-top:3px;font-size:.85em">⚠ hand miscount this round</div>` : ''}`;
+              //tip.classList.add('vis');
             });
 
             // Track tooltip position with mouse
@@ -2269,7 +2251,7 @@
               .attr('x', LEFT + game.maxRound * COL_W + 5)
               .attr('y', gy + CELL_H / 2 + 1)
               .attr('dominant-baseline', 'middle')
-              .attr('fill', wc).attr('font-size', 18).attr('font-family', FONT)
+              .attr('fill', wc).attr('font-size', 10).attr('font-family', FONT)
               .text('★');
           }
         }
