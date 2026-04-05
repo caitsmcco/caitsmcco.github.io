@@ -1799,7 +1799,7 @@
         return;
       }
 
-      const W = 260, H = 205, ML = 26, MR = 8, MT = 12, MB = 44;
+      const W = 260, H = 195, ML = 26, MR = 8, MT = 12, MB = 34;
       const iW = W - ML - MR, iH = H - MT - MB;
 
       const svg = d3.select('#bar-acc')
@@ -1844,15 +1844,19 @@
         });
 
       // ── Per-player beeswarm ──────────────────────────────────────────────
+      // ── Per-player beeswarm (miscounts only) ─────────────────────────────
       accuracy.forEach(a => {
         const col = (PCOL[a.player] || PCOL.Caitlin).peg;
         const cx  = x(a.player) + x.bandwidth() / 2;
         const bw  = x.bandwidth();
         const halfMax = bw * 0.44;
 
+        // Only plot miscounted rounds — correct rounds shown as % label at 0
+        const miscounts = a.records.filter(r => r.diff !== 0);
+
         // ── Beeswarm collision pass ──────────────────────────────────────
         const placed = [];
-        const sorted = [...a.records].sort((a, b) => a.diff - b.diff);
+        const sorted = [...miscounts].sort((a, b) => a.diff - b.diff);
 
         sorted.forEach(r => {
           const cy = y(r.diff);
@@ -1865,10 +1869,9 @@
 
           let chosen = halfMax;
           for (const offset of offsets) {
-            const tx = cx + offset;
             if (Math.abs(offset) > halfMax) continue;
             const collision = nearby.some(p => {
-              const dx = p.cx - tx, dy = p.cy - cy;
+              const dx = p.cx - (cx + offset), dy = p.cy - cy;
               return Math.sqrt(dx * dx + dy * dy) < DOT_R * 2.1;
             });
             if (!collision) { chosen = offset; break; }
@@ -1876,75 +1879,31 @@
 
           placed.push({ cx: cx + chosen, cy });
 
-          const isMiscount = r.diff !== 0;
           g.append('circle')
-            .attr('cx', cx + chosen)
-            .attr('cy', cy)
+            .attr('cx', cx + chosen).attr('cy', cy)
             .attr('r', DOT_R)
-            .attr('fill', col)
-            .attr('opacity', isMiscount ? 0.8 : 0.45)
+            .attr('fill', col).attr('opacity', 0.8)
             .attr('stroke-width', 0);
         });
 
-        // ── IQR box ────────────────────────────────────────────────────────
-        const diffs = a.records.map(r => r.diff).sort((a, b) => a - b);
-        const q1  = d3.quantile(diffs, 0.25);
-        const q3  = d3.quantile(diffs, 0.75);
-        const med = d3.median(diffs);
+        // ── % exact label at the zero line ────────────────────────────────
+        g.append('text')
+          .attr('x', cx).attr('y', y(0))
+          .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+          .attr('fill', col).attr('font-size', 6.5).attr('font-weight', '500')
+          .attr('font-family', FONT)
+          .text(`${Math.round(a.pct)}%`);
 
-        const boxW = 5;
-        g.append('rect')
-          .attr('x', cx - boxW / 2).attr('y', y(q3))
-          .attr('width', boxW).attr('height', Math.abs(y(q1) - y(q3)))
-          .attr('fill', 'none')
-          .attr('stroke', col).attr('stroke-width', 1.2)
-          .attr('opacity', 0.5).attr('rx', 1);
-
-        g.append('line')
-          .attr('x1', cx - boxW / 2).attr('x2', cx + boxW / 2)
-          .attr('y1', y(med)).attr('y2', y(med))
-          .attr('stroke', col).attr('stroke-width', 1.5)
-          .attr('opacity', 0.8);
-
-        // ── Stats under player name label ──────────────────────────────────
+        // ── Stats under player name label ─────────────────────────────────
         const avgLabel = a.avgDiff > 0 ? `avg +${Math.round(a.avgDiff * 10) / 10}`
           : a.avgDiff < 0 ? `avg ${Math.round(a.avgDiff * 10) / 10}`
           : 'avg 0';
-        const pctLabel = `${Math.round(a.pct)}% exact`;
 
         g.append('text')
           .attr('x', cx).attr('y', iH + 13)
           .attr('text-anchor', 'middle')
-          .attr('fill', col).attr('font-size', 5.5).attr('font-family', FONT)
-          .text(pctLabel);
-
-        g.append('text')
-          .attr('x', cx).attr('y', iH + 20)
-          .attr('text-anchor', 'middle')
           .attr('fill', '#7a7060').attr('font-size', 5.5).attr('font-family', FONT)
           .text(avgLabel);
-      });
-
-      // ── Legend ─────────────────────────────────────────────────────────────
-      const leg = [
-        { shape: 'circle', label: 'correct',  op: 0.45 },
-        { shape: 'circle', label: 'miscount', op: 0.8  },
-        { shape: 'box',    label: 'IQR'               },
-      ];
-
-      leg.forEach((l, i) => {
-        const lx = i * 52, ly = iH + 30;
-        if (l.shape === 'circle') {
-          g.append('circle').attr('cx', lx + 3).attr('cy', ly).attr('r', 2.5)
-            .attr('fill', '#888').attr('opacity', l.op);
-        } else {
-          g.append('rect').attr('x', lx + 1).attr('y', ly - 3).attr('width', 5).attr('height', 6)
-            .attr('fill', 'none').attr('stroke', '#888').attr('stroke-width', 1.2).attr('opacity', 0.5).attr('rx', 1);
-        }
-        g.append('text').attr('x', lx + 9).attr('y', ly + 1)
-          .attr('dominant-baseline', 'middle')
-          .attr('fill', '#7a7060').attr('font-size', 5.8).attr('font-family', FONT)
-          .text(l.label);
       });
 
       note.innerHTML = '';
