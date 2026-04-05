@@ -1133,11 +1133,6 @@
       const c2     = (PCOL[game.p2name] || PCOL.Colban).peg;
       const c2lite = (PCOL[game.p2name] || PCOL.Colban).light;
 
-      // Dealer is whoever actually earned crib points this round.
-      // If neither has crib points (e.g. 0–0 round) fall back to round parity,
-      // but crib > 0 is the reliable signal.
-      const p1IsDealer = crib1 > 0 ? true : crib2 > 0 ? false : rd.round % 2 === 1;
-
       const handCards = row => row
         ? ['p1','p2','p3','p4','p5','p6','p7'].map(f => parseCard(row[f])).filter(Boolean)
         : [];
@@ -1162,6 +1157,10 @@
       const total1 = peg1 + hand1 + crib1;
       const total2 = peg2 + hand2 + crib2;
       const barMax = Math.max(total1, total2, 1);
+
+      // Dealer is whoever actually earned crib points this round.
+      // Falls back to round parity only when neither has crib points (crib scored 0).
+      const p1IsDealer = crib1 > 0 ? true : crib2 > 0 ? false : rd.round % 2 === 1;
 
       function card(c, extra = '', outlineColor = '') {
         if (!c) return '';
