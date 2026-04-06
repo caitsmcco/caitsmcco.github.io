@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About Cribbage — Scoring Guide</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:     #222f1e;
+      --bg2:    #151a14;
+      --bg3:    #232018;
+      --border: #2e2a22;
+      --text:   #e8dfc8;
+      --muted:  #7a7060;
+      --gold:   #c8973a;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      min-height: 100vh;
+      padding: 0 0 4rem;
+    }
+
+    nav {
+      display: flex; align-items: center; gap: 2rem;
+      padding: .6rem 1.8rem;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2.5rem;
+    }
+    .nav-brand {
+      font-family: 'Playfair Display', serif; color: var(--gold);
+      font-size: 1.1rem; font-weight: 600; letter-spacing: .04em; text-decoration: none;
+    }
+    nav a { color: var(--muted); text-decoration: none; font-size: .85rem; letter-spacing: .08em; text-transform: uppercase; transition: color .15s; }
+    nav a:hover  { color: var(--text); }
+    nav a.active { color: var(--gold); }
+
+    .page-header { padding: 0 1.8rem; margin-bottom: 2rem; }
+    h1 { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 600; color: var(--gold); letter-spacing: .04em; margin-bottom: .2rem; }
+    .subtitle { font-size: .85rem; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
+
+    .content { padding: 0 1.8rem; display: flex; flex-direction: column; gap: 1rem; }
+
+    .section-heading {
+      font-size: .7rem; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--muted); margin: 1rem 0 .5rem;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-heading::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ── Distribution charts ─────────────────────────────────────── */
+    .dist-charts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .dist-panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .9rem 1.1rem;
+    }
+    .dist-title {
+      font-size: .7rem; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: .5rem;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .dist-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .dist-legend {
+      display: flex; gap: 1.2rem; margin-top: .5rem;
+      font-size: .65rem; color: var(--muted); align-items: center;
+    }
+    .dist-legend span { display: flex; align-items: center; gap: 4px; }
+    .dist-legend-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+    /* ── Two-column rules grid ───────────────────────────────────── */
+    .rules-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+
+    /* ── Rule card (compact, no example column) ──────────────────── */
+    .rule {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: start;
+      gap: .5rem 1rem;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .85rem 1rem;
+    }
+    .rule-example { display: none; }   /* hidden in compact layout */
+    .rule-info { display: flex; flex-direction: column; gap: .28rem; }
+    .rule-name { font-size: .88rem; font-weight: 500; color: var(--text); letter-spacing: .04em; }
+    .rule-desc { font-size: .73rem; color: var(--muted); line-height: 1.55; }
+    .rule-points { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; }
+    .pts-num   { font-size: 1.4rem; font-weight: 600; color: var(--gold); font-family: 'Playfair Display', serif; line-height: 1; }
+    .pts-label { font-size: .55rem; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
+
+    /* ── Playing card ────────────────────────────────────────────── */
+    .card {
+      width: 52px; height: 76px; border-radius: 5px; border: 1px solid #3a3020;
+      background: #f5f0e8; display: flex; flex-direction: column;
+      align-items: center; justify-content: space-between;
+      padding: 4px 3px; font-weight: 700; font-family: 'IBM Plex Mono', monospace;
+      flex-shrink: 0; user-select: none;
+    }
+    .card .cr { font-size: .85rem; line-height: 1; align-self: flex-start; }
+    .card .cs { font-size: 1.5rem; line-height: 1; }
+    .card.red   .cr, .card.red   .cs { color: #c0392b; }
+    .card.black .cr, .card.black .cs { color: #1a1814; }
+    .card.lit { box-shadow: 0 0 0 2px var(--gold); }
+    .card-sep { width:1px; height:52px; background:var(--border); margin:0 4px; flex-shrink:0; }
+    .cards-wrap { display:flex; align-items:center; gap:6px; transition:opacity .45s ease; }
+    .cards-wrap.fading { opacity:0; }
+    .example-caption { position:absolute; bottom:-18px; left:0; font-size:.65rem; color:var(--muted); white-space:nowrap; transition:opacity .45s ease; }
+    .example-caption.fading { opacity:0; }
+
+    /* ── Note block ──────────────────────────────────────────────── */
+    .note { background:var(--bg3); border-left:3px solid var(--gold); border-radius:0 6px 6px 0; padding:.6rem 1rem; font-size:.78rem; color:var(--muted); line-height:1.6; }
+    .note strong { color: var(--text); }
+
+    @media (max-width: 700px) {
+      .rules-grid  { grid-template-columns: 1fr; }
+      .dist-charts { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Navigation ───────────────────────────────────────────── -->
+  <nav>
+    <a class="nav-brand">Cribbage</a>
+    <a href="../">Dashboard</a>
+    <a href="../about" class="active">About Cribbage</a>
+    <a href="../collect/">Collect Data</a>
+    <a href="../wawa5.html">Testing New Things</a>
+  </nav>
+
+  <div class="page-header">
+    <h1>Scoring Guide</h1>
+    <div class="subtitle">How to count your hand in cribbage</div>
+  </div>
+
+  <div class="content">
+
+    <p style="font-size:.82rem;color:var(--muted);line-height:1.7;max-width:640px;">
+      After each round of play, both players count the points in their hand (four cards + the cut card).
+      Combinations can overlap — a single hand can score points in multiple categories simultaneously.
+      The dealer also counts the crib as an extra hand.
+    </p>
+
+    <!-- ── Distribution charts ───────────────────────────────────── -->
+    <div class="dist-charts">
+      <div class="dist-panel">
+        <div class="dist-title">Hand score distribution</div>
+        <svg id="dist-scores" width="100%" height="170"></svg>
+        <div class="dist-legend">
+          <span><span class="dist-legend-swatch" style="background:#c8973a;opacity:.75"></span>All possible hands</span>
+          <span><span class="dist-legend-swatch" style="background:#e85d4a"></span>Your games</span>
+        </div>
+      </div>
+      <div class="dist-panel">
+        <div class="dist-title">Scoring type frequency</div>
+        <svg id="dist-types" width="100%" height="170"></svg>
+        <div class="dist-legend">
+          <span><span class="dist-legend-swatch" style="background:#c8973a;opacity:.75"></span>All possible hands</span>
+          <span><span class="dist-legend-swatch" style="background:#e85d4a"></span>Your games</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Hand scoring ────────────────────────────────────────── -->
+    <div class="section-heading">Hand &amp; play scoring</div>
+    <div class="rules-grid">
+
+    <!-- Fifteen -->
+    <div class="rule" id="r-fifteen">
+      <div class="rule-info">
+        <span class="rule-name">Fifteen</span>
+        <span class="rule-desc">Any combination of cards whose pip values sum to exactly 15. Face cards count as 10; Ace counts as 1. Score 2 for each distinct combination.</span>
+      </div>
+      <div class="rule-example" style="margin-bottom:20px">
+        <div class="cards-wrap" id="ex-fifteen"></div>
+        <div class="example-caption" id="cap-fifteen"></div>
+      </div>
+      <div class="rule-points">
+        <span class="pts-num">2</span>
+        <span class="pts-label">per combo</span>
+      </div>
+    </div>
+
+    <!-- Pair -->
+    <div class="rule" id="r-pair">
+      <div class="rule-info">
+        <span class="rule-name">Pair</span>
+        <span class="rule-desc">Two cards of the same rank. Three of a kind scores 6 (three pairs). Four of a kind scores 12 (six pairs).</span>
+      </div>
+      <div class="rule-example" style="margin-bottom:20px">
+        <div class="cards-wrap" id="ex-pair"></div>
+        <div class="example-caption" id="cap-pair"></div>
+      </div>
+      <div class="rule-points">
+        <span class="pts-num">2</span>
+        <span class="pts-label">per pair</span>
+      </div>
+    </div>
+
+    <!-- Run -->
+    <div class="rule" id="r-run">
+      <div class="rule-info">
+        <span class="rule-name">Run (Straight)</span>
+        <span class="rule-desc">Three or more cards in consecutive rank order. Suit does not matter. Score 1 point per card in the run.</span>
+      </div>
+      <div class="rule-example" style="margin-bottom:20px">
+        <div class="cards-wrap" id="ex-run"></div>
+        <div class="example-caption" id="cap-run"></div>
+      </div>
+      <div class="rule-points">
+        <span class="pts-num">1</span>
+        <span class="pts-label">per card</span>
+      </div>
+    </div>
+
+    <!-- Flush -->
+    <div class="rule" id="r-flush">
+      <div class="rule-info">
+        <span class="rule-name">Flush</span>
+        <span class="rule-desc">Four cards in the hand of the same suit score 4. If the cut also matches, score 5. <em style="color:var(--gold)">House rule:</em> 3 hand cards + the cut card all the same suit also scores 4. In the crib, only a 5-card flush counts.</span>
+      </div>
+      <div class="rule-example" style="margin-bottom:20px">
+        <div class="cards-wrap" id="ex-flush"></div>
+        <div class="example-caption" id="cap-flush"></div>
+      </div>
+      <div class="rule-points">
+        <span class="pts-num">4–5</span>
+        <span class="pts-label">pts</span>
+      </div>
+    </div>
+
+    <!-- Nob -->
+    <div class="rule" id="r-nob">
+      <div class="rule-info">
+        <span class="rule-name">Nob (His Nobs)</span>
+        <span class="rule-desc">If your hand contains a Jack whose suit matches the cut card, score 1 point. Applies to both the hand and the crib.</span>
+      </div>
+      <div class="rule-example" style="margin-bottom:20px">
+        <div class="cards-wrap" id="ex-nob"></div>
+        <div class="example-caption" id="cap-nob"></div>
+      </div>
+      <div class="rule-points">
+        <span class="pts-num">1</span>
+        <span class="pts-label">pt</span>
+      </div>
+    </div>
+
+    </div><!-- /rules-grid hand -->
+
+    <!-- ── Play-only scoring ───────────────────────────────────── -->
+    <div class="section-heading">Pegging only</div>
+    <div class="rules-grid">
+
+    <!-- Thirty-one -->
+    <div class="rule" id="r-31">
+      <div class="rule-info">
+        <span class="rule-name">Thirty-one</span>
+        <span class="rule-desc">When the running total of played cards reaches exactly 31, score 2 points. The count then resets to zero.</span>
+      </div>
+      <div class="rule-example" style="margin-bottom:20px">
+        <div class="cards-wrap" id="ex-31"></div>
+        <div class="example-caption" id="cap-31"></div>
+      </div>
+      <div class="rule-points">
+        <span class="pts-num">2</span>
+        <span class="pts-label">pts</span>
+      </div>
+    </div>
+
+    <!-- Go / Last Card -->
+    <div class="rule" id="r-go">
+      <div class="rule-info">
+        <span class="rule-name">Go / Last Card</span>
+        <span class="rule-desc">If your opponent cannot play without exceeding 31, they say "Go" and you score 1 point. Playing the very last card also scores 1 (or 2 if it hits 31).</span>
+      </div>
+      <div class="rule-example" style="margin-bottom:20px">
+        <div class="cards-wrap" id="ex-go"></div>
+        <div class="example-caption" id="cap-go"></div>
+      </div>
+      <div class="rule-points">
+        <span class="pts-num">1</span>
+        <span class="pts-label">pt</span>
+      </div>
+    </div>
+
+    <!-- His Heels -->
+    <div class="rule" id="r-heels">
+      <div class="rule-info">
+        <span class="rule-name">His Heels</span>
+        <span class="rule-desc">If the dealer turns over a Jack as the cut card at the start of the round, the dealer immediately scores 2 points.</span>
+      </div>
+      <div class="rule-example" style="margin-bottom:20px">
+        <div class="cards-wrap" id="ex-heels"></div>
+        <div class="example-caption" id="cap-heels"></div>
+      </div>
+      <div class="rule-points">
+        <span class="pts-num">2</span>
+        <span class="pts-label">pts</span>
+      </div>
+    </div>
+
+    </div><!-- /rules-grid pegging -->
+
+    <!-- ── Useful combos ───────────────────────────────────────── -->
+    <div class="section-heading">Common combination hands</div>
+
+    <div class="note">
+      <strong>Tip:</strong> runs and pairs can overlap in the same hand, creating "double runs" and "triple runs" that score much more than they first appear. Always count systematically: fifteens first, then pairs, then runs, then flush, then nob.
+    </div>
+    <div class="rules-grid">
+
+    <!-- Double run of 3 -->
+    <div class="rule" id="r-dr3">
+      <div class="rule-info">
+        <span class="rule-name">Double run of 3</span>
+        <span class="rule-desc">A pair plus two different 3-card runs built from those ranks. Two runs of 3 (6 pts) plus the pair (2 pts).</span>
+      </div>
+      <div class="rule-example" style="margin-bottom:20px">
+        <div class="cards-wrap" id="ex-dr3"></div>
+        <div class="example-caption" id="cap-dr3"></div>
+      </div>
+      <div class="rule-points">
+        <span class="pts-num">8</span>
+        <span class="pts-label">pts</span>
+      </div>
+    </div>
+
+    <!-- Double run of 4 -->
+    <div class="rule" id="r-dr4">
+      <div class="rule-info">
+        <span class="rule-name">Double run of 4</span>
+        <span class="rule-desc">A pair plus two different 4-card runs. Two runs of 4 (8 pts) plus the pair (2 pts).</span>
+      </div>
+      <div class="rule-example" style="margin-bottom:20px">
+        <div class="cards-wrap" id="ex-dr4"></div>
+        <div class="example-caption" id="cap-dr4"></div>
+      </div>
+      <div class="rule-points">
+        <span class="pts-num">10</span>
+        <span class="pts-label">pts</span>
+      </div>
+    </div>
+
+    <!-- Triple run of 3 -->
+    <div class="rule" id="r-tr3">
+      <div class="rule-info">
+        <span class="rule-name">Triple run of 3</span>
+        <span class="rule-desc">Three of a kind plus three different 3-card runs. Three runs of 3 (9 pts) plus three of a kind (6 pts).</span>
+      </div>
+      <div class="rule-example" style="margin-bottom:20px">
+        <div class="cards-wrap" id="ex-tr3"></div>
+        <div class="example-caption" id="cap-tr3"></div>
+      </div>
+      <div class="rule-points">
+        <span class="pts-num">15</span>
+        <span class="pts-label">pts</span>
+      </div>
+    </div>
+
+    <!-- Double-double run -->
+    <div class="rule" id="r-ddr">
+      <div class="rule-info">
+        <span class="rule-name">Double-double run of 3</span>
+        <span class="rule-desc">Two pairs plus four different 3-card runs. Four runs of 3 (12 pts) plus two pairs (4 pts).</span>
+      </div>
+      <div class="rule-example" style="margin-bottom:20px">
+        <div class="cards-wrap" id="ex-ddr"></div>
+        <div class="example-caption" id="cap-ddr"></div>
+      </div>
+      <div class="rule-points">
+        <span class="pts-num">16</span>
+        <span class="pts-label">pts</span>
+      </div>
+    </div>
+
+    </div><!-- /rules-grid combos -->
+
+  </div><!-- /content -->
+
+
+  <script>
+    const SUIT_SYM  = { H: '♥', D: '♦', C: '♣', S: '♠' };
+    const RED_SUITS = new Set(['H', 'D']);
+    const FONT      = 'IBM Plex Mono, monospace';
+
+    function parseCard(str) {
+      str = str.trim();
+      return { rank: str.slice(0, -1), suit: str.slice(-1), red: RED_SUITS.has(str.slice(-1)) };
+    }
+    function makeCardEl(card, lit = false) {
+      const div = document.createElement('div');
+      div.className = 'card ' + (card.red ? 'red' : 'black') + (lit ? ' lit' : '');
+      div.innerHTML = `<span class="cr">${card.rank}</span><span class="cs">${SUIT_SYM[card.suit]}</span>`;
+      return div;
+    }
+    function makeSep() {
+      const d = document.createElement('div'); d.className = 'card-sep'; return d;
+    }
+
+    // ── Example definitions ───────────────────────────────────────
+    const EXAMPLES = [
+      { id:'ex-fifteen', capId:'cap-fifteen', examples:[
+        { cards:['10C','5D'],            caption:'10 + 5 = 15',           lit:[0,1] },
+        { cards:['7H','8S'],             caption:'7 + 8 = 15',            lit:[0,1] },
+        { cards:['3D','4S','8H'],        caption:'3 + 4 + 8 = 15',        lit:[0,1,2] },
+        { cards:['AC','6D','8H'],        caption:'1 + 6 + 8 = 15',        lit:[0,1,2] },
+        { cards:['5H','KD'],             caption:'5 + K(10) = 15',         lit:[0,1] },
+      ]},
+      { id:'ex-pair', capId:'cap-pair', examples:[
+        { cards:['6H','6S'],             caption:'Pair of 6s — 2 pts',             lit:[0,1] },
+        { cards:['9D','9H','9C'],        caption:'3 of a kind = 3 pairs — 6 pts',  lit:[0,1,2] },
+        { cards:['KH','KC','KD','KS'],   caption:'4 of a kind = 6 pairs — 12 pts', lit:[0,1,2,3] },
+      ]},
+      { id:'ex-run', capId:'cap-run', examples:[
+        { cards:['4H','5D','6C'],        caption:'4-5-6 run — 3 pts',      lit:[0,1,2] },
+        { cards:['2D','3H','4C','5S'],   caption:'2-3-4-5 run — 4 pts',    lit:[0,1,2,3] },
+        { cards:['7C','8D','9H','10S','JD'], caption:'7-8-9-10-J run — 5 pts', lit:[0,1,2,3,4] },
+      ]},
+      { id:'ex-flush', capId:'cap-flush', examples:[
+        { cards:['2H','5H','9H','QH'],              caption:'4-card flush (hand only) — 4 pts',       lit:[0,1,2,3] },
+        { cards:['3D','7D','JD','KD','|','9D'],     caption:'All 5 match cut suit — 5 pts',           lit:[0,1,2,3,5] },
+        { cards:['4C','8C','AC','|','7H','6C'],     caption:'House rule: 3 hand ♣ + cut ♣ — 4 pts',   lit:[0,1,2,5] },
+        { cards:['9H','QH','3H','|','KD','5H'],     caption:'House rule: 3 hand ♥ + cut ♥ — 4 pts',   lit:[0,1,2,5] },
+        { cards:['6S','7S','JS','KS','|','3S'],     caption:'5-card flush with cut — 5 pts',          lit:[0,1,2,3,5] },
+      ]},
+      { id:'ex-nob', capId:'cap-nob', examples:[
+        { cards:['JH','AC','7D','3S','|','9H'], caption:'Jack of ♥ matches cut ♥ — 1 pt', lit:[0,5] },
+        { cards:['JD','5H','KC','2S','|','4D'], caption:'Jack of ♦ matches cut ♦ — 1 pt', lit:[0,5] },
+      ]},
+      { id:'ex-31', capId:'cap-31', examples:[
+        { cards:['10H','7D','4S','10C'], caption:'10+7+4+10 = 31 — 2 pts', lit:[3] },
+        { cards:['KS','8H','3C','JS'],   caption:'10+8+3+10 = 31 — 2 pts', lit:[3] },
+      ]},
+      { id:'ex-go', capId:'cap-go', examples:[
+        { cards:['8H','9D','|','KS'],  caption:"Running total 17 — opp can't play — 1 pt", lit:[2] },
+        { cards:['5C','6D','7H'],      caption:'Last card played — 1 pt', lit:[2] },
+      ]},
+      { id:'ex-heels', capId:'cap-heels', examples:[
+        { cards:['JH'], caption:'Dealer cuts Jack of ♥ — 2 pts for dealer', lit:[0] },
+        { cards:['JC'], caption:'Dealer cuts Jack of ♣ — 2 pts for dealer', lit:[0] },
+      ]},
+      { id:'ex-dr3', capId:'cap-dr3', examples:[
+        { cards:['5H','5D','6C','7S'],  caption:'5-6-7 run × 2 (6) + pair of 5s (2) = 8 pts',   lit:[0,1,2,3] },
+        { cards:['JH','QC','QD','KS'],  caption:'J-Q-K run × 2 (6) + pair of Qs (2) = 8 pts',   lit:[0,1,2,3] },
+      ]},
+      { id:'ex-dr4', capId:'cap-dr4', examples:[
+        { cards:['3H','4C','5D','5S','6H'], caption:'3-4-5-6 run × 2 (8) + pair of 5s (2) = 10 pts', lit:[0,1,2,3,4] },
+      ]},
+      { id:'ex-tr3', capId:'cap-tr3', examples:[
+        { cards:['4H','4D','4C','5S','6H'], caption:'4-5-6 run × 3 (9) + 3 of a kind 4s (6) = 15 pts', lit:[0,1,2,3,4] },
+      ]},
+      { id:'ex-ddr', capId:'cap-ddr', examples:[
+        { cards:['6H','6D','7C','7S','8H'], caption:'6-7-8 run × 4 (12) + 2 pairs (4) = 16 pts', lit:[0,1,2,3,4] },
+      ]},
+    ];
+
+    function startRotator(def) {
+      const wrap = document.getElementById(def.id);
+      const cap  = document.getElementById(def.capId);
+      if (!wrap) return;
+      let idx = 0;
+      function render(ex) {
+        wrap.innerHTML = '';
+        ex.cards.forEach((c, i) => {
+          if (c === '|') { wrap.appendChild(makeSep()); }
+          else { wrap.appendChild(makeCardEl(parseCard(c), ex.lit.includes(i))); }
+        });
+        cap.textContent = ex.caption;
+      }
+      render(def.examples[0]);
+      if (def.examples.length <= 1) return;
+      setInterval(() => {
+        wrap.classList.add('fading'); cap.classList.add('fading');
+        setTimeout(() => {
+          idx = (idx + 1) % def.examples.length;
+          render(def.examples[idx]);
+          wrap.classList.remove('fading'); cap.classList.remove('fading');
+        }, 460);
+      }, 3000);
+    }
+    EXAMPLES.forEach(startRotator);
+
+
+    // ═══════════════════════════════════════════════════════════════
+    //  DISTRIBUTION CHARTS
+    //  Chart 1: hand score totals (0–29), sampled from all C(52,5)
+    //  Chart 2: scoring type frequency (fifteens/pairs/runs/flush/nob)
+    //  Both overlaid with actual counts from edited.csv
+    // ═══════════════════════════════════════════════════════════════
+
+    // ── Shared scoring engine (mirrors wawa5 house-rule flush) ──────
+    function pipVal(r) {
+      return ['J','Q','K'].includes(r) ? 10 : r === 'A' ? 1 : parseInt(r);
+    }
+    function rankOrd(r) {
+      if (r==='A') return 1; if (r==='J') return 11; if (r==='Q') return 12; if (r==='K') return 13;
+      return parseInt(r);
+    }
+    function scoreFiveCards(hand, cut) {
+      // hand = [{r,s}×4], cut = {r,s}
+      const five = [...hand, cut];
+      let fifteens = 0;
+      for (let m = 1; m < 32; m++) {
+        const sub = five.filter((_,i) => m & (1<<i));
+        if (sub.length >= 2 && sub.reduce((a,c) => a + pipVal(c.r), 0) === 15) fifteens += 2;
+      }
+      let pairs = 0;
+      for (let i = 0; i < 5; i++)
+        for (let j = i+1; j < 5; j++)
+          if (five[i].r === five[j].r) pairs += 2;
+      let runs = 0, bestLen = 0;
+      for (let m = 1; m < 32; m++) {
+        const sub = five.filter((_,i) => m & (1<<i));
+        if (sub.length < 3) continue;
+        const ord = sub.map(c => rankOrd(c.r)).sort((a,b)=>a-b);
+        if (ord.every((v,i) => i===0 || v===ord[i-1]+1)) {
+          if (sub.length > bestLen) { bestLen = sub.length; runs = 0; }
+          if (sub.length === bestLen) runs += sub.length;
+        }
+      }
+      // Flush — standard + house rule (3 hand + cut same suit)
+      const hs = hand.map(c => c.s);
+      const allSame = hs.every(s => s === hs[0]);
+      let flush = 0;
+      if (allSame && cut.s === hs[0]) flush = 5;
+      else if (allSame) flush = 4;
+      else { const sc = {}; hs.forEach(s => sc[s]=(sc[s]||0)+1); if ((sc[cut.s]||0) >= 3) flush = 4; }
+      const nob = hand.some(c => c.r==='J' && c.s===cut.s) ? 1 : 0;
+      return { fifteens, pairs, runs, flush, nob, total: fifteens+pairs+runs+flush+nob };
+    }
+
+    // ── Build and parse deck ─────────────────────────────────────────
+    const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+    const SUITS = ['H','D','C','S'];
+    const deck  = [];
+    RANKS.forEach(r => SUITS.forEach(s => deck.push({r,s})));
+
+    // ── CSV card parser (matches wawa5 parseCard) ────────────────────
+    function parseCsvCard(s) {
+      if (!s) return null;
+      s = s.trim();
+      if (s === '--' || s === 'XX' || s === '') return null;
+      const suit = s.slice(-1).toUpperCase();
+      if (!['H','D','C','S'].includes(suit)) return null;
+      const rank = s.slice(0,-1).toUpperCase();
+      if (!['A','2','3','4','5','6','7','8','9','10','J','Q','K'].includes(rank)) return null;
+      return { r: rank, s: suit };
+    }
+
+    // ── Enumerate all C(52,5) hands — sample every 7th (~371k) ───────
+    const theorScores = {};   // total → count
+    const theorTypes  = { fifteens:0, pairs:0, runs:0, flush:0, nob:0 };
+    let   theorN      = 0;
+    const STEP = 7;
+    let   enumIdx     = 0;
+
+    for (let a=0;a<52;a++)
+    for (let b=a+1;b<52;b++)
+    for (let c=b+1;c<52;c++)
+    for (let d=c+1;d<52;d++)
+    for (let e=d+1;e<52;e++) {
+      if (enumIdx++ % STEP !== 0) continue;
+      const sc = scoreFiveCards([deck[a],deck[b],deck[c],deck[d]], deck[e]);
+      theorScores[sc.total] = (theorScores[sc.total]||0) + 1;
+      if (sc.fifteens) theorTypes.fifteens++;
+      if (sc.pairs)    theorTypes.pairs++;
+      if (sc.runs)     theorTypes.runs++;
+      if (sc.flush)    theorTypes.flush++;
+      if (sc.nob)      theorTypes.nob++;
+      theorN++;
+    }
+
+    // ── Load CSV and score each real hand ───────────────────────────
+    d3.csv('../edited.csv').then(rows => {
+      const realScores = {};
+      const realTypes  = { fifteens:0, pairs:0, runs:0, flush:0, nob:0 };
+      let   realN      = 0;
+
+      rows.forEach(row => {
+        const handCards = ['p1','p2','p3','p4'].map(f => parseCsvCard(row[f])).filter(Boolean);
+        const cut       = parseCsvCard(row.cc);
+        if (handCards.length < 4 || !cut) return;
+        const sc = scoreFiveCards(handCards, cut);
+        realScores[sc.total] = (realScores[sc.total]||0) + 1;
+        if (sc.fifteens) realTypes.fifteens++;
+        if (sc.pairs)    realTypes.pairs++;
+        if (sc.runs)     realTypes.runs++;
+        if (sc.flush)    realTypes.flush++;
+        if (sc.nob)      realTypes.nob++;
+        realN++;
+      });
+
+      drawScoreChart(theorScores, theorN, realScores, realN);
+      drawTypeChart(theorTypes,   theorN, realTypes,  realN);
+    }).catch(() => {
+      // CSV unavailable — draw theoretical only
+      drawScoreChart(theorScores, theorN, {}, 0);
+      drawTypeChart(theorTypes,   theorN, {}, 0);
+    });
+
+    // ── Chart 1: score distribution ─────────────────────────────────
+    function drawScoreChart(theorS, theorN, realS, realN) {
+      const el   = document.getElementById('dist-scores');
+      const W    = el.parentElement.clientWidth || 380;
+      const H    = 170;
+      const ML=32, MR=8, MT=10, MB=20;
+      const iW   = W-ML-MR, iH = H-MT-MB;
+      el.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      el.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+      const scores   = d3.range(0, 30);
+      const theorPct = scores.map(s => theorN ? (theorS[s]||0)/theorN*100 : 0);
+      const realPct  = scores.map(s => realN  ? (realS[s] ||0)/realN *100 : 0);
+      const maxPct   = Math.max(d3.max(theorPct), d3.max(realPct), 1);
+
+      const x = d3.scaleBand().domain(scores).range([0, iW]).padding(0.1);
+      const y = d3.scaleLinear().domain([0, maxPct*1.1]).range([iH, 0]);
+      const svg = d3.select(el);
+      svg.selectAll('*').remove();
+      const g = svg.append('g').attr('transform', `translate(${ML},${MT})`);
+
+      // Grid + left axis
+      g.append('g').call(d3.axisLeft(y).ticks(4).tickSize(-iW).tickFormat(d => d.toFixed(0)+'%'))
+        .call(ax => {
+          ax.select('.domain').remove();
+          ax.selectAll('.tick line').attr('stroke','#2e2a22').attr('stroke-dasharray','2,2');
+          ax.selectAll('text').attr('fill','#7a7060').attr('font-size',6).attr('font-family',FONT);
+        });
+
+      // Theoretical bars (gold, behind)
+      scores.forEach((s,i) => {
+        if (!theorPct[i]) return;
+        g.append('rect')
+          .attr('x', x(s)).attr('y', y(theorPct[i]))
+          .attr('width', x.bandwidth()).attr('height', Math.max(iH-y(theorPct[i]),0))
+          .attr('fill','#c8973a').attr('opacity', 0.55).attr('rx',1);
+      });
+
+      // Real bars (red, in front, narrower so both are visible)
+      if (realN > 0) {
+        const rw = x.bandwidth() * 0.5;
+        scores.forEach((s,i) => {
+          if (!realPct[i]) return;
+          g.append('rect')
+            .attr('x', x(s) + x.bandwidth()*0.25).attr('y', y(realPct[i]))
+            .attr('width', rw).attr('height', Math.max(iH-y(realPct[i]),0))
+            .attr('fill','#e85d4a').attr('opacity', 0.85).attr('rx',1);
+        });
+      }
+
+      // X axis — label a subset
+      g.append('g').attr('transform', `translate(0,${iH})`)
+        .call(d3.axisBottom(x).tickValues([0,2,4,6,8,10,12,14,16,18,20,22,24,28,29]).tickSize(0))
+        .call(ax => {
+          ax.select('.domain').remove();
+          ax.selectAll('text').attr('fill','#7a7060').attr('font-size',6).attr('font-family',FONT);
+        });
+    }
+
+    // ── Chart 2: scoring type frequency ─────────────────────────────
+    function drawTypeChart(theorT, theorN, realT, realN) {
+      const el  = document.getElementById('dist-types');
+      const W   = el.parentElement.clientWidth || 380;
+      const H   = 170;
+      const ML=32, MR=8, MT=10, MB=20;
+      const iW  = W-ML-MR, iH = H-MT-MB;
+      el.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      el.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+      const types   = ['fifteens','pairs','runs','flush','nob'];
+      const labels  = ['Fifteens','Pairs','Runs','Flush','Nob'];
+      const COLORS  = { fifteens:'#c8973a', pairs:'#5a9e7a', runs:'#3a8fd4', flush:'#a855f7', nob:'#c8973a' };
+      const theorPct = types.map(t => theorN ? theorT[t]/theorN*100 : 0);
+      const realPct  = types.map(t => realN  ? realT[t] /realN *100 : 0);
+      const maxPct   = Math.max(d3.max(theorPct), d3.max(realPct), 1);
+
+      const x = d3.scaleBand().domain(types).range([0, iW]).padding(0.25);
+      const y = d3.scaleLinear().domain([0, maxPct*1.12]).range([iH, 0]);
+      const svg = d3.select(el);
+      svg.selectAll('*').remove();
+      const g = svg.append('g').attr('transform', `translate(${ML},${MT})`);
+
+      g.append('g').call(d3.axisLeft(y).ticks(4).tickSize(-iW).tickFormat(d => d.toFixed(0)+'%'))
+        .call(ax => {
+          ax.select('.domain').remove();
+          ax.selectAll('.tick line').attr('stroke','#2e2a22').attr('stroke-dasharray','2,2');
+          ax.selectAll('text').attr('fill','#7a7060').attr('font-size',6).attr('font-family',FONT);
+        });
+
+      const bw = x.bandwidth();
+
+      types.forEach((t, i) => {
+        const col = COLORS[t];
+        // Theoretical bar (muted, full width)
+        g.append('rect')
+          .attr('x', x(t)).attr('y', y(theorPct[i]))
+          .attr('width', bw).attr('height', Math.max(iH-y(theorPct[i]),0))
+          .attr('fill', col).attr('opacity', 0.45).attr('rx', 2);
+        g.append('text')
+          .attr('x', x(t)+bw/2).attr('y', y(theorPct[i])-3)
+          .attr('text-anchor','middle').attr('fill',col).attr('opacity',0.7)
+          .attr('font-size',5.5).attr('font-family',FONT)
+          .text(theorPct[i].toFixed(0)+'%');
+
+        // Real bar (vivid red, narrower, centred)
+        if (realN > 0) {
+          const rw = bw*0.5, rx = x(t)+bw*0.25;
+          g.append('rect')
+            .attr('x', rx).attr('y', y(realPct[i]))
+            .attr('width', rw).attr('height', Math.max(iH-y(realPct[i]),0))
+            .attr('fill','#e85d4a').attr('opacity',0.9).attr('rx',2);
+          g.append('text')
+            .attr('x', rx+rw/2).attr('y', y(realPct[i])-3)
+            .attr('text-anchor','middle').attr('fill','#e85d4a')
+            .attr('font-size',5.5).attr('font-family',FONT)
+            .text(realPct[i].toFixed(0)+'%');
+        }
+      });
+
+      // X axis labels
+      g.append('g').attr('transform',`translate(0,${iH})`)
+        .call(d3.axisBottom(x).tickSize(0).tickFormat((_,i) => labels[i]))
+        .call(ax => {
+          ax.select('.domain').remove();
+          ax.selectAll('text').attr('fill','#7a7060').attr('font-size',7).attr('font-family',FONT);
+        });
+    }
+
+  </script>
+
+</body>
+</html>
