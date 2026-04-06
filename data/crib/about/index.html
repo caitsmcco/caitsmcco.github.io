@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>About Cribbage — Scoring Guide</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
@@ -27,226 +28,126 @@
       padding: 0 0 4rem;
     }
 
-    /* ── Nav ───────────────────────────────────────────────────── */
     nav {
-      display: flex;
-      align-items: center;
-      gap: 2rem;
+      display: flex; align-items: center; gap: 2rem;
       padding: .6rem 1.8rem;
       background: var(--bg2);
       border-bottom: 1px solid var(--border);
       margin-bottom: 2.5rem;
     }
-
     .nav-brand {
-      font-family: 'Playfair Display', serif;
-      color: var(--gold);
-      font-size: 1.1rem;
-      font-weight: 600;
-      letter-spacing: .04em;
-      text-decoration: none;
+      font-family: 'Playfair Display', serif; color: var(--gold);
+      font-size: 1.1rem; font-weight: 600; letter-spacing: .04em; text-decoration: none;
     }
+    nav a { color: var(--muted); text-decoration: none; font-size: .85rem; letter-spacing: .08em; text-transform: uppercase; transition: color .15s; }
+    nav a:hover  { color: var(--text); }
+    nav a.active { color: var(--gold); }
 
-    nav a {
-      color: var(--muted);
-      text-decoration: none;
-      font-size: .85rem;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      transition: color .15s;
-    }
+    .page-header { padding: 0 1.8rem; margin-bottom: 2rem; }
+    h1 { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 600; color: var(--gold); letter-spacing: .04em; margin-bottom: .2rem; }
+    .subtitle { font-size: .85rem; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
 
-    nav a:hover     { color: var(--text); }
-    nav a.active    { color: var(--gold); }
+    .content { padding: 0 1.8rem; display: flex; flex-direction: column; gap: 1rem; }
 
-    /* ── Page header ───────────────────────────────────────────── */
-    .page-header {
-      padding: 0 1.8rem;
-      margin-bottom: 2.5rem;
-    }
-
-    h1 {
-      font-family: 'Playfair Display', serif;
-      font-size: 2rem;
-      font-weight: 600;
-      color: var(--gold);
-      letter-spacing: .04em;
-      margin-bottom: .2rem;
-    }
-
-    .subtitle {
-      font-size: .85rem;
-      color: var(--muted);
-      letter-spacing: .1em;
-      text-transform: uppercase;
-    }
-
-    /* ── Content grid ──────────────────────────────────────────── */
-    .content {
-      padding: 0 1.8rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    /* ── Section divider heading ───────────────────────────────── */
     .section-heading {
-      font-size: .7rem;
-      letter-spacing: .18em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin: 1rem 0 .5rem;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      font-size: .7rem; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--muted); margin: 1rem 0 .5rem;
+      display: flex; align-items: center; gap: 10px;
     }
+    .section-heading::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-    .section-heading::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
-
-    /* ── Rule card ─────────────────────────────────────────────── */
-    .rule {
-      display: grid;
-      grid-template-columns: 220px 1fr auto;
-      align-items: center;
-      gap: 1.5rem;
+    /* ── Distribution chart ─────────────────────────────────────── */
+    .dist-panel {
       background: var(--bg2);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 1rem 1.2rem;
-      min-height: 110px;
+      padding: .9rem 1.1rem;
     }
-
-    /* Left: name + description */
-    .rule-info { display: flex; flex-direction: column; gap: .35rem; }
-
-    .rule-name {
-      font-size: .95rem;
-      font-weight: 500;
-      color: var(--text);
-      letter-spacing: .04em;
+    .dist-title {
+      font-size: .7rem; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: .5rem;
+      display: flex; align-items: center; gap: 8px;
     }
-
-    .rule-desc {
-      font-size: .78rem;
+    .dist-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .dist-legend {
+      display: flex; gap: 1.2rem; margin-top: .5rem;
+      font-size: .65rem; color: var(--muted); align-items: center;
+    }
+    .dist-legend span { display: flex; align-items: center; gap: 4px; }
+    .dist-legend-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+    .dist-caption {
+      margin-top: .7rem;
+      font-size: .72rem;
       color: var(--muted);
-      line-height: 1.55;
+      line-height: 1.7;
+      max-width: 860px;
     }
+    .dist-caption strong { color: var(--text); }
+    .dist-caption p { margin: 0; }
 
-    /* Middle: animated card example */
+    /* ── Two-column rules grid ───────────────────────────────────── */
+    .rules-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+
+    /* ── Rule card: name+desc on top, example below, points right ─── */
+    .rule {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-rows: auto auto;
+      align-items: start;
+      gap: .4rem .8rem;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .85rem 1rem;
+    }
+    .rule-info   { grid-column: 1; grid-row: 1; }
+    .rule-points { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; }
+    /* Example spans full width below the text */
     .rule-example {
+      grid-column: 1 / -1;
+      grid-row: 2;
       display: flex;
-      align-items: center;
-      gap: 6px;
-      min-height: 88px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      padding-top: .4rem;
+      border-top: 1px solid var(--border);
       position: relative;
+      min-height: 100px;
     }
+    .rule-info { display: flex; flex-direction: column; gap: .28rem; }
+    .rule-name { font-size: .88rem; font-weight: 500; color: var(--text); letter-spacing: .04em; }
+    .rule-desc { font-size: .73rem; color: var(--muted); line-height: 1.55; }
+    .rule-points { display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; }
+    .pts-num   { font-size: 1.4rem; font-weight: 600; color: var(--gold); font-family: 'Playfair Display', serif; line-height: 1; }
+    .pts-label { font-size: .55rem; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
 
-    /* The inner wrapper fades in/out when rotating examples */
-    .cards-wrap {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: opacity .45s ease;
-    }
-
-    .cards-wrap.fading { opacity: 0; }
-
-    /* Separator between groups of cards (e.g. hand | cut card) */
-    .card-sep {
-      width: 1px;
-      height: 52px;
-      background: var(--border);
-      margin: 0 4px;
-      flex-shrink: 0;
-    }
-
-    /* Example caption below the cards */
-    .example-caption {
-      position: absolute;
-      bottom: -18px;
-      left: 0;
-      font-size: .65rem;
-      color: var(--muted);
-      white-space: nowrap;
-      transition: opacity .45s ease;
-    }
-
-    .example-caption.fading { opacity: 0; }
-
-    /* Right: points badge */
-    .rule-points {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 3px;
-      flex-shrink: 0;
-    }
-
-    .pts-num {
-      font-size: 1.6rem;
-      font-weight: 600;
-      color: var(--gold);
-      font-family: 'Playfair Display', serif;
-      line-height: 1;
-    }
-
-    .pts-label {
-      font-size: .6rem;
-      color: var(--muted);
-      letter-spacing: .1em;
-      text-transform: uppercase;
-    }
-
-    /* ── Playing card component ────────────────────────────────── */
+    /* ── Playing card ────────────────────────────────────────────── */
     .card {
-      width: 52px;
-      height: 76px;
-      border-radius: 5px;
-      border: 1px solid #3a3020;
-      background: #f5f0e8;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-between;
-      padding: 4px 3px;
-      font-weight: 700;
-      font-family: 'IBM Plex Mono', monospace;
-      flex-shrink: 0;
-      user-select: none;
+      width: 52px; height: 76px; border-radius: 5px; border: 1px solid #3a3020;
+      background: #f5f0e8; display: flex; flex-direction: column;
+      align-items: center; justify-content: space-between;
+      padding: 4px 3px; font-weight: 700; font-family: 'IBM Plex Mono', monospace;
+      flex-shrink: 0; user-select: none;
     }
-
     .card .cr { font-size: .85rem; line-height: 1; align-self: flex-start; }
     .card .cs { font-size: 1.5rem; line-height: 1; }
-
-    .card.red  .cr, .card.red  .cs { color: #c0392b; }
+    .card.red   .cr, .card.red   .cs { color: #c0392b; }
     .card.black .cr, .card.black .cs { color: #1a1814; }
+    .card.lit { box-shadow: 0 0 0 2px var(--gold); }
+    .card-sep { width:1px; height:52px; background:var(--border); margin:0 4px; flex-shrink:0; }
+    .cards-wrap { display:flex; align-items:center; gap:6px; transition:opacity .45s ease; }
+    .cards-wrap.fading { opacity:0; }
+    .example-caption { font-size:.65rem; color:var(--muted); white-space:nowrap; transition:opacity .45s ease; margin-top:2px; }
+    .example-caption.fading { opacity:0; }
 
-    /* Highlighted card — used to show which card completes the score */
-    .card.lit {
-      box-shadow: 0 0 0 2px var(--gold);
-    }
-
-    /* ── Note block ────────────────────────────────────────────── */
-    .note {
-      background: var(--bg3);
-      border-left: 3px solid var(--gold);
-      border-radius: 0 6px 6px 0;
-      padding: .6rem 1rem;
-      font-size: .78rem;
-      color: var(--muted);
-      line-height: 1.6;
-    }
-
+    /* ── Note block ──────────────────────────────────────────────── */
+    .note { background:var(--bg3); border-left:3px solid var(--gold); border-radius:0 6px 6px 0; padding:.6rem 1rem; font-size:.78rem; color:var(--muted); line-height:1.6; }
     .note strong { color: var(--text); }
 
     @media (max-width: 700px) {
-      .rule { grid-template-columns: 1fr; }
-      .rule-points { flex-direction: row; gap: 8px; align-items: baseline; }
+      .rules-grid  { grid-template-columns: 1fr; }
+      .dist-charts { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -274,8 +175,23 @@
       The dealer also counts the crib as an extra hand.
     </p>
 
+    <!-- ── Distribution chart ────────────────────────────────────── -->
+    <div class="dist-panel">
+      <div class="dist-title">Hand score distribution</div>
+      <svg id="dist-scores" width="100%" height="200"></svg>
+      <div class="dist-legend">
+        <span><span class="dist-legend-swatch" style="background:#c8973a;opacity:.75"></span>All possible hands</span>
+        <span><span class="dist-legend-swatch" style="background:#e85d4a"></span>Our games</span>
+        <span><span class="dist-legend-swatch" style="background:#2e2a22;border:1px solid #4a4030;"></span>Impossible score</span>
+      </div>
+      <div class="dist-caption">
+        <p>The gold bars show the theoretical probability of each hand score across all 12,994,800 possible cribbage hands, based on random dealing with no strategy (<a href="https://en.wikipedia.org/wiki/Cribbage_statistics" target="_blank" style="color:var(--gold);text-decoration:none;">Wikipedia: Cribbage statistics</a>). The red bars show how often each score actually appeared in our games. Differences reflect two things: <strong>strategic discarding</strong> — players actively choose which cards to keep, pushing scores away from the random baseline — and <strong>miscounts</strong>, where a hand was recorded with the wrong value. Scores of 19, 25, 26, and 27 are <strong>mathematically impossible</strong> in cribbage; any hand showing those values is a guaranteed miscount.</p>
+      </div>
+    </div>
+
     <!-- ── Hand scoring ────────────────────────────────────────── -->
     <div class="section-heading">Hand &amp; play scoring</div>
+    <div class="rules-grid">
 
     <!-- Fifteen -->
     <div class="rule" id="r-fifteen">
@@ -329,7 +245,7 @@
     <div class="rule" id="r-flush">
       <div class="rule-info">
         <span class="rule-name">Flush</span>
-        <span class="rule-desc">Four cards in the hand of the same suit score 4. If the cut card also matches, score 5. In the crib, only a 5-card flush (including cut) counts.</span>
+        <span class="rule-desc">Four cards in the hand of the same suit score 4. If the cut matches, score 5. <em style="color:var(--gold)">House rule:</em> 3 hand cards + the cut card all the same suit scores 4.</span>
       </div>
       <div class="rule-example" style="margin-bottom:20px">
         <div class="cards-wrap" id="ex-flush"></div>
@@ -345,7 +261,7 @@
     <div class="rule" id="r-nob">
       <div class="rule-info">
         <span class="rule-name">Nob (His Nobs)</span>
-        <span class="rule-desc">If your hand contains a Jack whose suit matches the cut card, score 1 point. Applies to both the hand and the crib.</span>
+        <span class="rule-desc">If your hand contains a Jack whose suit matches the cut card, score 1 point.</span>
       </div>
       <div class="rule-example" style="margin-bottom:20px">
         <div class="cards-wrap" id="ex-nob"></div>
@@ -357,8 +273,11 @@
       </div>
     </div>
 
+    </div><!-- /rules-grid hand -->
+
     <!-- ── Play-only scoring ───────────────────────────────────── -->
     <div class="section-heading">Pegging only</div>
+    <div class="rules-grid">
 
     <!-- Thirty-one -->
     <div class="rule" id="r-31">
@@ -396,7 +315,7 @@
     <div class="rule" id="r-heels">
       <div class="rule-info">
         <span class="rule-name">His Heels</span>
-        <span class="rule-desc">If the dealer turns over a Jack as the cut card at the start of the round, the dealer immediately scores 2 points.</span>
+        <span class="rule-desc">If the dealer turns over a Jack as the cut card at the start of the round, the dealer immediately scores 1 point.</span>
       </div>
       <div class="rule-example" style="margin-bottom:20px">
         <div class="cards-wrap" id="ex-heels"></div>
@@ -408,12 +327,15 @@
       </div>
     </div>
 
+    </div><!-- /rules-grid pegging -->
+
     <!-- ── Useful combos ───────────────────────────────────────── -->
     <div class="section-heading">Common combination hands</div>
 
     <div class="note">
       <strong>Tip:</strong> runs and pairs can overlap in the same hand, creating "double runs" and "triple runs" that score much more than they first appear. Always count systematically: fifteens first, then pairs, then runs, then flush, then nob.
     </div>
+    <div class="rules-grid">
 
     <!-- Double run of 3 -->
     <div class="rule" id="r-dr3">
@@ -479,228 +401,272 @@
       </div>
     </div>
 
+    </div><!-- /rules-grid combos -->
+
+    <!-- ── References ───────────────────────────────────────────── -->
+    <div class="section-heading">References</div>
+    <div style="font-size:.72rem;color:var(--muted);line-height:2;padding-bottom:.5rem;">
+      <div>
+        <span style="color:var(--muted);margin-right:.5rem;">1.</span>
+        Scoring rules based on:
+        <a href="https://rubl.com/rules/cribbage-scoring-chart.html" target="_blank"
+           style="color:var(--gold);text-decoration:none;">
+          rubl.com/rules/cribbage-scoring-chart.html
+        </a>
+      </div>
+      <div>
+        <span style="color:var(--muted);margin-right:.5rem;">2.</span>
+        Hand score distribution data from:
+        <a href="https://en.wikipedia.org/wiki/Cribbage_statistics" target="_blank"
+           style="color:var(--gold);text-decoration:none;">
+          en.wikipedia.org/wiki/Cribbage_statistics
+        </a>
+        — Lumetta, S. S. (2007). "Amusing Cribbage Facts."
+      </div>
+    </div>
+
   </div><!-- /content -->
 
 
   <script>
-    // ── Card rendering helpers ───────────────────────────────────
-    const SUIT_SYM = { H: '♥', D: '♦', C: '♣', S: '♠' };
+    const SUIT_SYM  = { H: '♥', D: '♦', C: '♣', S: '♠' };
     const RED_SUITS = new Set(['H', 'D']);
+    const FONT      = 'IBM Plex Mono, monospace';
 
-    /**
-     * Parse a shorthand card string like "10H", "JD", "AC".
-     * Returns { rank, suit, red }.
-     */
     function parseCard(str) {
       str = str.trim();
-      const suit = str.slice(-1);
-      const rank = str.slice(0, -1);
-      return { rank, suit, red: RED_SUITS.has(suit) };
+      return { rank: str.slice(0, -1), suit: str.slice(-1), red: RED_SUITS.has(str.slice(-1)) };
     }
-
-    /**
-     * Build a .card DOM element from a parsed card object.
-     * Pass lit=true to add the gold highlight ring.
-     */
     function makeCardEl(card, lit = false) {
       const div = document.createElement('div');
       div.className = 'card ' + (card.red ? 'red' : 'black') + (lit ? ' lit' : '');
       div.innerHTML = `<span class="cr">${card.rank}</span><span class="cs">${SUIT_SYM[card.suit]}</span>`;
       return div;
     }
-
-    /**
-     * Build a .card-sep DOM element (thin vertical divider between card groups).
-     */
     function makeSep() {
-      const d = document.createElement('div');
-      d.className = 'card-sep';
-      return d;
+      const d = document.createElement('div'); d.className = 'card-sep'; return d;
     }
 
-    // ── Example rotator ─────────────────────────────────────────
-
-    /**
-     * Each example definition:
-     *   id       — DOM id of the .cards-wrap element
-     *   capId    — DOM id of the caption element
-     *   examples — array of { cards, caption, lit }
-     *     cards   — array of card strings OR the string '|' for a separator
-     *     caption — text shown below the cards
-     *     lit     — indices of cards to highlight (gold ring)
-     */
+    // ── Example definitions ───────────────────────────────────────
     const EXAMPLES = [
-
-      {
-        id: 'ex-fifteen', capId: 'cap-fifteen',
-        examples: [
-          { cards: ['10C', '5D'],            caption: '10 + 5 = 15',                   lit: [0,1] },
-          { cards: ['7H', '8S'],             caption: '7 + 8 = 15',                    lit: [0,1] },
-          { cards: ['3D', '4S', '8H'],       caption: '3 + 4 + 8 = 15',               lit: [0,1,2] },
-          { cards: ['AC', '6D', '8H'],       caption: '1 + 6 + 8 = 15',               lit: [0,1,2] },
-          { cards: ['2S', '3H', '10C'],      caption: '2 + 3 + 10 = 15',              lit: [0,1,2] },
-          { cards: ['AC', '2D', '3H', '9S'], caption: '1 + 2 + 3 + 9 = 15',          lit: [0,1,2,3] },
-          { cards: ['5H', 'KD'],             caption: '5 + K(10) = 15',               lit: [0,1] },
-        ],
-      },
-
-      {
-        id: 'ex-pair', capId: 'cap-pair',
-        examples: [
-          { cards: ['6H', '6S'],             caption: 'Pair of 6s — 2 pts',           lit: [0,1] },
-          { cards: ['QC', 'QD'],             caption: 'Pair of Queens — 2 pts',       lit: [0,1] },
-          { cards: ['9D', '9H', '9C'],       caption: '3 of a kind = 3 pairs — 6 pts',lit: [0,1,2] },
-          { cards: ['KH', 'KC', 'KD', 'KS'],caption: '4 of a kind = 6 pairs — 12 pts',lit:[0,1,2,3]},
-          { cards: ['AC', 'AH'],             caption: 'Pair of Aces — 2 pts',         lit: [0,1] },
-        ],
-      },
-
-      {
-        id: 'ex-run', capId: 'cap-run',
-        examples: [
-          { cards: ['4H', '5D', '6C'],       caption: '4-5-6 run — 3 pts',           lit: [0,1,2] },
-          { cards: ['9S', '10H', 'JC'],      caption: '9-10-J run — 3 pts',          lit: [0,1,2] },
-          { cards: ['2D', '3H', '4C', '5S'], caption: '2-3-4-5 run — 4 pts',        lit: [0,1,2,3] },
-          { cards: ['7C', '8D', '9H', '10S', 'JD'], caption: '7-8-9-10-J run — 5 pts', lit:[0,1,2,3,4]},
-          { cards: ['AC', '2H', '3S'],       caption: 'A-2-3 run — 3 pts',          lit: [0,1,2] },
-        ],
-      },
-
-      {
-        id: 'ex-flush', capId: 'cap-flush',
-        examples: [
-          { cards: ['2H', '5H', '9H', 'QH'],         caption: '4-card flush (hand only) — 4 pts',  lit:[0,1,2,3] },
-          { cards: ['3D', '7D', 'JD', 'KD', '|', '9D'], caption: 'All 5 match cut suit — 5 pts', lit:[0,1,2,3,5] },
-          { cards: ['4C', '8C', '10C', 'AC'],         caption: '4-card flush — 4 pts',            lit:[0,1,2,3] },
-          { cards: ['6S', '7S', 'JS', 'KS', '|', '3S'], caption: '5-card flush with cut — 5 pts', lit:[0,1,2,3,5] },
-        ],
-      },
-
-      {
-        id: 'ex-nob', capId: 'cap-nob',
-        examples: [
-          { cards: ['JH', 'AC', '7D', '3S', '|', '9H'], caption: 'Jack of ♥ matches cut ♥ — 1 pt', lit:[0,5] },
-          { cards: ['JD', '5H', 'KC', '2S', '|', '4D'], caption: 'Jack of ♦ matches cut ♦ — 1 pt', lit:[0,5] },
-          { cards: ['JS', '8H', '3C', '6D', '|', 'QS'], caption: 'Jack of ♠ matches cut ♠ — 1 pt', lit:[0,5] },
-        ],
-      },
-
-      {
-        id: 'ex-31', capId: 'cap-31',
-        examples: [
-          { cards: ['10H', '7D', '4S', '10C'], caption: '10+7+4+10 = 31 — 2 pts',  lit:[3] },
-          { cards: ['KS', '8H', '3C', 'JS'],   caption: '10+8+3+10 = 31 — 2 pts',  lit:[3] },
-          { cards: ['9D', '6H', '7S', '9C'],   caption: '9+6+7+9 = 31 — 2 pts',    lit:[3] },
-          { cards: ['5H', '5D', '5S', 'JC'],   caption: '5+5+5+10(J) = 25… nope! count again', lit:[0] },
-          { cards: ['AC', '10D', '10S', '10C'],caption: '1+10+10+10 = 31 — 2 pts', lit:[3] },
-        ],
-      },
-
-      {
-        id: 'ex-go', capId: 'cap-go',
-        examples: [
-          { cards: ['8H', '9D', '|', 'KS'],  caption: 'Running total 17 — opp plays K (27). Can\'t reach 31, say "Go" — 1 pt', lit:[2] },
-          { cards: ['5C', '6D', '7H'],        caption: 'Last card played in the round — 1 pt', lit:[2] },
-        ],
-      },
-
-      {
-        id: 'ex-heels', capId: 'cap-heels',
-        examples: [
-          { cards: ['JH'],  caption: 'Dealer cuts Jack of ♥ — 2 pts for dealer', lit:[0] },
-          { cards: ['JC'],  caption: 'Dealer cuts Jack of ♣ — 2 pts for dealer', lit:[0] },
-          { cards: ['JS'],  caption: 'Dealer cuts Jack of ♠ — 2 pts for dealer', lit:[0] },
-          { cards: ['JD'],  caption: 'Dealer cuts Jack of ♦ — 2 pts for dealer', lit:[0] },
-        ],
-      },
-
-      {
-        id: 'ex-dr3', capId: 'cap-dr3',
-        examples: [
-          { cards: ['5H', '5D', '6C', '7S'],  caption: '5-6-7 run × 2 (6) + pair of 5s (2) = 8 pts', lit:[0,1,2,3] },
-          { cards: ['8H', '9C', '9D', '10H'], caption: '8-9-10 run × 2 (6) + pair of 9s (2) = 8 pts', lit:[0,1,2,3] },
-          { cards: ['JH', 'QC', 'QD', 'KS'], caption: 'J-Q-K run × 2 (6) + pair of Qs (2) = 8 pts',  lit:[0,1,2,3] },
-        ],
-      },
-
-      {
-        id: 'ex-dr4', capId: 'cap-dr4',
-        examples: [
-          { cards: ['3H', '4C', '5D', '5S', '6H'], caption: '3-4-5-6 run × 2 (8) + pair of 5s (2) = 10 pts', lit:[0,1,2,3,4] },
-          { cards: ['7C', '8D', '9H', '9S', '10C'], caption: '7-8-9-10 run × 2 (8) + pair of 9s (2) = 10 pts', lit:[0,1,2,3,4] },
-        ],
-      },
-
-      {
-        id: 'ex-tr3', capId: 'cap-tr3',
-        examples: [
-          { cards: ['4H', '4D', '4C', '5S', '6H'], caption: '4-5-6 run × 3 (9) + 3 of a kind 4s (6) = 15 pts', lit:[0,1,2,3,4] },
-          { cards: ['7H', '8D', '8C', '8S', '9H'], caption: '7-8-9 run × 3 (9) + 3 of a kind 8s (6) = 15 pts', lit:[0,1,2,3,4] },
-        ],
-      },
-
-      {
-        id: 'ex-ddr', capId: 'cap-ddr',
-        examples: [
-          { cards: ['6H', '6D', '7C', '7S', '8H'], caption: '6-7-8 run × 4 (12) + 2 pairs (4) = 16 pts', lit:[0,1,2,3,4] },
-          { cards: ['3H', '3D', '4C', '4S', '5H'], caption: '3-4-5 run × 4 (12) + 2 pairs (4) = 16 pts', lit:[0,1,2,3,4] },
-        ],
-      },
-
+      { id:'ex-fifteen', capId:'cap-fifteen', examples:[
+        { cards:['10C','5D'],            caption:'10 + 5 = 15',           lit:[0,1] },
+        { cards:['7H','8S'],             caption:'7 + 8 = 15',            lit:[0,1] },
+        { cards:['3D','4S','8H'],        caption:'3 + 4 + 8 = 15',        lit:[0,1,2] },
+        { cards:['AC','6D','8H'],        caption:'1 + 6 + 8 = 15',        lit:[0,1,2] },
+        { cards:['5H','KD'],             caption:'5 + K(10) = 15',         lit:[0,1] },
+      ]},
+      { id:'ex-pair', capId:'cap-pair', examples:[
+        { cards:['6H','6S'],             caption:'Pair of 6s = 2 pts',             lit:[0,1] },
+        { cards:['9D','9H','9C'],        caption:'3 of a kind = 3 pairs = 6 pts',  lit:[0,1,2] },
+        { cards:['KH','KC','KD','KS'],   caption:'4 of a kind = 6 pairs = 12 pts', lit:[0,1,2,3] },
+      ]},
+      { id:'ex-run', capId:'cap-run', examples:[
+        { cards:['4H','5D','6C'],        caption:'4-5-6 run = 3 pts',      lit:[0,1,2] },
+        { cards:['2D','3H','4C','5S'],   caption:'2-3-4-5 run = 4 pts',    lit:[0,1,2,3] },
+        { cards:['7C','8D','9H','JD','|','10S'], caption:'7-8-9-10-J run = 5 pts', lit:[0,1,2,3,4] },
+      ]},
+      { id:'ex-flush', capId:'cap-flush', examples:[
+        { cards:['2H','5H','9H','QH'],              caption:'4-card flush (hand only) = 4 pts',       lit:[0,1,2,3] },
+        { cards:['3D','7D','JD','KD','|','9D'],     caption:'All 5 match cut suit = 5 pts',           lit:[0,1,2,3,5] },
+        { cards:['4C','8C','AC','7H','|','6C'],     caption:'House rule: 3 hand ♣ + cut ♣ = 4 pts',   lit:[0,1,2,5] },
+        { cards:['9H','QH','3H','KD','|','5H'],     caption:'House rule: 3 hand ♥ + cut ♥ = 4 pts',   lit:[0,1,2,5] },
+        { cards:['6S','7S','JS','KS','|','3S'],     caption:'5-card flush with cut = 5 pts',          lit:[0,1,2,3,5] },
+      ]},
+      { id:'ex-nob', capId:'cap-nob', examples:[
+        { cards:['JH','AC','7D','3S','|','9H'], caption:'Jack of ♥ matches cut ♥ = 1 pt', lit:[0,5] },
+        { cards:['JD','5H','KC','2S','|','4D'], caption:'Jack of ♦ matches cut ♦ = 1 pt', lit:[0,5] },
+      ]},
+      { id:'ex-31', capId:'cap-31', examples:[
+        { cards:['10H','7D','4S','10C'], caption:'10+7+4+10 = 31 — 2 pts', lit:[3] },
+        { cards:['KS','8H','3C','JS'],   caption:'10+8+3+10 = 31 = 2 pts', lit:[3] },
+      ]},
+      { id:'ex-go', capId:'cap-go', examples:[
+        { cards:['8H','9D','JD','|'],  caption:"Running total 27 — opp doesn't have card less than 4 = 1 pt", lit:[2] },
+        { cards:['5C','6D','9H'],      caption:'Last card played = 1 pt', lit:[2] },
+      ]},
+      { id:'ex-heels', capId:'cap-heels', examples:[
+        { cards:['JH'], caption:'Dealer cuts Jack of ♥ = 1 pt for dealer', lit:[0] },
+        { cards:['JC'], caption:'Dealer cuts Jack of ♣ = 1 pt for dealer', lit:[0] },
+      ]},
+      { id:'ex-dr3', capId:'cap-dr3', examples:[
+        { cards:['5H','5D','6C','7S'],  caption:'5-6-7 run × 2 (6) + pair of 5s (2) = 8 pts',   lit:[0,1,2,3] },
+        { cards:['JH','QC','QD','KS'],  caption:'J-Q-K run × 2 (6) + pair of Qs (2) = 8 pts',   lit:[0,1,2,3] },
+      ]},
+      { id:'ex-dr4', capId:'cap-dr4', examples:[
+        { cards:['3H','4C','5D','6S','|','6H'], caption:'3-4-5-6 run × 2 (8) + pair of 5s (2) = 10 pts', lit:[0,1,2,3,4] },
+        { cards:['5H','6C','6D','7S','|','8H'], caption:'3-4-5-6 run × 2 (8) + pair of 5s (2) = 10 pts', lit:[0,1,2,3,4] },
+      ]},
+      { id:'ex-tr3', capId:'cap-tr3', examples:[
+        { cards:['4H','4D','4C','5S','|','6H'], caption:'4-5-6 run × 3 (9) + 3 of a kind 4s (6) = 15 pts', lit:[0,1,2,3,4] },
+        { cards:['AH','2D','3C','3S','|','3H'], caption:'4-5-6 run × 3 (9) + 3 of a kind 4s (6) = 15 pts', lit:[0,1,2,3,4] },
+      ]},
+      { id:'ex-ddr', capId:'cap-ddr', examples:[
+        { cards:['6H','6D','7C','7S','|','8H'], caption:'6-7-8 run × 4 (12) + 2 pairs (4) = 16 pts', lit:[0,1,2,3,4] },
+        { cards:['10H','10D','JC','JS','|','QH'], caption:'6-7-8 run × 4 (12) + 2 pairs (4) = 16 pts', lit:[0,1,2,3,4] },
+      ]},
     ];
 
-
-    // ── Mount examples and start rotation ───────────────────────
-
-    /**
-     * Builds the initial card layout for an example set and starts
-     * the timed rotation, fading between examples.
-     */
     function startRotator(def) {
       const wrap = document.getElementById(def.id);
       const cap  = document.getElementById(def.capId);
-      let idx    = 0;
-
-      function render(example) {
+      if (!wrap) return;
+      let idx = 0;
+      function render(ex) {
         wrap.innerHTML = '';
-        example.cards.forEach((c, i) => {
-          if (c === '|') {
-            wrap.appendChild(makeSep());
-          } else {
-            const card = parseCard(c);
-            const lit  = example.lit.includes(i);
-            wrap.appendChild(makeCardEl(card, lit));
-          }
+        ex.cards.forEach((c, i) => {
+          if (c === '|') { wrap.appendChild(makeSep()); }
+          else { wrap.appendChild(makeCardEl(parseCard(c), ex.lit.includes(i))); }
         });
-        cap.textContent = example.caption;
+        cap.textContent = ex.caption;
       }
-
-      // Show first example immediately
       render(def.examples[0]);
-
-      // Only rotate if there is more than one example
       if (def.examples.length <= 1) return;
-
       setInterval(() => {
-        // Fade out
-        wrap.classList.add('fading');
-        cap.classList.add('fading');
-
+        wrap.classList.add('fading'); cap.classList.add('fading');
         setTimeout(() => {
-          // Swap content
           idx = (idx + 1) % def.examples.length;
           render(def.examples[idx]);
-
-          // Fade back in
-          wrap.classList.remove('fading');
-          cap.classList.remove('fading');
-        }, 460);  // just after the CSS transition ends
-
-      }, 3000);  // rotate every 3 seconds
+          wrap.classList.remove('fading'); cap.classList.remove('fading');
+        }, 460);
+      }, 5000);
     }
-
     EXAMPLES.forEach(startRotator);
 
+
+    // ═══════════════════════════════════════════════════════════════
+    //  HAND SCORE DISTRIBUTION
+    //  Theoretical counts from Wikipedia: Cribbage statistics
+    //  (12,994,800 total possible hands, random discard assumption)
+    //  Overlaid with recorded handPoints from edited.csv
+    // ═══════════════════════════════════════════════════════════════
+
+    // Exact counts per score 0–29 from Wikipedia
+    const WIKI_COUNTS = {
+       0:1009008,  1:99792,   2:2813796, 3:505008,  4:2855676,
+       5:697508,   6:1800268, 7:751324,  8:1137236, 9:361224,
+      10:388740,  11:51680,  12:317340, 13:19656,  14:90100,
+      15:9168,    16:58248,  17:11196,  18:2708,   19:0,
+      20:8068,    21:2496,   22:444,    23:356,    24:3680,
+      25:0,       26:0,      27:0,      28:76,     29:4,
+    };
+    const WIKI_TOTAL   = 12994800;
+    // Scores impossible in standard cribbage (0 hands in the table)
+    const IMPOSSIBLE   = new Set([19, 25, 26, 27]);
+
+    // ── CSV card parser ──────────────────────────────────────────────
+    function parseCsvCard(s) {
+      if (!s) return null;
+      s = s.trim();
+      if (s === '--' || s === 'XX' || s === '') return null;
+      const suit = s.slice(-1).toUpperCase();
+      if (!['H','D','C','S'].includes(suit)) return null;
+      const rank = s.slice(0,-1).toUpperCase();
+      if (!['A','2','3','4','5','6','7','8','9','10','J','Q','K'].includes(rank)) return null;
+      return { r: rank, s: suit };
+    }
+
+    // ── Load CSV — use recorded handPoints directly ──────────────────
+    d3.csv('../edited.csv').then(rows => {
+      const realScores = {};
+      let   realN      = 0;
+      rows.forEach(row => {
+        const hp = row.handPoints !== undefined ? +row.handPoints : NaN;
+        if (isNaN(hp) || row.handPoints === '' || row.handPoints === undefined) return;
+        const score = Math.round(hp);
+        if (score < 0 || score > 29) return;
+        realScores[score] = (realScores[score]||0) + 1;
+        realN++;
+      });
+      drawScoreChart(realScores, realN);
+    }).catch(() => {
+      drawScoreChart({}, 0);
+    });
+
+    // ── Chart: score distribution ────────────────────────────────────
+    function drawScoreChart(realS, realN) {
+      const el  = document.getElementById('dist-scores');
+      const W   = el.parentElement.clientWidth || 700;
+      const H   = 200;
+      const ML=34, MR=10, MT=12, MB=22;
+      const iW  = W-ML-MR, iH = H-MT-MB;
+      el.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      el.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+      const scores    = d3.range(0, 30);
+      const theorPct  = scores.map(s => WIKI_COUNTS[s] / WIKI_TOTAL * 100);
+      const realPct   = scores.map(s => realN ? (realS[s]||0) / realN * 100 : 0);
+      const maxPct    = Math.max(d3.max(theorPct), d3.max(realPct), 1);
+
+      const x = d3.scaleBand().domain(scores).range([0, iW]).padding(0.08);
+      const y = d3.scaleLinear().domain([0, maxPct * 1.12]).range([iH, 0]);
+
+      const svg = d3.select(el);
+      svg.selectAll('*').remove();
+      const g = svg.append('g').attr('transform', `translate(${ML},${MT})`);
+
+      // Y axis + gridlines
+      g.append('g')
+        .call(d3.axisLeft(y).ticks(5).tickSize(-iW).tickFormat(d => d.toFixed(0)+'%'))
+        .call(ax => {
+          ax.select('.domain').remove();
+          ax.selectAll('.tick line').attr('stroke','#2e2a22').attr('stroke-dasharray','2,2');
+          ax.selectAll('text').attr('fill','#7a7060').attr('font-size',6.5).attr('font-family',FONT);
+        });
+
+      // Impossible score background shading — subtle dark fill
+      scores.forEach(s => {
+        if (!IMPOSSIBLE.has(s)) return;
+        g.append('rect')
+          .attr('x', x(s)).attr('y', 0)
+          .attr('width', x.bandwidth()).attr('height', iH)
+          .attr('fill', '#1a1810').attr('rx', 1);
+        // Small "✕" label at the top of the impossible column
+        g.append('text')
+          .attr('x', x(s) + x.bandwidth()/2).attr('y', 5)
+          .attr('text-anchor','middle').attr('dominant-baseline','hanging')
+          .attr('fill','#4a4030').attr('font-size',6).attr('font-family',FONT)
+          .text('✕');
+      });
+
+      // Theoretical bars (gold)
+      scores.forEach((s, i) => {
+        if (IMPOSSIBLE.has(s)) return;
+        const pct = theorPct[i];
+        if (!pct) return;
+        g.append('rect')
+          .attr('x', x(s)).attr('y', y(pct))
+          .attr('width', x.bandwidth()).attr('height', Math.max(iH - y(pct), 0))
+          .attr('fill','#c8973a').attr('opacity', 0.6).attr('rx', 1);
+      });
+
+      // Real bars (red, narrower, centred) — drawn on top
+      if (realN > 0) {
+        const rw = x.bandwidth() * 0.5;
+        scores.forEach((s, i) => {
+          const pct = realPct[i];
+          if (!pct) return;
+          // Impossible-score real bar gets a warning red to make miscounts obvious
+          const fill = IMPOSSIBLE.has(s) ? '#ff4444' : '#e85d4a';
+          g.append('rect')
+            .attr('x', x(s) + x.bandwidth()*0.25).attr('y', y(pct))
+            .attr('width', rw).attr('height', Math.max(iH - y(pct), 0))
+            .attr('fill', fill).attr('opacity', IMPOSSIBLE.has(s) ? 1 : 0.85).attr('rx', 1);
+        });
+      }
+
+      // X axis — every integer label, rotated for readability
+      g.append('g').attr('transform', `translate(0,${iH})`)
+        .call(d3.axisBottom(x).tickValues(d3.range(0,30)).tickSize(0))
+        .call(ax => {
+          ax.select('.domain').remove();
+          ax.selectAll('text')
+            .attr('fill', d => IMPOSSIBLE.has(d) ? '#4a4030' : '#7a7060')
+            .attr('font-size', 6).attr('font-family', FONT);
+        });
+    }
+
   </script>
+
 </body>
 </html>
