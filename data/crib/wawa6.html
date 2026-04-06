@@ -131,10 +131,18 @@
       align-items: start;
     }
 
-    /* ── Bottom row: 4 equal chart panels ─────────────────────────────── */
+    /* ── Bottom row: 3 equal chart panels ─────────────────────────────── */
     .bottom-row {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--gap);
+      align-items: start;
+    }
+
+    /* ── Distribution + accuracy row ──────────────────────────────────── */
+    .dist-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
       gap: var(--gap);
       align-items: start;
     }
@@ -353,6 +361,7 @@
     @media (max-width: 900px) {
       .top-row    { grid-template-columns: 1fr; }
       .bottom-row { grid-template-columns: repeat(2, 1fr); }
+      .dist-row   { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 520px) {
@@ -433,20 +442,22 @@
       <div class="pt">Best round</div>
       <svg id="bar-max"></svg>
     </div>
+  </div>
+
+  <!-- ── Bottom panel row: dist (wide) + accuracy (narrow) ────────────── -->
+  <div class="dist-row">
+    <div class="panel" id="dist-panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">
+        <div class="pt" style="margin-bottom:0;">Hand score distribution</div>
+        <div id="dist-legend" style="display:flex;gap:.9rem;font-size:.6rem;color:var(--muted);align-items:center;"></div>
+      </div>
+      <svg id="dist-svg" width="100%"></svg>
+    </div>
     <div class="panel">
       <div class="pt">Hand counting accuracy</div>
       <svg id="bar-acc"></svg>
       <div id="bar-acc-note" style="font-size:.6rem;color:var(--muted);margin-top:.2rem;line-height:1.5;"></div>
     </div>
-  </div>
-
-  <!-- ── Hand score distribution ───────────────────────────────────────── -->
-  <div class="panel" id="dist-panel">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">
-      <div class="pt" style="margin-bottom:0;">Hand score distribution</div>
-      <div id="dist-legend" style="display:flex;gap:.9rem;font-size:.6rem;color:var(--muted);align-items:center;"></div>
-    </div>
-    <svg id="dist-svg" width="100%"></svg>
   </div>
 
   </div><!-- /page-body -->
