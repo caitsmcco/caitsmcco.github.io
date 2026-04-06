@@ -84,18 +84,33 @@
     /* ── Two-column rules grid ───────────────────────────────────── */
     .rules-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
 
-    /* ── Rule card (compact, no example column) ──────────────────── */
+    /* ── Rule card: name+desc on top, example below, points right ─── */
     .rule {
       display: grid;
       grid-template-columns: 1fr auto;
+      grid-template-rows: auto auto;
       align-items: start;
-      gap: .5rem 1rem;
+      gap: .4rem .8rem;
       background: var(--bg2);
       border: 1px solid var(--border);
       border-radius: 8px;
       padding: .85rem 1rem;
     }
-    .rule-example { display: none; }   /* hidden in compact layout */
+    .rule-info   { grid-column: 1; grid-row: 1; }
+    .rule-points { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; flex-shrink: 0; }
+    /* Example spans full width below the text */
+    .rule-example {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      padding-top: .4rem;
+      border-top: 1px solid var(--border);
+      position: relative;
+      min-height: 100px;
+    }
     .rule-info { display: flex; flex-direction: column; gap: .28rem; }
     .rule-name { font-size: .88rem; font-weight: 500; color: var(--text); letter-spacing: .04em; }
     .rule-desc { font-size: .73rem; color: var(--muted); line-height: 1.55; }
@@ -119,7 +134,7 @@
     .card-sep { width:1px; height:52px; background:var(--border); margin:0 4px; flex-shrink:0; }
     .cards-wrap { display:flex; align-items:center; gap:6px; transition:opacity .45s ease; }
     .cards-wrap.fading { opacity:0; }
-    .example-caption { position:absolute; bottom:-18px; left:0; font-size:.65rem; color:var(--muted); white-space:nowrap; transition:opacity .45s ease; }
+    .example-caption { font-size:.65rem; color:var(--muted); white-space:nowrap; transition:opacity .45s ease; margin-top:2px; }
     .example-caption.fading { opacity:0; }
 
     /* ── Note block ──────────────────────────────────────────────── */
@@ -491,7 +506,7 @@
           render(def.examples[idx]);
           wrap.classList.remove('fading'); cap.classList.remove('fading');
         }, 460);
-      }, 3000);
+      }, 5000);
     }
     EXAMPLES.forEach(startRotator);
 
@@ -585,30 +600,36 @@
       theorN++;
     }
 
-    // ── Load CSV and score each real hand ───────────────────────────
+    // ── Load CSV — use recorded handPoints directly ─────────────────
     d3.csv('../edited.csv').then(rows => {
       const realScores = {};
       const realTypes  = { fifteens:0, pairs:0, runs:0, flush:0, nob:0 };
       let   realN      = 0;
 
       rows.forEach(row => {
+        // Use the recorded hand score directly — this is what players counted
+        const hp = row.handPoints !== undefined ? +row.handPoints : NaN;
+        if (isNaN(hp) || row.handPoints === '' || row.handPoints === undefined) return;
+        const score = Math.round(hp);
+        if (score < 0 || score > 29) return;
+        realScores[score] = (realScores[score]||0) + 1;
+        realN++;
+
+        // For type frequency, we need the actual cards to know which types scored
         const handCards = ['p1','p2','p3','p4'].map(f => parseCsvCard(row[f])).filter(Boolean);
         const cut       = parseCsvCard(row.cc);
         if (handCards.length < 4 || !cut) return;
         const sc = scoreFiveCards(handCards, cut);
-        realScores[sc.total] = (realScores[sc.total]||0) + 1;
         if (sc.fifteens) realTypes.fifteens++;
         if (sc.pairs)    realTypes.pairs++;
         if (sc.runs)     realTypes.runs++;
         if (sc.flush)    realTypes.flush++;
         if (sc.nob)      realTypes.nob++;
-        realN++;
       });
 
       drawScoreChart(theorScores, theorN, realScores, realN);
       drawTypeChart(theorTypes,   theorN, realTypes,  realN);
     }).catch(() => {
-      // CSV unavailable — draw theoretical only
       drawScoreChart(theorScores, theorN, {}, 0);
       drawTypeChart(theorTypes,   theorN, {}, 0);
     });
