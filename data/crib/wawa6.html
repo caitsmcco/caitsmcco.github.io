@@ -59,7 +59,6 @@
       align-items: center;
       gap: .3rem;
       flex-wrap: wrap;
-      justify-content: right;
     }
 
     .pill {
@@ -174,7 +173,7 @@
     }
 
     /* A single score row: dot + name + value */
-    .si { display: flex; align-items: center; gap: 7px; padding-top:5px}
+    .si { display: flex; align-items: center; gap: 7px; }
     .sd { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }  /* colour dot */
     .sn { color: var(--muted); min-width: 56px; }                          /* player name */
     .sv { font-weight: 500; }                                              /* score value */
@@ -757,7 +756,40 @@
 
   </div>
 
-  <!-- Floating tooltip — positioned by JS on mousemove -->
+  <!-- ── Accuracy chart comparison ────────────────────────────────────── -->
+  <div style="margin-top:1.4rem;margin-bottom:.4rem;">
+    <div class="pt" style="padding:0 0 0 0;">Hand counting accuracy — four views</div>
+    <p style="font-size:.72rem;color:var(--muted);line-height:1.6;margin-bottom:.8rem;">
+      Each panel shows a different way to visualise the same accuracy data. Pick the one that reads most clearly to you.
+    </p>
+  </div>
+  <div class="bottom-row" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
+
+    <div class="panel">
+      <div class="pt">A · miscount scatter</div>
+      <svg id="acc-v1"></svg>
+      <div style="font-size:.6rem;color:var(--muted);margin-top:.3rem;line-height:1.5;">Dots = miscounted rounds only. Y = error magnitude. % exact shown at zero line.</div>
+    </div>
+
+    <div class="panel">
+      <div class="pt">B · stacked %</div>
+      <svg id="acc-v2"></svg>
+      <div style="font-size:.6rem;color:var(--muted);margin-top:.3rem;line-height:1.5;">Each bar = 100%. Segments show share of exact / over / under rounds.</div>
+    </div>
+
+    <div class="panel">
+      <div class="pt">C · % exact bar</div>
+      <svg id="acc-v3"></svg>
+      <div style="font-size:.6rem;color:var(--muted);margin-top:.3rem;line-height:1.5;">Simple bar showing percentage of rounds counted exactly right.</div>
+    </div>
+
+    <div class="panel">
+      <div class="pt">D · diverging %</div>
+      <svg id="acc-v4"></svg>
+      <div style="font-size:.6rem;color:var(--muted);margin-top:.3rem;line-height:1.5;">Over-counts above zero, under-counts below. Gap = % exact at centre.</div>
+    </div>
+
+  </div>
   <div class="tooltip" id="tooltip"></div>
   <!-- Score breakdown tooltip — triggered by hovering the hand score pill -->
   <div class="score-tip" id="score-tip"></div>
@@ -1950,6 +1982,229 @@
 
 
     // ═══════════════════════════════════════════════════════════════════════
+    //  ACCURACY CHART VARIANTS — four views for comparison
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * V1 — Beeswarm scatter (current production chart, mirrored here).
+     * Miscount dots only; % exact shown as text at the zero line.
+     */
+    function renderAccV1(accuracy) {
+      clearChart('acc-v1');
+      if (!accuracy.length) return;
+
+      const W = 260, H = 170, ML = 26, MR = 8, MT = 12, MB = 20;
+      const iW = W - ML - MR, iH = H - MT - MB;
+      const svg = d3.select('#acc-v1').attr('viewBox', `0 0 ${W} ${H}`)
+        .attr('preserveAspectRatio', 'xMidYMid meet').attr('width', '100%').attr('height', null);
+      const g = svg.append('g').attr('transform', `translate(${ML},${MT})`);
+
+      const players    = accuracy.map(a => a.player);
+      const allDiffs   = accuracy.flatMap(a => a.records.map(r => r.diff));
+      const maxAbsDiff = Math.max(d3.max(allDiffs.map(Math.abs)) || 0, 1);
+      const x   = d3.scaleBand().domain(players).range([0, iW]).padding(0.25);
+      const yExt = maxAbsDiff + 0.7;
+      const y   = d3.scaleLinear().domain([-yExt, yExt]).range([iH, 0]);
+      const DOT_R = 2.3;
+
+      g.append('g').attr('transform', `translate(0,${iH})`).call(d3.axisBottom(x).tickSize(0)).call(ax => axisStyle(ax));
+      const yTicks = d3.range(-maxAbsDiff, maxAbsDiff + 1).filter(Number.isInteger);
+      g.append('g').call(d3.axisLeft(y).tickValues(yTicks).tickSize(-iW)
+        .tickFormat(d => d > 0 ? `+${d}` : `${d}`))
+        .call(ax => {
+          ax.select('.domain').remove();
+          ax.selectAll('.tick line').attr('stroke', d => d === 0 ? '#4a4030' : '#2e2a22')
+            .attr('stroke-dasharray', d => d === 0 ? null : '2,2')
+            .attr('stroke-width', d => d === 0 ? 1.0 : 0.8).attr('opacity', d => d === 0 ? 0.4 : 1);
+          ax.selectAll('text').attr('fill', d => d === 0 ? '#9a8a70' : '#7a7060').attr('font-size', 6.5).attr('font-family', FONT);
+        });
+
+      accuracy.forEach(a => {
+        const col = (PCOL[a.player] || PCOL.Caitlin).peg;
+        const light = (PCOL[a.player] || PCOL.Caitlin).light;
+        const cx = x(a.player) + x.bandwidth() / 2;
+        const bw = x.bandwidth();
+        const halfMax = bw * 0.44;
+        const step = DOT_R * 2.2;
+        const placed = [];
+
+        [...a.records].filter(r => r.diff !== 0).sort((a, b) => a.diff - b.diff).forEach(r => {
+          const cy = y(r.diff);
+          const nearby = placed.filter(p => Math.abs(p.cy - cy) < DOT_R * 2);
+          const offsets = [0]; for (let s = step; s <= halfMax; s += step) offsets.push(s, -s);
+          let chosen = offsets[offsets.length - 1];
+          for (const off of offsets) {
+            if (Math.abs(off) > halfMax) continue;
+            if (!nearby.some(p => { const dx = p.cx-(cx+off), dy = p.cy-cy; return Math.sqrt(dx*dx+dy*dy) < DOT_R*2.1; })) { chosen = off; break; }
+          }
+          placed.push({ cx: cx + chosen, cy });
+          g.append('circle').attr('cx', cx + chosen).attr('cy', cy).attr('r', DOT_R).attr('fill', col).attr('opacity', 0.8).attr('stroke-width', 0);
+        });
+
+        g.append('text').attr('x', cx).attr('y', y(0)).attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+          .attr('fill', light).attr('font-size', 6.5).attr('font-weight', '600').attr('font-family', FONT)
+          .text(`${Math.round(a.pct)}%`);
+        const avgLbl = a.avgDiff === 0 ? 'avg 0' : a.avgDiff > 0 ? `avg +${Math.round(a.avgDiff*10)/10}` : `avg ${Math.round(a.avgDiff*10)/10}`;
+        g.append('text').attr('x', cx).attr('y', iH + 13).attr('text-anchor', 'middle')
+          .attr('fill', '#7a7060').attr('font-size', 5.5).attr('font-family', FONT).text(avgLbl);
+      });
+    }
+
+    /**
+     * V2 — 100% stacked bar: exact / over / under shares per player.
+     */
+    function renderAccV2(accuracy) {
+      clearChart('acc-v2');
+      if (!accuracy.length) return;
+
+      const svg = trendSvg('acc-v2');
+      const g = svg.append('g').attr('transform', `translate(${VML},${VMT})`);
+      const players = accuracy.map(a => a.player);
+      const x = d3.scaleBand().domain(players).range([0, ViW]).padding(0.28);
+      const y = d3.scaleLinear().domain([0, 100]).range([ViH, 0]);
+
+      g.append('g').attr('transform', `translate(0,${ViH})`).call(d3.axisBottom(x).tickSize(0)).call(ax => axisStyle(ax));
+      g.append('g').call(d3.axisLeft(y).ticks(5).tickFormat(d => d + '%').tickSize(-ViW)).call(ax => axisStyle(ax, true));
+
+      const EXACT_COL = '#4a8a5a';   // green-ish for correct
+      const OVER_COL  = '#c0a030';   // amber for over
+      const UNDER_COL = '#8888cc';   // blue for under
+
+      accuracy.forEach(a => {
+        const col  = (PCOL[a.player] || PCOL.Caitlin).peg;
+        const bx   = x(a.player), bw = x.bandwidth();
+        const n    = a.records.length;
+        const pctExact = a.pct;
+        const pctOver  = (a.overCount  / n) * 100;
+        const pctUnder = (a.underCount / n) * 100;
+
+        let yOff = ViH;
+        [[pctExact, EXACT_COL, `${Math.round(pctExact)}%`],
+         [pctOver,  OVER_COL,  pctOver  > 5 ? `+${Math.round(pctOver)}%`  : ''],
+         [pctUnder, UNDER_COL, pctUnder > 5 ? `-${Math.round(pctUnder)}%` : '']
+        ].forEach(([pct, fill, lbl]) => {
+          if (!pct) return;
+          const bh = ViH - y(pct);
+          g.append('rect').attr('x', bx).attr('y', yOff - bh).attr('width', bw).attr('height', bh)
+            .attr('fill', fill).attr('opacity', 0.85);
+          if (lbl && bh > 8)
+            g.append('text').attr('x', bx + bw/2).attr('y', yOff - bh/2)
+              .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+              .attr('fill', '#fff').attr('font-size', 6).attr('font-family', FONT).text(lbl);
+          yOff -= bh;
+        });
+      });
+
+      // Legend
+      [[EXACT_COL, 'exact'], [OVER_COL, 'over'], [UNDER_COL, 'under']].forEach(([col, lbl], i) => {
+        g.append('rect').attr('x', i * 44).attr('y', ViH + 14).attr('width', 5).attr('height', 5).attr('fill', col).attr('opacity', 0.85).attr('rx', 1);
+        g.append('text').attr('x', i * 44 + 7).attr('y', ViH + 18.5).attr('dominant-baseline', 'middle').attr('fill', '#7a7060').attr('font-size', 5.8).attr('font-family', FONT).text(lbl);
+      });
+    }
+
+    /**
+     * V3 — Simple % exact bar chart. One bar per player, y-axis 0–100%.
+     */
+    function renderAccV3(accuracy) {
+      clearChart('acc-v3');
+      if (!accuracy.length) return;
+
+      const svg = trendSvg('acc-v3');
+      const g = svg.append('g').attr('transform', `translate(${VML},${VMT})`);
+      const players = accuracy.map(a => a.player);
+      const x = d3.scaleBand().domain(players).range([0, ViW]).padding(0.3);
+      const y = d3.scaleLinear().domain([0, 100]).range([ViH, 0]);
+
+      g.append('g').attr('transform', `translate(0,${ViH})`).call(d3.axisBottom(x).tickSize(0)).call(ax => axisStyle(ax));
+      g.append('g').call(d3.axisLeft(y).ticks(5).tickFormat(d => d + '%').tickSize(-ViW)).call(ax => axisStyle(ax, true));
+
+      // 100% reference line
+      g.append('line').attr('x1', 0).attr('x2', ViW).attr('y1', y(100)).attr('y2', y(100))
+        .attr('stroke', '#3a3020').attr('stroke-width', 0.8).attr('stroke-dasharray', '3,3');
+
+      accuracy.forEach(a => {
+        const col = (PCOL[a.player] || PCOL.Caitlin).peg;
+        const bx = x(a.player), bw = x.bandwidth();
+        const by = y(a.pct), bh = ViH - by;
+        g.append('rect').attr('x', bx).attr('y', by).attr('width', bw).attr('height', Math.max(bh, 0)).attr('fill', col).attr('rx', 2).attr('opacity', 0.85);
+        g.append('text').attr('x', bx + bw/2).attr('y', by - 3).attr('text-anchor', 'middle')
+          .attr('fill', col).attr('font-size', 7).attr('font-weight', '500').attr('font-family', FONT).text(`${Math.round(a.pct)}%`);
+      });
+    }
+
+    /**
+     * V4 — Diverging % bar. Over-count % above zero, under-count % below.
+     * % exact shown as label at the centre. Zero line = perfect accuracy.
+     */
+    function renderAccV4(accuracy) {
+      clearChart('acc-v4');
+      if (!accuracy.length) return;
+
+      const svg = trendSvg('acc-v4');
+      const g = svg.append('g').attr('transform', `translate(${VML},${VMT})`);
+      const players = accuracy.map(a => a.player);
+
+      const maxPct = d3.max(accuracy, a => {
+        const n = a.records.length;
+        return Math.max((a.overCount / n) * 100, (a.underCount / n) * 100);
+      }) || 1;
+      const yExt = Math.ceil(maxPct / 10) * 10 + 5;
+
+      const x  = d3.scaleBand().domain(players).range([0, ViW]).padding(0.3);
+      const y  = d3.scaleLinear().domain([-yExt, yExt]).range([ViH, 0]);
+      const y0 = y(0);
+
+      g.append('g').attr('transform', `translate(0,${ViH})`).call(d3.axisBottom(x).tickSize(0)).call(ax => axisStyle(ax));
+      g.append('g').call(d3.axisLeft(y).ticks(6).tickFormat(d => Math.abs(d) + '%').tickSize(-ViW)).call(ax => {
+        ax.select('.domain').remove();
+        ax.selectAll('.tick line').attr('stroke', d => d === 0 ? '#5a5040' : '#2e2a22')
+          .attr('stroke-dasharray', d => d === 0 ? null : '2,2').attr('stroke-width', d => d === 0 ? 1.2 : 0.8).attr('opacity', d => d === 0 ? 0.5 : 1);
+        ax.selectAll('text').attr('fill', '#7a7060').attr('font-size', 6.5).attr('font-family', FONT);
+      });
+
+      // axis labels
+      g.append('text').attr('x', -3).attr('y', y(yExt * 0.6)).attr('text-anchor', 'end').attr('fill', '#c0a030').attr('font-size', 5.5).attr('font-family', FONT).text('over');
+      g.append('text').attr('x', -3).attr('y', y(-yExt * 0.6)).attr('text-anchor', 'end').attr('fill', '#8888cc').attr('font-size', 5.5).attr('font-family', FONT).text('under');
+
+      accuracy.forEach(a => {
+        const col   = (PCOL[a.player] || PCOL.Caitlin).peg;
+        const light = (PCOL[a.player] || PCOL.Caitlin).light;
+        const bx    = x(a.player), bw = x.bandwidth();
+        const n     = a.records.length;
+        const pctOver  = (a.overCount  / n) * 100;
+        const pctUnder = (a.underCount / n) * 100;
+
+        // Over bar (upward from zero)
+        if (pctOver > 0) {
+          const bh = y0 - y(pctOver);
+          g.append('rect').attr('x', bx).attr('y', y0 - bh).attr('width', bw).attr('height', bh)
+            .attr('fill', '#c0a030').attr('rx', 2).attr('opacity', 0.8);
+          if (bh > 8) g.append('text').attr('x', bx + bw/2).attr('y', y0 - bh/2)
+            .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+            .attr('fill', '#fff').attr('font-size', 5.8).attr('font-family', FONT).text(`${Math.round(pctOver)}%`);
+        }
+
+        // Under bar (downward from zero)
+        if (pctUnder > 0) {
+          const bh = y(0) - y(pctUnder); // in SVG coords, lower y = higher screen
+          const barH = Math.abs(y(0) - y(-pctUnder));
+          g.append('rect').attr('x', bx).attr('y', y0).attr('width', bw).attr('height', barH)
+            .attr('fill', '#8888cc').attr('rx', 2).attr('opacity', 0.8);
+          if (barH > 8) g.append('text').attr('x', bx + bw/2).attr('y', y0 + barH/2)
+            .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+            .attr('fill', '#fff').attr('font-size', 5.8).attr('font-family', FONT).text(`${Math.round(pctUnder)}%`);
+        }
+
+        // % exact label at zero line
+        g.append('text').attr('x', bx + bw/2).attr('y', y0)
+          .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+          .attr('fill', light).attr('font-size', 6.5).attr('font-weight', '600').attr('font-family', FONT)
+          .text(`${Math.round(a.pct)}%`);
+      });
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
     //  MISCOUNT EXPLORER — full list of miscounted hands below the dashboard
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -2134,6 +2389,13 @@
       renderBarAvg(allGames);
       renderBarMax(allGames);
       renderBarAcc(allGames);
+
+      // Accuracy comparison variants
+      const accData = computeAccuracy(allGames);
+      renderAccV1(accData);
+      renderAccV2(accData);
+      renderAccV3(accData);
+      renderAccV4(accData);
 
       const first = games[0];
       if (first) {
