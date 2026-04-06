@@ -59,7 +59,8 @@
       align-items: center;
       gap: .3rem;
       flex-wrap: wrap;
-    }
+      justify-content: right;
+    } 
 
     .pill {
       display: flex;
@@ -106,6 +107,8 @@
       grid-template-columns: 2fr 3fr;
       gap: 1rem;
       align-items: start;
+      padding-left: 1rem;
+      padding-right: 1rem;
       margin-bottom: 1rem;
     }
 
@@ -116,6 +119,8 @@
       grid-template-columns: 1fr 1fr 1fr 1fr;
       gap: 1rem;
       align-items: start;
+      margin-bottom: 1rem;
+      padding: .9rem 1rem;
     }
 
     /* Standard panel with background + border */
@@ -129,7 +134,6 @@
 
     /* Borderless panel — used for the cribbage board column */
     .panel2 {
-      padding: .9rem 1.1rem;
       height: 100%;
     }
 
@@ -185,7 +189,7 @@
       align-items: center;
       gap: 5px;
       margin-top: .5rem;
-      font-size: 1rem;
+      font-size: .58rem;
       color: var(--muted);
     }
 
@@ -479,7 +483,7 @@
     .rd-play-num  { font-size: .5rem; color: var(--muted); line-height: 1; }
 
     /* Score bars */
-    .rd-scores { display: flex; flex-direction: column; gap: 4px; margin-top: 3px; }
+    .rd-scores { display: flex; flex-direction: column; min-height: 50px;gap: 4px; margin-top: 3px; }
 
     .sc-pill {
       display: grid;
@@ -756,46 +760,16 @@
 
   </div>
 
-  <!-- ── Accuracy chart comparison ────────────────────────────────────── -->
-  <div style="margin-top:1.4rem;margin-bottom:.4rem;">
-    <div class="pt" style="padding:0 0 0 0;">Hand counting accuracy — five views</div>
-    <p style="font-size:.72rem;color:var(--muted);line-height:1.6;margin-bottom:.8rem;">
-      Each panel shows a different way to visualise the same accuracy data. Pick the one that reads most clearly to you.
-    </p>
+  <!-- ── Hand score distribution ──────────────────────────────────── -->
+  <div class="panel" style="margin-top:1rem;" id="dist-panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">
+      <div class="pt" style="margin-bottom:0;">Hand score distribution</div>
+      <div id="dist-legend" style="display:flex;gap:.9rem;font-size:.62rem;color:var(--muted);align-items:center;"></div>
+    </div>
+    <svg id="dist-svg" width="100%"></svg>
   </div>
-  <div class="bottom-row" style="grid-template-columns: 1fr 1fr 1fr 1fr 1fr;">
 
-    <div class="panel">
-      <div class="pt">A · miscount scatter</div>
-      <svg id="acc-v1"></svg>
-      <div style="font-size:.6rem;color:var(--muted);margin-top:.3rem;line-height:1.5;">Dots = miscounted rounds only. Y = error magnitude. % exact shown at zero line.</div>
-    </div>
-
-    <div class="panel">
-      <div class="pt">B · stacked %</div>
-      <svg id="acc-v2"></svg>
-      <div style="font-size:.6rem;color:var(--muted);margin-top:.3rem;line-height:1.5;">Each bar = 100%. Under at bottom, exact in middle, over at top.</div>
-    </div>
-
-    <div class="panel">
-      <div class="pt">C · % exact bar</div>
-      <svg id="acc-v3"></svg>
-      <div style="font-size:.6rem;color:var(--muted);margin-top:.3rem;line-height:1.5;">Simple bar showing percentage of rounds counted exactly right.</div>
-    </div>
-
-    <div class="panel">
-      <div class="pt">D · diverging %</div>
-      <svg id="acc-v4"></svg>
-      <div style="font-size:.6rem;color:var(--muted);margin-top:.3rem;line-height:1.5;">Over-counts above zero, under-counts below. Gap = % exact at centre.</div>
-    </div>
-
-    <div class="panel">
-      <div class="pt">E · violin</div>
-      <svg id="acc-v5"></svg>
-      <div style="font-size:.6rem;color:var(--muted);margin-top:.3rem;line-height:1.5;">Width = % of rounds at each error value. Zero line = perfect.</div>
-    </div>
-
-  </div>
+  <!-- Floating tooltip — positioned by JS on mousemove -->
   <div class="tooltip" id="tooltip"></div>
   <!-- Score breakdown tooltip — triggered by hovering the hand score pill -->
   <div class="score-tip" id="score-tip"></div>
@@ -814,7 +788,7 @@
     const PCOL = {
       Caitlin: { peg: '#c0392b', light: '#e85d4a' },
       Sarah:   { peg: '#6113a5', light: '#a855f7' },
-      Colban:  { peg: '#918000', light: '#fffe56' },
+      Colban:  { peg: '#918000', light: '#E3E049' },
       James:   { peg: '#185fa5', light: '#3a8fd4' },
       Darren:  { peg: '#0e7c55', light: '#10b981' },
     };
@@ -1988,347 +1962,168 @@
 
 
     // ═══════════════════════════════════════════════════════════════════════
-    //  ACCURACY CHART VARIANTS — four views for comparison
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /**
-     * V1 — Beeswarm scatter (current production chart, mirrored here).
-     * Miscount dots only; % exact shown as text at the zero line.
-     */
-    function renderAccV1(accuracy) {
-      clearChart('acc-v1');
-      if (!accuracy.length) return;
-
-      const W = 260, H = 170, ML = 26, MR = 8, MT = 12, MB = 20;
-      const iW = W - ML - MR, iH = H - MT - MB;
-      const svg = d3.select('#acc-v1').attr('viewBox', `0 0 ${W} ${H}`)
-        .attr('preserveAspectRatio', 'xMidYMid meet').attr('width', '100%').attr('height', null);
-      const g = svg.append('g').attr('transform', `translate(${ML},${MT})`);
-
-      const players    = accuracy.map(a => a.player);
-      const allDiffs   = accuracy.flatMap(a => a.records.map(r => r.diff));
-      const maxAbsDiff = Math.max(d3.max(allDiffs.map(Math.abs)) || 0, 1);
-      const x   = d3.scaleBand().domain(players).range([0, iW]).padding(0.25);
-      const yExt = maxAbsDiff + 0.7;
-      const y   = d3.scaleLinear().domain([-yExt, yExt]).range([iH, 0]);
-      const DOT_R = 2.3;
-
-      g.append('g').attr('transform', `translate(0,${iH})`).call(d3.axisBottom(x).tickSize(0)).call(ax => axisStyle(ax));
-      const yTicks = d3.range(-maxAbsDiff, maxAbsDiff + 1).filter(Number.isInteger);
-      g.append('g').call(d3.axisLeft(y).tickValues(yTicks).tickSize(-iW)
-        .tickFormat(d => d > 0 ? `+${d}` : `${d}`))
-        .call(ax => {
-          ax.select('.domain').remove();
-          ax.selectAll('.tick line').attr('stroke', d => d === 0 ? '#4a4030' : '#2e2a22')
-            .attr('stroke-dasharray', d => d === 0 ? null : '2,2')
-            .attr('stroke-width', d => d === 0 ? 1.0 : 0.8).attr('opacity', d => d === 0 ? 0.4 : 1);
-          ax.selectAll('text').attr('fill', d => d === 0 ? '#9a8a70' : '#7a7060').attr('font-size', 6.5).attr('font-family', FONT);
-        });
-
-      accuracy.forEach(a => {
-        const col = (PCOL[a.player] || PCOL.Caitlin).peg;
-        const light = (PCOL[a.player] || PCOL.Caitlin).light;
-        const cx = x(a.player) + x.bandwidth() / 2;
-        const bw = x.bandwidth();
-        const halfMax = bw * 0.44;
-        const step = DOT_R * 2.2;
-        const placed = [];
-
-        [...a.records].filter(r => r.diff !== 0).sort((a, b) => a.diff - b.diff).forEach(r => {
-          const cy = y(r.diff);
-          const nearby = placed.filter(p => Math.abs(p.cy - cy) < DOT_R * 2);
-          const offsets = [0]; for (let s = step; s <= halfMax; s += step) offsets.push(s, -s);
-          let chosen = offsets[offsets.length - 1];
-          for (const off of offsets) {
-            if (Math.abs(off) > halfMax) continue;
-            if (!nearby.some(p => { const dx = p.cx-(cx+off), dy = p.cy-cy; return Math.sqrt(dx*dx+dy*dy) < DOT_R*2.1; })) { chosen = off; break; }
-          }
-          placed.push({ cx: cx + chosen, cy });
-          g.append('circle').attr('cx', cx + chosen).attr('cy', cy).attr('r', DOT_R).attr('fill', col).attr('opacity', 0.8).attr('stroke-width', 0);
-        });
-
-        g.append('text').attr('x', cx).attr('y', y(0)).attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
-          .attr('fill', light).attr('font-size', 6.5).attr('font-weight', '600').attr('font-family', FONT)
-          .text(`${Math.round(a.pct)}%`);
-        const avgLbl = a.avgDiff === 0 ? 'avg 0' : a.avgDiff > 0 ? `avg +${Math.round(a.avgDiff*10)/10}` : `avg ${Math.round(a.avgDiff*10)/10}`;
-        g.append('text').attr('x', cx).attr('y', iH + 13).attr('text-anchor', 'middle')
-          .attr('fill', '#7a7060').attr('font-size', 5.5).attr('font-family', FONT).text(avgLbl);
-      });
-    }
-
-    /**
-     * V2 — 100% stacked bar: exact / over / under shares per player.
-     */
-    function renderAccV2(accuracy) {
-      clearChart('acc-v2');
-      if (!accuracy.length) return;
-
-      const svg = trendSvg('acc-v2');
-      const g = svg.append('g').attr('transform', `translate(${VML},${VMT})`);
-      const players = accuracy.map(a => a.player);
-      const x = d3.scaleBand().domain(players).range([0, ViW]).padding(0.28);
-      const y = d3.scaleLinear().domain([0, 100]).range([ViH, 0]);
-
-      g.append('g').attr('transform', `translate(0,${ViH})`).call(d3.axisBottom(x).tickSize(0)).call(ax => axisStyle(ax));
-      g.append('g').call(d3.axisLeft(y).ticks(5).tickFormat(d => d + '%').tickSize(-ViW)).call(ax => axisStyle(ax, true));
-
-      const EXACT_COL = '#4a8a5a';   // green-ish for correct
-      const OVER_COL  = '#c0a030';   // amber for over
-      const UNDER_COL = '#8888cc';   // blue for under
-
-      accuracy.forEach(a => {
-        const col  = (PCOL[a.player] || PCOL.Caitlin).peg;
-        const bx   = x(a.player), bw = x.bandwidth();
-        const n    = a.records.length;
-        const pctExact = a.pct;
-        const pctOver  = (a.overCount  / n) * 100;
-        const pctUnder = (a.underCount / n) * 100;
-
-        let yOff = ViH;
-        // Stack order bottom→top: under, exact, over
-        [[pctUnder, UNDER_COL, pctUnder > 5 ? `${Math.round(pctUnder)}%` : ''],
-         [pctExact, EXACT_COL, `${Math.round(pctExact)}%`],
-         [pctOver,  OVER_COL,  pctOver  > 5 ? `${Math.round(pctOver)}%`  : ''],
-        ].forEach(([pct, fill, lbl]) => {
-          if (!pct) return;
-          const bh = ViH - y(pct);
-          g.append('rect').attr('x', bx).attr('y', yOff - bh).attr('width', bw).attr('height', bh)
-            .attr('fill', fill).attr('opacity', 0.85);
-          if (lbl && bh > 8)
-            g.append('text').attr('x', bx + bw/2).attr('y', yOff - bh/2)
-              .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
-              .attr('fill', '#fff').attr('font-size', 6).attr('font-family', FONT).text(lbl);
-          yOff -= bh;
-        });
-      });
-
-      // Legend
-      [[UNDER_COL, 'under'], [EXACT_COL, 'exact'], [OVER_COL, 'over']].forEach(([col, lbl], i) => {
-        g.append('rect').attr('x', i * 44).attr('y', ViH + 14).attr('width', 5).attr('height', 5).attr('fill', col).attr('opacity', 0.85).attr('rx', 1);
-        g.append('text').attr('x', i * 44 + 7).attr('y', ViH + 18.5).attr('dominant-baseline', 'middle').attr('fill', '#7a7060').attr('font-size', 5.8).attr('font-family', FONT).text(lbl);
-      });
-    }
-
-    /**
-     * V3 — Simple % exact bar chart. One bar per player, y-axis 0–100%.
-     */
-    function renderAccV3(accuracy) {
-      clearChart('acc-v3');
-      if (!accuracy.length) return;
-
-      const svg = trendSvg('acc-v3');
-      const g = svg.append('g').attr('transform', `translate(${VML},${VMT})`);
-      const players = accuracy.map(a => a.player);
-      const x = d3.scaleBand().domain(players).range([0, ViW]).padding(0.3);
-      const y = d3.scaleLinear().domain([0, 100]).range([ViH, 0]);
-
-      g.append('g').attr('transform', `translate(0,${ViH})`).call(d3.axisBottom(x).tickSize(0)).call(ax => axisStyle(ax));
-      g.append('g').call(d3.axisLeft(y).ticks(5).tickFormat(d => d + '%').tickSize(-ViW)).call(ax => axisStyle(ax, true));
-
-      // 100% reference line
-      g.append('line').attr('x1', 0).attr('x2', ViW).attr('y1', y(100)).attr('y2', y(100))
-        .attr('stroke', '#3a3020').attr('stroke-width', 0.8).attr('stroke-dasharray', '3,3');
-
-      accuracy.forEach(a => {
-        const col = (PCOL[a.player] || PCOL.Caitlin).peg;
-        const bx = x(a.player), bw = x.bandwidth();
-        const by = y(a.pct), bh = ViH - by;
-        g.append('rect').attr('x', bx).attr('y', by).attr('width', bw).attr('height', Math.max(bh, 0)).attr('fill', col).attr('rx', 2).attr('opacity', 0.85);
-        g.append('text').attr('x', bx + bw/2).attr('y', by - 3).attr('text-anchor', 'middle')
-          .attr('fill', col).attr('font-size', 7).attr('font-weight', '500').attr('font-family', FONT).text(`${Math.round(a.pct)}%`);
-      });
-    }
-
-    /**
-     * V4 — Diverging % bar. Over-count % above zero, under-count % below.
-     * % exact shown as label at the centre. Zero line = perfect accuracy.
-     */
-    function renderAccV4(accuracy) {
-      clearChart('acc-v4');
-      if (!accuracy.length) return;
-
-      const svg = trendSvg('acc-v4');
-      const g = svg.append('g').attr('transform', `translate(${VML},${VMT})`);
-      const players = accuracy.map(a => a.player);
-
-      const maxPct = d3.max(accuracy, a => {
-        const n = a.records.length;
-        return Math.max((a.overCount / n) * 100, (a.underCount / n) * 100);
-      }) || 1;
-      const yExt = Math.ceil(maxPct / 10) * 10 + 5;
-
-      const x  = d3.scaleBand().domain(players).range([0, ViW]).padding(0.3);
-      const y  = d3.scaleLinear().domain([-yExt, yExt]).range([ViH, 0]);
-      const y0 = y(0);
-
-      g.append('g').attr('transform', `translate(0,${ViH})`).call(d3.axisBottom(x).tickSize(0)).call(ax => axisStyle(ax));
-      g.append('g').call(d3.axisLeft(y).ticks(6).tickFormat(d => Math.abs(d) + '%').tickSize(-ViW)).call(ax => {
-        ax.select('.domain').remove();
-        ax.selectAll('.tick line').attr('stroke', d => d === 0 ? '#5a5040' : '#2e2a22')
-          .attr('stroke-dasharray', d => d === 0 ? null : '2,2').attr('stroke-width', d => d === 0 ? 1.2 : 0.8).attr('opacity', d => d === 0 ? 0.5 : 1);
-        ax.selectAll('text').attr('fill', '#7a7060').attr('font-size', 6.5).attr('font-family', FONT);
-      });
-
-      // axis labels
-      g.append('text').attr('x', -3).attr('y', y(yExt * 0.6)).attr('text-anchor', 'end').attr('fill', '#c0a030').attr('font-size', 5.5).attr('font-family', FONT).text('over');
-      g.append('text').attr('x', -3).attr('y', y(-yExt * 0.6)).attr('text-anchor', 'end').attr('fill', '#8888cc').attr('font-size', 5.5).attr('font-family', FONT).text('under');
-
-      accuracy.forEach(a => {
-        const col   = (PCOL[a.player] || PCOL.Caitlin).peg;
-        const light = (PCOL[a.player] || PCOL.Caitlin).light;
-        const bx    = x(a.player), bw = x.bandwidth();
-        const n     = a.records.length;
-        const pctOver  = (a.overCount  / n) * 100;
-        const pctUnder = (a.underCount / n) * 100;
-
-        // Over bar (upward from zero)
-        if (pctOver > 0) {
-          const bh = y0 - y(pctOver);
-          g.append('rect').attr('x', bx).attr('y', y0 - bh).attr('width', bw).attr('height', bh)
-            .attr('fill', '#c0a030').attr('rx', 2).attr('opacity', 0.8);
-          if (bh > 8) g.append('text').attr('x', bx + bw/2).attr('y', y0 - bh/2)
-            .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
-            .attr('fill', '#fff').attr('font-size', 5.8).attr('font-family', FONT).text(`${Math.round(pctOver)}%`);
-        }
-
-        // Under bar (downward from zero)
-        if (pctUnder > 0) {
-          const bh = y(0) - y(pctUnder); // in SVG coords, lower y = higher screen
-          const barH = Math.abs(y(0) - y(-pctUnder));
-          g.append('rect').attr('x', bx).attr('y', y0).attr('width', bw).attr('height', barH)
-            .attr('fill', '#8888cc').attr('rx', 2).attr('opacity', 0.8);
-          if (barH > 8) g.append('text').attr('x', bx + bw/2).attr('y', y0 + barH/2)
-            .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
-            .attr('fill', '#fff').attr('font-size', 5.8).attr('font-family', FONT).text(`${Math.round(pctUnder)}%`);
-        }
-
-        // % exact label at zero line
-        g.append('text').attr('x', bx + bw/2).attr('y', y0)
-          .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
-          .attr('fill', light).attr('font-size', 6.5).attr('font-weight', '600').attr('font-family', FONT)
-          .text(`${Math.round(a.pct)}%`);
-      });
-    }
-
-
-    /**
-     * V5 — Violin chart. Y-axis = error value (integer diffs). Width of the
-     * shape at each Y level = percentage of that player's rounds at that diff.
-     * Zero line highlighted. % exact shown at zero.
-     */
-    function renderAccV5(accuracy) {
-      clearChart('acc-v5');
-      if (!accuracy.length) return;
-
-      const W = 260, H = 170, ML = 26, MR = 8, MT = 12, MB = 20;
-      const iW = W - ML - MR, iH = H - MT - MB;
-
-      const svg = d3.select('#acc-v5')
-        .attr('viewBox', `0 0 ${W} ${H}`)
-        .attr('preserveAspectRatio', 'xMidYMid meet')
-        .attr('width', '100%').attr('height', null);
-      const g = svg.append('g').attr('transform', `translate(${ML},${MT})`);
-
-      const players    = accuracy.map(a => a.player);
-      const allDiffs   = accuracy.flatMap(a => a.records.map(r => r.diff));
-      const maxAbsDiff = Math.max(d3.max(allDiffs.map(Math.abs)) || 0, 1);
-
-      const x    = d3.scaleBand().domain(players).range([0, iW]).padding(0.18);
-      const yExt = maxAbsDiff + 0.7;
-      const y    = d3.scaleLinear().domain([-yExt, yExt]).range([iH, 0]);
-
-      // Width scale: max half-width is 45% of band so adjacent violins don't touch
-      const maxHalfW = x.bandwidth() * 0.45;
-
-      // ── Axes ──────────────────────────────────────────────────────────────
-      g.append('g').attr('transform', `translate(0,${iH})`)
-        .call(d3.axisBottom(x).tickSize(0)).call(ax => axisStyle(ax));
-
-      const yTicks = d3.range(-maxAbsDiff, maxAbsDiff + 1).filter(Number.isInteger);
-      g.append('g')
-        .call(d3.axisLeft(y).tickValues(yTicks).tickSize(-iW)
-          .tickFormat(d => d > 0 ? `+${d}` : `${d}`))
-        .call(ax => {
-          ax.select('.domain').remove();
-          ax.selectAll('.tick line')
-            .attr('stroke', d => d === 0 ? '#4a4030' : '#2e2a22')
-            .attr('stroke-dasharray', d => d === 0 ? null : '2,2')
-            .attr('stroke-width', d => d === 0 ? 1.0 : 0.8)
-            .attr('opacity', d => d === 0 ? 0.45 : 1);
-          ax.selectAll('text')
-            .attr('fill', d => d === 0 ? '#9a8a70' : '#7a7060')
-            .attr('font-size', 6.5).attr('font-family', FONT);
-        });
-
-      // ── Per-player violin ──────────────────────────────────────────────────
-      accuracy.forEach(a => {
-        const col   = (PCOL[a.player] || PCOL.Caitlin).peg;
-        const light = (PCOL[a.player] || PCOL.Caitlin).light;
-        const cx    = x(a.player) + x.bandwidth() / 2;
-        const n     = a.records.length;
-
-        // Count rounds at each integer diff value
-        const counts = {};
-        a.records.forEach(r => { counts[r.diff] = (counts[r.diff] || 0) + 1; });
-
-        // Find the global max % across all diff values for this player
-        // to normalise the half-width
-        const maxPct = d3.max(Object.values(counts)) / n;
-
-        // Build violin path: left edge going up, right edge going down, closed
-        // Each integer diff level gets a horizontal half-width proportional to
-        // its percentage share. We interpolate between levels for a smooth shape.
-        const diffLevels = yTicks.filter(d => Math.abs(d) <= maxAbsDiff);
-
-        // Build the right-side points (top→bottom), then mirror for left
-        const rightPts = diffLevels.map(d => {
-          const pct = (counts[d] || 0) / n;
-          const hw  = maxPct > 0 ? (pct / maxPct) * maxHalfW : 0;
-          return [cx + hw, y(d)];
-        });
-        const leftPts = diffLevels.map(d => {
-          const pct = (counts[d] || 0) / n;
-          const hw  = maxPct > 0 ? (pct / maxPct) * maxHalfW : 0;
-          return [cx - hw, y(d)];
-        }).reverse();
-
-        const allPts = [...rightPts, ...leftPts];
-        const pathData = allPts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ') + ' Z';
-
-        g.append('path')
-          .attr('d', pathData)
-          .attr('fill', col).attr('opacity', 0.35)
-          .attr('stroke', col).attr('stroke-width', 1.2).attr('stroke-opacity', 0.7);
-
-        // Centre spine
-        g.append('line')
-          .attr('x1', cx).attr('x2', cx)
-          .attr('y1', y(-maxAbsDiff)).attr('y2', y(maxAbsDiff))
-          .attr('stroke', col).attr('stroke-width', 0.6).attr('opacity', 0.3);
-
-        // % exact label at zero
-        g.append('text')
-          .attr('x', cx).attr('y', y(0))
-          .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
-          .attr('fill', light).attr('font-size', 6.5).attr('font-weight', '600')
-          .attr('font-family', FONT)
-          .text(`${Math.round(a.pct)}%`);
-
-        // avg label below player name
-        const avgLbl = a.avgDiff === 0 ? 'avg 0'
-          : a.avgDiff > 0 ? `avg +${Math.round(a.avgDiff * 10) / 10}`
-          : `avg ${Math.round(a.avgDiff * 10) / 10}`;
-        g.append('text')
-          .attr('x', cx).attr('y', iH + 13).attr('text-anchor', 'middle')
-          .attr('fill', '#7a7060').attr('font-size', 5.5).attr('font-family', FONT)
-          .text(avgLbl);
-      });
-    }
-
-
-    // ═══════════════════════════════════════════════════════════════════════
     //  MISCOUNT EXPLORER — full list of miscounted hands below the dashboard
     // ═══════════════════════════════════════════════════════════════════════
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  HAND SCORE DISTRIBUTION
+    //  Gold bars = all 12,994,800 possible hands (Wikipedia exact counts).
+    //  Stacked coloured bars = our recorded handPoints, split by player.
+    //  Impossible scores (19, 25, 26, 27) shown with dim background.
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // Exact counts from Wikipedia: Cribbage statistics
+    const WIKI_COUNTS = {
+       0:1009008,  1:99792,   2:2813796, 3:505008,  4:2855676,
+       5:697508,   6:1800268, 7:751324,  8:1137236, 9:361224,
+      10:388740,  11:51680,  12:317340, 13:19656,  14:90100,
+      15:9168,    16:58248,  17:11196,  18:2708,   19:0,
+      20:8068,    21:2496,   22:444,    23:356,    24:3680,
+      25:0,       26:0,      27:0,      28:76,     29:4,
+    };
+    const WIKI_TOTAL = 12994800;
+    const IMPOSSIBLE = new Set([19, 25, 26, 27]);
+
+    function renderDistChart(games) {
+      const svgEl  = document.getElementById('dist-svg');
+      const legEl  = document.getElementById('dist-legend');
+      if (!svgEl) return;
+
+      // ── Tally handPoints per player from _raw rows ─────────────────
+      // playerScores[playerName][score] = count
+      const playerScores = {};
+      const playerOrder  = [];  // insertion order = display order
+
+      games.forEach(game => {
+        if (!game._raw) return;
+        game._raw.forEach(row => {
+          const name = row.Name;
+          const hp   = row.handPoints !== undefined ? +row.handPoints : NaN;
+          if (isNaN(hp) || row.handPoints === '' || row.handPoints === undefined) return;
+          const score = Math.round(hp);
+          if (score < 0 || score > 29) return;
+          if (!playerScores[name]) {
+            playerScores[name] = {};
+            playerOrder.push(name);
+          }
+          playerScores[name][score] = (playerScores[name][score] || 0) + 1;
+        });
+      });
+
+      const players = playerOrder;
+      const totalReal = players.reduce((s, p) =>
+        s + Object.values(playerScores[p]).reduce((a, b) => a + b, 0), 0);
+
+      // ── Layout ──────────────────────────────────────────────────────
+      const W   = svgEl.parentElement.clientWidth || 900;
+      const H   = 190;
+      const ML  = 34, MR = 12, MT = 14, MB = 22;
+      const iW  = W - ML - MR, iH = H - MT - MB;
+
+      svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      svgEl.setAttribute('height', H);
+
+      const scores   = d3.range(0, 30);
+      const theorPct = scores.map(s => WIKI_COUNTS[s] / WIKI_TOTAL * 100);
+
+      // Max y = whichever series is taller
+      const realPct  = scores.map(s =>
+        totalReal ? players.reduce((sum, p) => sum + (playerScores[p]?.[s] || 0), 0) / totalReal * 100 : 0
+      );
+      const maxPct = Math.max(d3.max(theorPct), d3.max(realPct), 1);
+
+      const x = d3.scaleBand().domain(scores).range([0, iW]).padding(0.1);
+      const y = d3.scaleLinear().domain([0, maxPct * 1.1]).range([iH, 0]);
+
+      const svg = d3.select(svgEl);
+      svg.selectAll('*').remove();
+      const g = svg.append('g').attr('transform', `translate(${ML},${MT})`);
+
+      // Y axis
+      g.append('g')
+        .call(d3.axisLeft(y).ticks(5).tickSize(-iW).tickFormat(d => d.toFixed(0) + '%'))
+        .call(ax => {
+          ax.select('.domain').remove();
+          ax.selectAll('.tick line').attr('stroke', '#2e2a22').attr('stroke-dasharray', '2,2');
+          ax.selectAll('text').attr('fill', '#7a7060').attr('font-size', 7).attr('font-family', FONT);
+        });
+
+      // Impossible score backgrounds
+      scores.forEach(s => {
+        if (!IMPOSSIBLE.has(s)) return;
+        g.append('rect')
+          .attr('x', x(s)).attr('y', 0)
+          .attr('width', x.bandwidth()).attr('height', iH)
+          .attr('fill', '#1c1a14').attr('rx', 1);
+        g.append('text')
+          .attr('x', x(s) + x.bandwidth() / 2).attr('y', 4)
+          .attr('text-anchor', 'middle').attr('dominant-baseline', 'hanging')
+          .attr('fill', '#3a3525').attr('font-size', 5.5).attr('font-family', FONT)
+          .text('✕');
+      });
+
+      // Theoretical bars (light grey, behind everything)
+      scores.forEach((s, i) => {
+        if (IMPOSSIBLE.has(s) || !theorPct[i]) return;
+        g.append('rect')
+          .attr('x', x(s)).attr('y', y(theorPct[i]))
+          .attr('width', x.bandwidth()).attr('height', Math.max(iH - y(theorPct[i]), 0))
+          .attr('fill', '#a09880').attr('opacity', 0.28).attr('rx', 1);
+      });
+
+      // Stacked player bars — each player's slice stacked on top of prior
+      if (totalReal > 0) {
+        scores.forEach(s => {
+          let yOffset = iH;  // start at bottom, stack upward
+          players.forEach(player => {
+            const count = playerScores[player]?.[s] || 0;
+            if (!count) return;
+            const pct = count / totalReal * 100;
+            const bh  = Math.max(iH - y(pct), 0);
+            const col = (PCOL[player] || PCOL.Caitlin).peg;
+            g.append('rect')
+              .attr('x', x(s) + x.bandwidth() * 0.15)
+              .attr('y', yOffset - bh)
+              .attr('width', x.bandwidth() * 0.7)
+              .attr('height', bh)
+              .attr('fill', col)
+              .attr('opacity', 0.88)
+              .attr('rx', 1);
+            yOffset -= bh;
+          });
+        });
+      }
+
+      // X axis — label every integer, dim impossible ones
+      g.append('g').attr('transform', `translate(0,${iH})`)
+        .call(d3.axisBottom(x).tickValues(scores).tickSize(0))
+        .call(ax => {
+          ax.select('.domain').remove();
+          ax.selectAll('text')
+            .attr('fill', d => IMPOSSIBLE.has(d) ? '#3a3525' : '#7a7060')
+            .attr('font-size', 6).attr('font-family', FONT);
+        });
+
+      // ── Legend ──────────────────────────────────────────────────────
+      legEl.innerHTML = '';
+      // Theoretical swatch
+      const mkSwatch = (col, opacity, label) => {
+        const sp = document.createElement('span');
+        sp.style.cssText = 'display:flex;align-items:center;gap:4px;';
+        const sw = document.createElement('span');
+        sw.style.cssText = `width:10px;height:10px;border-radius:2px;background:${col};opacity:${opacity};flex-shrink:0;display:inline-block;`;
+        sp.appendChild(sw);
+        sp.appendChild(document.createTextNode(label));
+        legEl.appendChild(sp);
+      };
+      mkSwatch('#a09880', 0.5, 'All possible hands');
+      players.forEach(p => {
+        const col = (PCOL[p] || PCOL.Caitlin).peg;
+        mkSwatch(col, 0.88, p);
+      });
+    }
+
 
     // ═══════════════════════════════════════════════════════════════════════
     //  APPLICATION STATE
@@ -2511,14 +2306,7 @@
       renderBarAvg(allGames);
       renderBarMax(allGames);
       renderBarAcc(allGames);
-
-      // Accuracy comparison variants
-      const accData = computeAccuracy(allGames);
-      renderAccV1(accData);
-      renderAccV2(accData);
-      renderAccV3(accData);
-      renderAccV4(accData);
-      renderAccV5(accData);
+      renderDistChart(allGames);
 
       const first = games[0];
       if (first) {
@@ -2599,9 +2387,9 @@
       // Layout constants
       const FIXED_H = 500;
       const maxR    = d3.max(games, g => g.maxRound);
-      const LEFT    = 30;   // wider to fit ordinal label
+      const LEFT    = 20;   // wider to fit ordinal label
       const TOP     = 36;
-      const BOT     = 16;
+      const BOT     = 10;
 
       const availH  = FIXED_H - TOP - BOT;
       const CELL_H  = Math.floor((availH - games.length * 3) / games.length);
@@ -2609,7 +2397,7 @@
       const CELL_W  = 35;
       const COL_W   = CELL_W + 3;
 
-      const totalW = LEFT + maxR * COL_W + 38;
+      const totalW = LEFT + maxR * COL_W;
       const totalH = TOP + games.length * ROW_H + BOT;
 
       svg.attr('width', totalW).attr('height', Math.max(totalH, FIXED_H));
