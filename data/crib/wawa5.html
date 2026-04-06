@@ -2227,7 +2227,7 @@
       const CELL_W  = 35;
       const COL_W   = CELL_W + 3;
 
-      const totalW = LEFT + maxR * COL_W + 11;
+      const totalW = LEFT + maxR * COL_W;
       const totalH = TOP + games.length * ROW_H + BOT;
 
       svg.attr('width', totalW).attr('height', Math.max(totalH, FIXED_H));
