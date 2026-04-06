@@ -1323,7 +1323,7 @@
       const maxT = d3.max(data, d => d.total) || 1;
       const x  = d3.scaleBand().domain(data.map(d => d.player)).range([0, ViW]).padding(0.28);
       const xi = d3.scaleBand().domain(['w', 'l']).range([0, x.bandwidth()]).padding(0.06);
-      const y  = d3.scaleLinear().domain([0, maxT + 0.5]).range([ViH, 0]);
+      const y  = d3.scaleLinear().domain([0, maxT]).range([ViH, 0]);
 
       const xAxis = g.append('g').attr('transform', `translate(0,${ViH})`)
         .call(d3.axisBottom(x).tickSize(0))
@@ -1553,7 +1553,7 @@
         return;
       }
 
-      const W = 260, H = 170, ML = 26, MR = 8, MT = 12, MB = 20;
+      const W = 260, H = 190, ML = 26, MR = 8, MT = 12, MB = 20;
       const iW = W - ML - MR, iH = H - MT - MB;
 
       const svg = d3.select('#bar-acc')
@@ -1607,32 +1607,43 @@
       accuracy.forEach(a => {
         const col = (PCOL[a.player] || PCOL.Caitlin).peg;
         const light = (PCOL[a.player] || PCOL.Caitlin).light;
-        const cx  = x(a.player) + x.bandwidth() / 2;
-        const bw  = x.bandwidth();
-        const halfMax = bw * 0.44;
+        const cx      = x(a.player) + x.bandwidth() / 2;
+        const bw      = x.bandwidth();
+        const halfMax = bw * 0.46;  // wider spread now that acc panel is bigger
 
         // Only plot miscounted rounds — correct rounds shown as % label at 0
         const miscounts = a.records.filter(r => r.diff !== 0);
 
         // ── Beeswarm collision pass ──────────────────────────────────────
-        // Sort by diff, then place each dot as close to centre as possible
-        // without overlapping. Offsets alternate left/right so the swarm
-        // grows symmetrically rather than clustering to one side.
+        // Group by integer diff so we can shuffle within each row, then
+        // place greedily from centre outward alternating left/right.
         const placed = [];
-        const sorted = [...miscounts].sort((a, b) => a.diff - b.diff);
 
-        sorted.forEach(r => {
+        // Shuffle miscounts at the same diff value so the spread is less
+        // order-dependent — use a simple deterministic Fisher-Yates per row.
+        const byDiff = d3.group(miscounts, r => r.diff);
+        const allSorted = [];
+        [...byDiff.keys()].sort((a, b) => a - b).forEach(diff => {
+          const recs = [...byDiff.get(diff)];
+          for (let i = recs.length - 1; i > 0; i--) {
+            // Deterministic seed: mix diff + index + player hash
+            const j = Math.abs((diff * 31 + i * 17 + a.player.charCodeAt(0)) % (i + 1));
+            [recs[i], recs[j]] = [recs[j], recs[i]];
+          }
+          allSorted.push(...recs);
+        });
+
+        allSorted.forEach(r => {
           const cy = y(r.diff);
           const nearby = placed.filter(p => Math.abs(p.cy - cy) < DOT_R * 2);
 
-          // Build offsets alternating left/right: 0, +step, -step, +2step, -2step …
-          const step = DOT_R * 2.2;
+          const step = DOT_R * 2.1;
           const offsets = [0];
           for (let s = step; s <= halfMax; s += step) {
             offsets.push(s, -s);
           }
 
-          let chosen = offsets[offsets.length - 1]; // fallback to edge
+          let chosen = halfMax;
           for (const offset of offsets) {
             if (Math.abs(offset) > halfMax) continue;
             const tx = cx + offset;
