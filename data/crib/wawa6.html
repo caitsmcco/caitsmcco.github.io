@@ -147,6 +147,13 @@
       align-items: start;
     }
 
+    /* Force both SVGs in the dist-row to the same pixel height */
+    #dist-svg, #bar-acc {
+      display: block;
+      width: 100%;
+      height: 240px;
+    }
+
     /* ── Filter + sort bar controls ────────────────────────────────────── */
     .filter-bar {
       display: flex;
@@ -1748,7 +1755,6 @@
 
       svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
       svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-      svgEl.setAttribute('height', H);
 
       const scores   = d3.range(0, 30);
       const theorPct = scores.map(s => WIKI_COUNTS[s] / WIKI_TOTAL * 100);
