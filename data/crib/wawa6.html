@@ -758,12 +758,12 @@
 
   <!-- ── Accuracy chart comparison ────────────────────────────────────── -->
   <div style="margin-top:1.4rem;margin-bottom:.4rem;">
-    <div class="pt" style="padding:0 0 0 0;">Hand counting accuracy — four views</div>
+    <div class="pt" style="padding:0 0 0 0;">Hand counting accuracy — five views</div>
     <p style="font-size:.72rem;color:var(--muted);line-height:1.6;margin-bottom:.8rem;">
       Each panel shows a different way to visualise the same accuracy data. Pick the one that reads most clearly to you.
     </p>
   </div>
-  <div class="bottom-row" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
+  <div class="bottom-row" style="grid-template-columns: 1fr 1fr 1fr 1fr 1fr;">
 
     <div class="panel">
       <div class="pt">A · miscount scatter</div>
@@ -774,7 +774,7 @@
     <div class="panel">
       <div class="pt">B · stacked %</div>
       <svg id="acc-v2"></svg>
-      <div style="font-size:.6rem;color:var(--muted);margin-top:.3rem;line-height:1.5;">Each bar = 100%. Segments show share of exact / over / under rounds.</div>
+      <div style="font-size:.6rem;color:var(--muted);margin-top:.3rem;line-height:1.5;">Each bar = 100%. Under at bottom, exact in middle, over at top.</div>
     </div>
 
     <div class="panel">
@@ -787,6 +787,12 @@
       <div class="pt">D · diverging %</div>
       <svg id="acc-v4"></svg>
       <div style="font-size:.6rem;color:var(--muted);margin-top:.3rem;line-height:1.5;">Over-counts above zero, under-counts below. Gap = % exact at centre.</div>
+    </div>
+
+    <div class="panel">
+      <div class="pt">E · violin</div>
+      <svg id="acc-v5"></svg>
+      <div style="font-size:.6rem;color:var(--muted);margin-top:.3rem;line-height:1.5;">Width = % of rounds at each error value. Zero line = perfect.</div>
     </div>
 
   </div>
@@ -2079,9 +2085,10 @@
         const pctUnder = (a.underCount / n) * 100;
 
         let yOff = ViH;
-        [[pctExact, EXACT_COL, `${Math.round(pctExact)}%`],
-         [pctOver,  OVER_COL,  pctOver  > 5 ? `+${Math.round(pctOver)}%`  : ''],
-         [pctUnder, UNDER_COL, pctUnder > 5 ? `-${Math.round(pctUnder)}%` : '']
+        // Stack order bottom→top: under, exact, over
+        [[pctUnder, UNDER_COL, pctUnder > 5 ? `${Math.round(pctUnder)}%` : ''],
+         [pctExact, EXACT_COL, `${Math.round(pctExact)}%`],
+         [pctOver,  OVER_COL,  pctOver  > 5 ? `${Math.round(pctOver)}%`  : ''],
         ].forEach(([pct, fill, lbl]) => {
           if (!pct) return;
           const bh = ViH - y(pct);
@@ -2096,7 +2103,7 @@
       });
 
       // Legend
-      [[EXACT_COL, 'exact'], [OVER_COL, 'over'], [UNDER_COL, 'under']].forEach(([col, lbl], i) => {
+      [[UNDER_COL, 'under'], [EXACT_COL, 'exact'], [OVER_COL, 'over']].forEach(([col, lbl], i) => {
         g.append('rect').attr('x', i * 44).attr('y', ViH + 14).attr('width', 5).attr('height', 5).attr('fill', col).attr('opacity', 0.85).attr('rx', 1);
         g.append('text').attr('x', i * 44 + 7).attr('y', ViH + 18.5).attr('dominant-baseline', 'middle').attr('fill', '#7a7060').attr('font-size', 5.8).attr('font-family', FONT).text(lbl);
       });
@@ -2200,6 +2207,121 @@
           .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
           .attr('fill', light).attr('font-size', 6.5).attr('font-weight', '600').attr('font-family', FONT)
           .text(`${Math.round(a.pct)}%`);
+      });
+    }
+
+
+    /**
+     * V5 — Violin chart. Y-axis = error value (integer diffs). Width of the
+     * shape at each Y level = percentage of that player's rounds at that diff.
+     * Zero line highlighted. % exact shown at zero.
+     */
+    function renderAccV5(accuracy) {
+      clearChart('acc-v5');
+      if (!accuracy.length) return;
+
+      const W = 260, H = 170, ML = 26, MR = 8, MT = 12, MB = 20;
+      const iW = W - ML - MR, iH = H - MT - MB;
+
+      const svg = d3.select('#acc-v5')
+        .attr('viewBox', `0 0 ${W} ${H}`)
+        .attr('preserveAspectRatio', 'xMidYMid meet')
+        .attr('width', '100%').attr('height', null);
+      const g = svg.append('g').attr('transform', `translate(${ML},${MT})`);
+
+      const players    = accuracy.map(a => a.player);
+      const allDiffs   = accuracy.flatMap(a => a.records.map(r => r.diff));
+      const maxAbsDiff = Math.max(d3.max(allDiffs.map(Math.abs)) || 0, 1);
+
+      const x    = d3.scaleBand().domain(players).range([0, iW]).padding(0.18);
+      const yExt = maxAbsDiff + 0.7;
+      const y    = d3.scaleLinear().domain([-yExt, yExt]).range([iH, 0]);
+
+      // Width scale: max half-width is 45% of band so adjacent violins don't touch
+      const maxHalfW = x.bandwidth() * 0.45;
+
+      // ── Axes ──────────────────────────────────────────────────────────────
+      g.append('g').attr('transform', `translate(0,${iH})`)
+        .call(d3.axisBottom(x).tickSize(0)).call(ax => axisStyle(ax));
+
+      const yTicks = d3.range(-maxAbsDiff, maxAbsDiff + 1).filter(Number.isInteger);
+      g.append('g')
+        .call(d3.axisLeft(y).tickValues(yTicks).tickSize(-iW)
+          .tickFormat(d => d > 0 ? `+${d}` : `${d}`))
+        .call(ax => {
+          ax.select('.domain').remove();
+          ax.selectAll('.tick line')
+            .attr('stroke', d => d === 0 ? '#4a4030' : '#2e2a22')
+            .attr('stroke-dasharray', d => d === 0 ? null : '2,2')
+            .attr('stroke-width', d => d === 0 ? 1.0 : 0.8)
+            .attr('opacity', d => d === 0 ? 0.45 : 1);
+          ax.selectAll('text')
+            .attr('fill', d => d === 0 ? '#9a8a70' : '#7a7060')
+            .attr('font-size', 6.5).attr('font-family', FONT);
+        });
+
+      // ── Per-player violin ──────────────────────────────────────────────────
+      accuracy.forEach(a => {
+        const col   = (PCOL[a.player] || PCOL.Caitlin).peg;
+        const light = (PCOL[a.player] || PCOL.Caitlin).light;
+        const cx    = x(a.player) + x.bandwidth() / 2;
+        const n     = a.records.length;
+
+        // Count rounds at each integer diff value
+        const counts = {};
+        a.records.forEach(r => { counts[r.diff] = (counts[r.diff] || 0) + 1; });
+
+        // Find the global max % across all diff values for this player
+        // to normalise the half-width
+        const maxPct = d3.max(Object.values(counts)) / n;
+
+        // Build violin path: left edge going up, right edge going down, closed
+        // Each integer diff level gets a horizontal half-width proportional to
+        // its percentage share. We interpolate between levels for a smooth shape.
+        const diffLevels = yTicks.filter(d => Math.abs(d) <= maxAbsDiff);
+
+        // Build the right-side points (top→bottom), then mirror for left
+        const rightPts = diffLevels.map(d => {
+          const pct = (counts[d] || 0) / n;
+          const hw  = maxPct > 0 ? (pct / maxPct) * maxHalfW : 0;
+          return [cx + hw, y(d)];
+        });
+        const leftPts = diffLevels.map(d => {
+          const pct = (counts[d] || 0) / n;
+          const hw  = maxPct > 0 ? (pct / maxPct) * maxHalfW : 0;
+          return [cx - hw, y(d)];
+        }).reverse();
+
+        const allPts = [...rightPts, ...leftPts];
+        const pathData = allPts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ') + ' Z';
+
+        g.append('path')
+          .attr('d', pathData)
+          .attr('fill', col).attr('opacity', 0.35)
+          .attr('stroke', col).attr('stroke-width', 1.2).attr('stroke-opacity', 0.7);
+
+        // Centre spine
+        g.append('line')
+          .attr('x1', cx).attr('x2', cx)
+          .attr('y1', y(-maxAbsDiff)).attr('y2', y(maxAbsDiff))
+          .attr('stroke', col).attr('stroke-width', 0.6).attr('opacity', 0.3);
+
+        // % exact label at zero
+        g.append('text')
+          .attr('x', cx).attr('y', y(0))
+          .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+          .attr('fill', light).attr('font-size', 6.5).attr('font-weight', '600')
+          .attr('font-family', FONT)
+          .text(`${Math.round(a.pct)}%`);
+
+        // avg label below player name
+        const avgLbl = a.avgDiff === 0 ? 'avg 0'
+          : a.avgDiff > 0 ? `avg +${Math.round(a.avgDiff * 10) / 10}`
+          : `avg ${Math.round(a.avgDiff * 10) / 10}`;
+        g.append('text')
+          .attr('x', cx).attr('y', iH + 13).attr('text-anchor', 'middle')
+          .attr('fill', '#7a7060').attr('font-size', 5.5).attr('font-family', FONT)
+          .text(avgLbl);
       });
     }
 
@@ -2396,6 +2518,7 @@
       renderAccV2(accData);
       renderAccV3(accData);
       renderAccV4(accData);
+      renderAccV5(accData);
 
       const first = games[0];
       if (first) {
