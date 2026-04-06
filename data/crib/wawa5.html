@@ -480,7 +480,7 @@
     .rd-play-num  { font-size: .5rem; color: var(--muted); line-height: 1; }
 
     /* Score bars */
-    .rd-scores { display: flex; flex-direction: column; gap: 4px; margin-top: 3px; }
+    .rd-scores { display: flex; flex-direction: column; min-height: 50px;gap: 4px; margin-top: 3px; }
 
     .sc-pill {
       display: grid;
@@ -609,6 +609,9 @@
 
     /* Inline miscount verdict shown below the hand cards */
     .mc-verdict--inline {
+      border-color: #d4a030;
+      border: 1px solid var(--border);
+      border-radius: 8px;
       margin-top: .3rem;
       padding-top: .4rem;
       border-top: 1px solid var(--border);
@@ -681,12 +684,11 @@
     <!-- LEFT: game heatmap -->
     <div class="panel" name="heatmap">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;">
-        <div class="pt" style="margin-bottom:0;">Games</div>
+        <!-- Opponent filter pills — populated dynamically by buildPills() -->
+        <div class="filter-bar" id="filter-bar" style="margin-bottom:.6rem;">
+          <span class="filter-label"></span>
+        </div>
         <div class="sort-bar" id="sort-bar"></div>
-      </div>
-      <!-- Opponent filter pills — populated dynamically by buildPills() -->
-      <div class="filter-bar" id="filter-bar" style="margin-bottom:.6rem;">
-        <span class="filter-label"></span>
       </div>
       <!-- overflow-x allows horizontal scroll if there are many rounds -->
       <div style="overflow-x: auto">
@@ -2212,7 +2214,7 @@
       }
 
       // Layout constants
-      const FIXED_H = 500;
+      const FIXED_H = 440;
       const maxR    = d3.max(games, g => g.maxRound);
       const LEFT    = 30;   // wider to fit ordinal label
       const TOP     = 36;
@@ -2332,7 +2334,7 @@
                 .attr('y', gy + 5)
                 .attr('text-anchor', 'end')
                 .attr('dominant-baseline', 'hanging')
-                .attr('font-size', Math.min(CELL_H * 0.28, 7))
+                .attr('font-size', Math.min(CELL_H * 0.3, 7))
                 .attr('font-family', FONT)
                 .attr('fill', '#d4a030')
                 .attr('pointer-events', 'none')
