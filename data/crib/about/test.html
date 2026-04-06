@@ -178,7 +178,7 @@
         <svg id="dist-scores" width="100%" height="170"></svg>
         <div class="dist-legend">
           <span><span class="dist-legend-swatch" style="background:#c8973a;opacity:.75"></span>All possible hands</span>
-          <span><span class="dist-legend-swatch" style="background:#e85d4a"></span>Your games</span>
+          <span><span class="dist-legend-swatch" style="background:#e85d4a"></span>Our hands</span>
         </div>
       </div>
       <div class="dist-panel">
@@ -247,7 +247,7 @@
     <div class="rule" id="r-flush">
       <div class="rule-info">
         <span class="rule-name">Flush</span>
-        <span class="rule-desc">Four cards in the hand of the same suit score 4. If the cut also matches, score 5. <em style="color:var(--gold)">House rule:</em> 3 hand cards + the cut card all the same suit also scores 4. In the crib, only a 5-card flush counts.</span>
+        <span class="rule-desc">Four cards in the hand of the same suit score 4. If the cut matches, score 5. <em style="color:var(--gold)">House rule:</em> 3 hand cards + the cut card all the same suit scores 4.</span>
       </div>
       <div class="rule-example" style="margin-bottom:20px">
         <div class="cards-wrap" id="ex-flush"></div>
@@ -263,7 +263,7 @@
     <div class="rule" id="r-nob">
       <div class="rule-info">
         <span class="rule-name">Nob (His Nobs)</span>
-        <span class="rule-desc">If your hand contains a Jack whose suit matches the cut card, score 1 point. Applies to both the hand and the crib.</span>
+        <span class="rule-desc">If your hand contains a Jack whose suit matches the cut card, score 1 point.</span>
       </div>
       <div class="rule-example" style="margin-bottom:20px">
         <div class="cards-wrap" id="ex-nob"></div>
@@ -317,7 +317,7 @@
     <div class="rule" id="r-heels">
       <div class="rule-info">
         <span class="rule-name">His Heels</span>
-        <span class="rule-desc">If the dealer turns over a Jack as the cut card at the start of the round, the dealer immediately scores 2 points.</span>
+        <span class="rule-desc">If the dealer turns over a Jack as the cut card at the start of the round, the dealer immediately scores 1 point.</span>
       </div>
       <div class="rule-example" style="margin-bottom:20px">
         <div class="cards-wrap" id="ex-heels"></div>
@@ -437,50 +437,53 @@
         { cards:['5H','KD'],             caption:'5 + K(10) = 15',         lit:[0,1] },
       ]},
       { id:'ex-pair', capId:'cap-pair', examples:[
-        { cards:['6H','6S'],             caption:'Pair of 6s — 2 pts',             lit:[0,1] },
-        { cards:['9D','9H','9C'],        caption:'3 of a kind = 3 pairs — 6 pts',  lit:[0,1,2] },
-        { cards:['KH','KC','KD','KS'],   caption:'4 of a kind = 6 pairs — 12 pts', lit:[0,1,2,3] },
+        { cards:['6H','6S'],             caption:'Pair of 6s = 2 pts',             lit:[0,1] },
+        { cards:['9D','9H','9C'],        caption:'3 of a kind = 3 pairs = 6 pts',  lit:[0,1,2] },
+        { cards:['KH','KC','KD','KS'],   caption:'4 of a kind = 6 pairs = 12 pts', lit:[0,1,2,3] },
       ]},
       { id:'ex-run', capId:'cap-run', examples:[
-        { cards:['4H','5D','6C'],        caption:'4-5-6 run — 3 pts',      lit:[0,1,2] },
-        { cards:['2D','3H','4C','5S'],   caption:'2-3-4-5 run — 4 pts',    lit:[0,1,2,3] },
-        { cards:['7C','8D','9H','10S','JD'], caption:'7-8-9-10-J run — 5 pts', lit:[0,1,2,3,4] },
+        { cards:['4H','5D','6C'],        caption:'4-5-6 run = 3 pts',      lit:[0,1,2] },
+        { cards:['2D','3H','4C','5S'],   caption:'2-3-4-5 run = 4 pts',    lit:[0,1,2,3] },
+        { cards:['7C','8D','9H','JD','|','10S'], caption:'7-8-9-10-J run = 5 pts', lit:[0,1,2,3,4] },
       ]},
       { id:'ex-flush', capId:'cap-flush', examples:[
-        { cards:['2H','5H','9H','QH'],              caption:'4-card flush (hand only) — 4 pts',       lit:[0,1,2,3] },
-        { cards:['3D','7D','JD','KD','|','9D'],     caption:'All 5 match cut suit — 5 pts',           lit:[0,1,2,3,5] },
-        { cards:['4C','8C','AC','|','7H','6C'],     caption:'House rule: 3 hand ♣ + cut ♣ — 4 pts',   lit:[0,1,2,5] },
-        { cards:['9H','QH','3H','|','KD','5H'],     caption:'House rule: 3 hand ♥ + cut ♥ — 4 pts',   lit:[0,1,2,5] },
-        { cards:['6S','7S','JS','KS','|','3S'],     caption:'5-card flush with cut — 5 pts',          lit:[0,1,2,3,5] },
+        { cards:['2H','5H','9H','QH'],              caption:'4-card flush (hand only) = 4 pts',       lit:[0,1,2,3] },
+        { cards:['3D','7D','JD','KD','|','9D'],     caption:'All 5 match cut suit = 5 pts',           lit:[0,1,2,3,5] },
+        { cards:['4C','8C','AC','7H','|','6C'],     caption:'House rule: 3 hand ♣ + cut ♣ = 4 pts',   lit:[0,1,2,5] },
+        { cards:['9H','QH','3H','KD','|','5H'],     caption:'House rule: 3 hand ♥ + cut ♥ = 4 pts',   lit:[0,1,2,5] },
+        { cards:['6S','7S','JS','KS','|','3S'],     caption:'5-card flush with cut = 5 pts',          lit:[0,1,2,3,5] },
       ]},
       { id:'ex-nob', capId:'cap-nob', examples:[
-        { cards:['JH','AC','7D','3S','|','9H'], caption:'Jack of ♥ matches cut ♥ — 1 pt', lit:[0,5] },
-        { cards:['JD','5H','KC','2S','|','4D'], caption:'Jack of ♦ matches cut ♦ — 1 pt', lit:[0,5] },
+        { cards:['JH','AC','7D','3S','|','9H'], caption:'Jack of ♥ matches cut ♥ = 1 pt', lit:[0,5] },
+        { cards:['JD','5H','KC','2S','|','4D'], caption:'Jack of ♦ matches cut ♦ = 1 pt', lit:[0,5] },
       ]},
       { id:'ex-31', capId:'cap-31', examples:[
         { cards:['10H','7D','4S','10C'], caption:'10+7+4+10 = 31 — 2 pts', lit:[3] },
-        { cards:['KS','8H','3C','JS'],   caption:'10+8+3+10 = 31 — 2 pts', lit:[3] },
+        { cards:['KS','8H','3C','JS'],   caption:'10+8+3+10 = 31 = 2 pts', lit:[3] },
       ]},
       { id:'ex-go', capId:'cap-go', examples:[
-        { cards:['8H','9D','|','KS'],  caption:"Running total 17 — opp can't play — 1 pt", lit:[2] },
-        { cards:['5C','6D','7H'],      caption:'Last card played — 1 pt', lit:[2] },
+        { cards:['8H','9D','JD','|'],  caption:"Running total 27 — opp doesn't have card less than 4 = 1 pt", lit:[2] },
+        { cards:['5C','6D','9H'],      caption:'Last card played = 1 pt', lit:[2] },
       ]},
       { id:'ex-heels', capId:'cap-heels', examples:[
-        { cards:['JH'], caption:'Dealer cuts Jack of ♥ — 2 pts for dealer', lit:[0] },
-        { cards:['JC'], caption:'Dealer cuts Jack of ♣ — 2 pts for dealer', lit:[0] },
+        { cards:['JH'], caption:'Dealer cuts Jack of ♥ = 1 pt for dealer', lit:[0] },
+        { cards:['JC'], caption:'Dealer cuts Jack of ♣ = 1 pt for dealer', lit:[0] },
       ]},
       { id:'ex-dr3', capId:'cap-dr3', examples:[
         { cards:['5H','5D','6C','7S'],  caption:'5-6-7 run × 2 (6) + pair of 5s (2) = 8 pts',   lit:[0,1,2,3] },
         { cards:['JH','QC','QD','KS'],  caption:'J-Q-K run × 2 (6) + pair of Qs (2) = 8 pts',   lit:[0,1,2,3] },
       ]},
       { id:'ex-dr4', capId:'cap-dr4', examples:[
-        { cards:['3H','4C','5D','5S','6H'], caption:'3-4-5-6 run × 2 (8) + pair of 5s (2) = 10 pts', lit:[0,1,2,3,4] },
+        { cards:['3H','4C','5D','6S','|','6H'], caption:'3-4-5-6 run × 2 (8) + pair of 5s (2) = 10 pts', lit:[0,1,2,3,4] },
+        { cards:['5H','6C','6D','7S','|','8H'], caption:'3-4-5-6 run × 2 (8) + pair of 5s (2) = 10 pts', lit:[0,1,2,3,4] },
       ]},
       { id:'ex-tr3', capId:'cap-tr3', examples:[
-        { cards:['4H','4D','4C','5S','6H'], caption:'4-5-6 run × 3 (9) + 3 of a kind 4s (6) = 15 pts', lit:[0,1,2,3,4] },
+        { cards:['4H','4D','4C','5S','|','6H'], caption:'4-5-6 run × 3 (9) + 3 of a kind 4s (6) = 15 pts', lit:[0,1,2,3,4] },
+        { cards:['AH','2D','3C','3S','|','3H'], caption:'4-5-6 run × 3 (9) + 3 of a kind 4s (6) = 15 pts', lit:[0,1,2,3,4] },
       ]},
       { id:'ex-ddr', capId:'cap-ddr', examples:[
-        { cards:['6H','6D','7C','7S','8H'], caption:'6-7-8 run × 4 (12) + 2 pairs (4) = 16 pts', lit:[0,1,2,3,4] },
+        { cards:['6H','6D','7C','7S','|','8H'], caption:'6-7-8 run × 4 (12) + 2 pairs (4) = 16 pts', lit:[0,1,2,3,4] },
+        { cards:['10H','10D','JC','JS','|','QH'], caption:'6-7-8 run × 4 (12) + 2 pairs (4) = 16 pts', lit:[0,1,2,3,4] },
       ]},
     ];
 
