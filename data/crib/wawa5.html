@@ -107,7 +107,8 @@
       grid-template-columns: 2fr 3fr;
       gap: 1rem;
       align-items: start;
-      padding-left: 1.8rem;
+      padding-left: 1rem;
+      padding-right: 1rem;
       margin-bottom: 1rem;
     }
 
@@ -119,7 +120,7 @@
       gap: 1rem;
       align-items: start;
       margin-bottom: 1rem;
-      padding: .9rem 1.1rem;
+      padding: .9rem 1rem;
     }
 
     /* Standard panel with background + border */
@@ -2216,9 +2217,9 @@
       // Layout constants
       const FIXED_H = 500;
       const maxR    = d3.max(games, g => g.maxRound);
-      const LEFT    = 30;   // wider to fit ordinal label
+      const LEFT    = 20;   // wider to fit ordinal label
       const TOP     = 36;
-      const BOT     = 16;
+      const BOT     = 10;
 
       const availH  = FIXED_H - TOP - BOT;
       const CELL_H  = Math.floor((availH - games.length * 3) / games.length);
@@ -2226,7 +2227,7 @@
       const CELL_W  = 35;
       const COL_W   = CELL_W + 3;
 
-      const totalW = LEFT + maxR * COL_W + 38;
+      const totalW = LEFT + maxR * COL_W + 11;
       const totalH = TOP + games.length * ROW_H + BOT;
 
       svg.attr('width', totalW).attr('height', Math.max(totalH, FIXED_H));
