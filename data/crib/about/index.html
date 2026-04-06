@@ -82,7 +82,7 @@
       line-height: 1.7;
       max-width: 860px;
     }
-    .dist-caption strong { color: var(--text); }
+    .dist-caption strong { color: var(--text); font-weight: 530}
     .dist-caption p { margin: 0; }
 
     /* ── Two-column rules grid ───────────────────────────────────── */
@@ -175,20 +175,7 @@
       The dealer also counts the crib as an extra hand.
     </p>
 
-    <!-- ── Distribution chart ────────────────────────────────────── -->
-    <div class="dist-panel">
-      <div class="dist-title">Hand score distribution</div>
-      <svg id="dist-scores" width="100%" height="200"></svg>
-      <div class="dist-legend">
-        <span><span class="dist-legend-swatch" style="background:#c8973a;opacity:.75"></span>All possible hands</span>
-        <span><span class="dist-legend-swatch" style="background:#e85d4a"></span>Our games</span>
-        <span><span class="dist-legend-swatch" style="background:#2e2a22;border:1px solid #4a4030;"></span>Impossible score</span>
-      </div>
-      <div class="dist-caption">
-        <p>The gold bars show the theoretical probability of each hand score across all 12,994,800 possible cribbage hands, based on random dealing with no strategy (<a href="https://en.wikipedia.org/wiki/Cribbage_statistics" target="_blank" style="color:var(--gold);text-decoration:none;">Wikipedia: Cribbage statistics</a>). The red bars show how often each score actually appeared in our games. Differences reflect two things: <strong>strategic discarding</strong> — players actively choose which cards to keep, pushing scores away from the random baseline — and <strong>miscounts</strong>, where a hand was recorded with the wrong value. Scores of 19, 25, 26, and 27 are <strong>mathematically impossible</strong> in cribbage; any hand showing those values is a guaranteed miscount.</p>
-      </div>
-    </div>
-
+    
     <!-- ── Hand scoring ────────────────────────────────────────── -->
     <div class="section-heading">Hand &amp; play scoring</div>
     <div class="rules-grid">
@@ -208,7 +195,7 @@
         <span class="pts-label">per combo</span>
       </div>
     </div>
-
+    
     <!-- Pair -->
     <div class="rule" id="r-pair">
       <div class="rule-info">
@@ -224,7 +211,7 @@
         <span class="pts-label">per pair</span>
       </div>
     </div>
-
+    
     <!-- Run -->
     <div class="rule" id="r-run">
       <div class="rule-info">
@@ -240,7 +227,7 @@
         <span class="pts-label">per card</span>
       </div>
     </div>
-
+    
     <!-- Flush -->
     <div class="rule" id="r-flush">
       <div class="rule-info">
@@ -256,7 +243,7 @@
         <span class="pts-label">pts</span>
       </div>
     </div>
-
+    
     <!-- Nob -->
     <div class="rule" id="r-nob">
       <div class="rule-info">
@@ -272,13 +259,13 @@
         <span class="pts-label">pt</span>
       </div>
     </div>
-
-    </div><!-- /rules-grid hand -->
-
-    <!-- ── Play-only scoring ───────────────────────────────────── -->
-    <div class="section-heading">Pegging only</div>
-    <div class="rules-grid">
-
+    
+  </div><!-- /rules-grid hand -->
+  
+  <!-- ── Play-only scoring ───────────────────────────────────── -->
+  <div class="section-heading">Pegging only</div>
+  <div class="rules-grid">
+    
     <!-- Thirty-one -->
     <div class="rule" id="r-31">
       <div class="rule-info">
@@ -294,7 +281,7 @@
         <span class="pts-label">pts</span>
       </div>
     </div>
-
+    
     <!-- Go / Last Card -->
     <div class="rule" id="r-go">
       <div class="rule-info">
@@ -310,7 +297,7 @@
         <span class="pts-label">pt</span>
       </div>
     </div>
-
+    
     <!-- His Heels -->
     <div class="rule" id="r-heels">
       <div class="rule-info">
@@ -327,46 +314,46 @@
       </div>
     </div>
 
-    </div><!-- /rules-grid pegging -->
-
-    <!-- ── Useful combos ───────────────────────────────────────── -->
+  </div><!-- /rules-grid pegging -->
+  
+  <!-- ── Useful combos ───────────────────────────────────────── -->
     <div class="section-heading">Common combination hands</div>
-
+    
     <div class="note">
       <strong>Tip:</strong> runs and pairs can overlap in the same hand, creating "double runs" and "triple runs" that score much more than they first appear. Always count systematically: fifteens first, then pairs, then runs, then flush, then nob.
     </div>
     <div class="rules-grid">
-
-    <!-- Double run of 3 -->
-    <div class="rule" id="r-dr3">
-      <div class="rule-info">
-        <span class="rule-name">Double run of 3</span>
-        <span class="rule-desc">A pair plus two different 3-card runs built from those ranks. Two runs of 3 (6 pts) plus the pair (2 pts).</span>
+      
+      <!-- Double run of 3 -->
+      <div class="rule" id="r-dr3">
+        <div class="rule-info">
+          <span class="rule-name">Double run of 3</span>
+          <span class="rule-desc">A pair plus two different 3-card runs built from those ranks. Two runs of 3 (6 pts) plus the pair (2 pts).</span>
+        </div>
+        <div class="rule-example" style="margin-bottom:20px">
+          <div class="cards-wrap" id="ex-dr3"></div>
+          <div class="example-caption" id="cap-dr3"></div>
+        </div>
+        <div class="rule-points">
+          <span class="pts-num">8</span>
+          <span class="pts-label">pts</span>
+        </div>
       </div>
-      <div class="rule-example" style="margin-bottom:20px">
-        <div class="cards-wrap" id="ex-dr3"></div>
-        <div class="example-caption" id="cap-dr3"></div>
-      </div>
-      <div class="rule-points">
-        <span class="pts-num">8</span>
-        <span class="pts-label">pts</span>
-      </div>
-    </div>
-
-    <!-- Double run of 4 -->
-    <div class="rule" id="r-dr4">
-      <div class="rule-info">
-        <span class="rule-name">Double run of 4</span>
-        <span class="rule-desc">A pair plus two different 4-card runs. Two runs of 4 (8 pts) plus the pair (2 pts).</span>
-      </div>
-      <div class="rule-example" style="margin-bottom:20px">
-        <div class="cards-wrap" id="ex-dr4"></div>
-        <div class="example-caption" id="cap-dr4"></div>
-      </div>
-      <div class="rule-points">
-        <span class="pts-num">10</span>
-        <span class="pts-label">pts</span>
-      </div>
+      
+      <!-- Double run of 4 -->
+      <div class="rule" id="r-dr4">
+        <div class="rule-info">
+          <span class="rule-name">Double run of 4</span>
+          <span class="rule-desc">A pair plus two different 4-card runs. Two runs of 4 (8 pts) plus the pair (2 pts).</span>
+        </div>
+        <div class="rule-example" style="margin-bottom:20px">
+          <div class="cards-wrap" id="ex-dr4"></div>
+          <div class="example-caption" id="cap-dr4"></div>
+        </div>
+        <div class="rule-points">
+          <span class="pts-num">10</span>
+          <span class="pts-label">pts</span>
+        </div>
     </div>
 
     <!-- Triple run of 3 -->
@@ -384,7 +371,7 @@
         <span class="pts-label">pts</span>
       </div>
     </div>
-
+    
     <!-- Double-double run -->
     <div class="rule" id="r-ddr">
       <div class="rule-info">
@@ -400,32 +387,46 @@
         <span class="pts-label">pts</span>
       </div>
     </div>
+    
+  </div><!-- /rules-grid combos -->
 
-    </div><!-- /rules-grid combos -->
-
-    <!-- ── References ───────────────────────────────────────────── -->
-    <div class="section-heading">References</div>
-    <div style="font-size:.72rem;color:var(--muted);line-height:2;padding-bottom:.5rem;">
-      <div>
-        <span style="color:var(--muted);margin-right:.5rem;">1.</span>
-        Scoring rules based on:
-        <a href="https://rubl.com/rules/cribbage-scoring-chart.html" target="_blank"
+  <!-- ── Distribution chart ────────────────────────────────────── -->
+  <div class="dist-panel">
+    <div class="dist-title">Hand score distribution</div>
+    <svg id="dist-scores" width="100%" height="200"></svg>
+    <div class="dist-legend">
+      <span><span class="dist-legend-swatch" style="background:#c8973a;opacity:.75"></span>All possible hands</span>
+      <span><span class="dist-legend-swatch" style="background:#e85d4a"></span>Our games</span>
+      <span><span class="dist-legend-swatch" style="background:#2e2a22;border:1px solid #4a4030;"></span>Impossible score</span>
+    </div>
+    <div class="dist-caption">
+      <p>The gold bars show the theoretical probability of each hand score across all 12,994,800 possible cribbage hands, based on random dealing with no strategy (<a href="https://en.wikipedia.org/wiki/Cribbage_statistics" target="_blank" style="color:var(--gold);text-decoration:none;">Wikipedia: Cribbage statistics</a>). The red bars show how often each score actually appeared in our games. Differences reflect two things: <strong>strategic discarding</strong> — players actively choose which cards to keep, pushing scores away from the random baseline — and <strong>miscounts</strong>, where a hand was recorded with the wrong value. Scores of 19, 25, 26, and 27 are <strong>mathematically impossible</strong> in cribbage; any hand showing those values is a guaranteed miscount.</p>
+    </div>
+  </div>
+  
+  <!-- ── References ───────────────────────────────────────────── -->
+  <div class="section-heading">References</div>
+  <div style="font-size:.72rem;color:var(--muted);line-height:2;padding-bottom:.5rem;">
+    <div>
+      <span style="color:var(--muted);margin-right:.5rem;">1.</span>
+      Scoring rules based on:
+      <a href="https://rubl.com/rules/cribbage-scoring-chart.html" target="_blank"
            style="color:var(--gold);text-decoration:none;">
-          rubl.com/rules/cribbage-scoring-chart.html
+           rubl.com/rules/cribbage-scoring-chart.html
         </a>
       </div>
       <div>
         <span style="color:var(--muted);margin-right:.5rem;">2.</span>
         Hand score distribution data from:
         <a href="https://en.wikipedia.org/wiki/Cribbage_statistics" target="_blank"
-           style="color:var(--gold);text-decoration:none;">
-          en.wikipedia.org/wiki/Cribbage_statistics
-        </a>
-        — Lumetta, S. S. (2007). "Amusing Cribbage Facts."
-      </div>
+        style="color:var(--gold);text-decoration:none;">
+        en.wikipedia.org/wiki/Cribbage_statistics
+      </a>
+      — Lumetta, S. S. (2007). "Amusing Cribbage Facts."
     </div>
-
-  </div><!-- /content -->
+  </div>
+  
+</div><!-- /content -->
 
 
   <script>
