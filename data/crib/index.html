@@ -1306,7 +1306,10 @@
               player:     name,
               recorded:   recorded || 0,
               calculated: scored.total,
-              diff:       (recorded || 0) - scored.total,  // + = over-counted, - = under-counted
+              diff:       (recorded || 0) - scored.total,
+              gameNum:    game.gameNum,
+              date:       game.date,
+              round:      rd.round,
             });
           });
         });
@@ -1756,11 +1759,32 @@
             const vJitter = (prng(vSeed) * 2 - 1) * vJitterMax;
             const cy      = baseCy + vJitter;
 
-            g.append('circle')
+            const circle = g.append('circle')
               .attr('cx', cx + clipped).attr('cy', cy)
               .attr('r', DOT_R)
               .attr('fill', col).attr('opacity', 0.82)
-              .attr('stroke-width', 0);
+              .attr('stroke-width', 0)
+              .style('cursor', 'pointer');
+
+            const tip = document.getElementById('tooltip');
+            const diffLabel = r.diff > 0 ? `+${r.diff} over` : `${r.diff} under`;
+            const node = circle.node();
+            node.addEventListener('mouseenter', () => {
+              circle.attr('opacity', 1).attr('stroke', '#e8dfc8').attr('stroke-width', 1);
+              tip.innerHTML = `
+                <div class="tth">${ordinal(r.gameNum)} game · Round ${r.round}</div>
+                <div>Recorded <strong>${r.recorded}</strong> · Calculated <strong>${r.calculated}</strong></div>
+                <div style="color:${col};margin-top:2px;">${diffLabel}</div>`;
+              tip.classList.add('vis');
+            });
+            node.addEventListener('mousemove', e => {
+              tip.style.left = (e.clientX + 14) + 'px';
+              tip.style.top  = (e.clientY - 10) + 'px';
+            });
+            node.addEventListener('mouseleave', () => {
+              circle.attr('opacity', 0.82).attr('stroke-width', 0);
+              tip.classList.remove('vis');
+            });
           });
         });
 
