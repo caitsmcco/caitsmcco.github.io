@@ -1631,7 +1631,7 @@
         return;
       }
 
-      const W = 260, H = 190, ML = 26, MR = 8, MT = 12, MB = 20;
+      const W = 260, H = 200, ML = 26, MR = 8, MT = 12, MB = 30;
       const iW = W - ML - MR, iH = H - MT - MB;
 
       const svg = d3.select('#bar-acc')
@@ -1909,9 +1909,9 @@
       });
 
       // Each column is split in half: hand on the left, crib on the right
-      const hw = x.bandwidth() * 0.3;
-      const handX = s => x(s) + x.bandwidth() * 0.01;
-      const cribX = s => x(s) + x.bandwidth() * 0.52;
+      const hw = x.bandwidth() * 0.36;
+      const handX = s => x(s) + x.bandwidth() * 0.04;
+      const cribX = s => x(s) + x.bandwidth() * 0.57;
 
       // Hand bars (off-white, left half)
       if (handN > 0) {
