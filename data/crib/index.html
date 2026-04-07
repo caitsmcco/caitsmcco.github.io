@@ -1726,46 +1726,42 @@
           allSorted.push(...recs);
         });
 
-        // Place each dot with collision-aware horizontal offset
-        // plus a small random vertical jitter within the row band
-        const rowH = Math.abs(y(0) - y(1));  // pixel height of one diff unit
-        const vJitterMax = rowH * 0.28;       // jitter up to ±28% of row height
-        const placed = [];
+        // Pre-assign horizontal slots per diff row.
+        // Sort every dot in the row by its shuffle order, then assign:
+        //   index 0 → 0 (centre)
+        //   index 1 → -step  (left)
+        //   index 2 → +step  (right)
+        //   index 3 → -2step
+        //   index 4 → +2step  …
+        // This guarantees symmetric growth with no collision logic needed.
+        const rowH = Math.abs(y(0) - y(1));
+        const vJitterMax = rowH * 0.28;
+        const step = DOT_R * 2.1;
 
-        allSorted.forEach((r, ri) => {
-          const baseCy = y(r.diff);
-          const vSeed  = r.diff * 97 + ri * 53 + a.player.charCodeAt(0);
-          const vJitter = (prng(vSeed) * 2 - 1) * vJitterMax;
-          const cy = baseCy + vJitter;
+        // Group allSorted by diff to assign slots within each row
+        const byDiffFinal = d3.group(allSorted, r => r.diff);
 
-          const nearby = placed.filter(p => Math.abs(p.baseCy - baseCy) < DOT_R * 2.2);
-          // How many are already in this row determines which side to try first
-          const rowCount = nearby.length;
+        byDiffFinal.forEach((recs, diff) => {
+          const baseCy = y(diff);
 
-          // Strict centre-outward: 0, then alternate ±step
-          // Odd rowCount → try negative first, even → positive first
-          // This guarantees symmetric left-right growth
-          const step = DOT_R * 2.1;
-          const slots = [0];
-          for (let s = step; s <= halfMax; s += step) {
-            if (rowCount % 2 === 0) slots.push(s, -s);
-            else                    slots.push(-s, s);
-          }
+          recs.forEach((r, rowIdx) => {
+            // Slot index → offset: 0→0, 1→-step, 2→+step, 3→-2step, 4→+2step …
+            const slotNum  = Math.floor((rowIdx + 1) / 2);
+            const sign     = rowIdx % 2 === 0 ? -1 : 1;   // 0→special-cased below
+            const offset   = rowIdx === 0 ? 0 : sign * slotNum * step;
+            const clipped  = Math.max(-halfMax, Math.min(halfMax, offset));
 
-          let chosen = halfMax;
-          for (const offset of slots) {
-            if (Math.abs(offset) > halfMax) continue;
-            const collision = nearby.some(p => Math.abs(p.cx - (cx + offset)) < DOT_R * 2.1);
-            if (!collision) { chosen = offset; break; }
-          }
+            // Vertical jitter
+            const vSeed   = diff * 97 + rowIdx * 53 + a.player.charCodeAt(0);
+            const vJitter = (prng(vSeed) * 2 - 1) * vJitterMax;
+            const cy      = baseCy + vJitter;
 
-          placed.push({ cx: cx + chosen, cy, baseCy });
-
-          g.append('circle')
-            .attr('cx', cx + chosen).attr('cy', cy)
-            .attr('r', DOT_R)
-            .attr('fill', col).attr('opacity', 0.82)
-            .attr('stroke-width', 0);
+            g.append('circle')
+              .attr('cx', cx + clipped).attr('cy', cy)
+              .attr('r', DOT_R)
+              .attr('fill', col).attr('opacity', 0.82)
+              .attr('stroke-width', 0);
+          });
         });
 
         // ── % exact label at the zero line ────────────────────────────────
