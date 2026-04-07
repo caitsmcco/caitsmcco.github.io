@@ -191,6 +191,10 @@
       height: 160px;
     }
 
+    #bar-acc {
+      height: 360px;
+    }
+
     /* ── Filter + sort bar controls ────────────────────────────────────── */
     .filter-bar {
       display: flex;
@@ -1641,7 +1645,7 @@
         return;
       }
 
-      const W = 260, H = 200, ML = 26, MR = 8, MT = 12, MB = 30;
+      const W = 260, H = 360, ML = 26, MR = 8, MT = 12, MB = 30;
       const iW = W - ML - MR, iH = H - MT - MB;
 
       const svg = d3.select('#bar-acc')
@@ -1657,10 +1661,11 @@
       const maxAbsDiff = Math.max(d3.max(allDiffs.map(Math.abs)) || 0, 1);
 
       const x = d3.scaleBand().domain(players).range([0, iW]).padding(0.25);
-      const yExt = maxAbsDiff + 0.7;
+      // Extra padding above/below so integer rows are well separated
+      const yExt = maxAbsDiff + 1.2;
       const y    = d3.scaleLinear().domain([-yExt, yExt]).range([iH, 0]);
 
-      const DOT_R = 2.5;  // dot radius in SVG units
+      const DOT_R = 2.8;  // slightly larger dots to fill the extra space
 
       // ── Axes ──────────────────────────────────────────────────────────────
       g.append('g').attr('transform', `translate(0,${iH})`)
@@ -1690,49 +1695,70 @@
             .attr('font-size', 6.5).attr('font-family', FONT);
         });
 
-      // ── Per-player beeswarm ──────────────────────────────────────────────
       // ── Per-player beeswarm (miscounts only) ─────────────────────────────
       accuracy.forEach(a => {
-        const col = (PCOL[a.player] || PCOL.Caitlin).peg;
+        const col   = (PCOL[a.player] || PCOL.Caitlin).peg;
         const light = (PCOL[a.player] || PCOL.Caitlin).light;
         const cx      = x(a.player) + x.bandwidth() / 2;
         const bw      = x.bandwidth();
-        const halfMax = bw * 0.46;  // wider spread now that acc panel is bigger
+        const halfMax = bw * 0.46;
 
-        // Only plot miscounted rounds — correct rounds shown as % label at 0
         const miscounts = a.records.filter(r => r.diff !== 0);
 
-        // ── Beeswarm collision pass ──────────────────────────────────────
-        // Group by integer diff so we can shuffle within each row, then
-        // place greedily from centre outward alternating left/right.
-        const placed = [];
+        // Deterministic pseudo-random helper seeded by player + diff + index
+        const prng = (seed) => {
+          let s = seed ^ 0xdeadbeef;
+          s = Math.imul(s ^ (s >>> 16), 0x45d9f3b);
+          s = Math.imul(s ^ (s >>> 16), 0x45d9f3b);
+          return ((s ^ (s >>> 16)) >>> 0) / 0xffffffff;
+        };
 
-        // Shuffle miscounts at the same diff value so the spread is less
-        // order-dependent — use a simple deterministic Fisher-Yates per row.
+        // Shuffle within each diff row for less order-dependent spread
         const byDiff = d3.group(miscounts, r => r.diff);
         const allSorted = [];
         [...byDiff.keys()].sort((a, b) => a - b).forEach(diff => {
           const recs = [...byDiff.get(diff)];
           for (let i = recs.length - 1; i > 0; i--) {
-            // Deterministic seed: mix diff + index + player hash
-            const j = Math.abs((diff * 31 + i * 17 + a.player.charCodeAt(0)) % (i + 1));
+            const seed = diff * 31 + i * 17 + a.player.charCodeAt(0);
+            const j = Math.floor(prng(seed) * (i + 1));
             [recs[i], recs[j]] = [recs[j], recs[i]];
           }
           allSorted.push(...recs);
         });
 
-        allSorted.forEach(r => {
-          const cy = y(r.diff);
-          const nearby = placed.filter(p => Math.abs(p.cy - cy) < DOT_R * 2);
+        // Place each dot with collision-aware horizontal offset
+        // plus a small random vertical jitter within the row band
+        const rowH = Math.abs(y(0) - y(1));  // pixel height of one diff unit
+        const vJitterMax = rowH * 0.28;       // jitter up to ±28% of row height
+        const placed = [];
 
+        allSorted.forEach((r, ri) => {
+          const baseCy = y(r.diff);
+          // Vertical jitter: deterministic per dot, alternates sign
+          const vSeed = r.diff * 97 + ri * 53 + a.player.charCodeAt(0);
+          const vJitter = (prng(vSeed) * 2 - 1) * vJitterMax;
+          const cy = baseCy + vJitter;
+
+          const nearby = placed.filter(p => Math.abs(p.cy - cy) < DOT_R * 2.2);
+
+          // Build candidate horizontal offsets: start near centre,
+          // use pseudo-random ordering so dots don't always fan left then right
           const step = DOT_R * 2.1;
-          const offsets = [0];
-          for (let s = step; s <= halfMax; s += step) {
-            offsets.push(s, -s);
+          const slots = [0];
+          for (let s = step; s <= halfMax; s += step) slots.push(s, -s);
+
+          // Shuffle the slots with a per-row seed for more organic spread
+          const slotSeed = r.diff * 41 + a.player.charCodeAt(0);
+          const shuffled = [...slots];
+          for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(prng(slotSeed + i) * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
           }
+          // Always try centre first for the first dot in a row
+          if (nearby.length === 0) shuffled.unshift(0);
 
           let chosen = halfMax;
-          for (const offset of offsets) {
+          for (const offset of shuffled) {
             if (Math.abs(offset) > halfMax) continue;
             const tx = cx + offset;
             const collision = nearby.some(p => {
@@ -1747,7 +1773,7 @@
           g.append('circle')
             .attr('cx', cx + chosen).attr('cy', cy)
             .attr('r', DOT_R)
-            .attr('fill', col).attr('opacity', 0.8)
+            .attr('fill', col).attr('opacity', 0.82)
             .attr('stroke-width', 0);
         });
 
