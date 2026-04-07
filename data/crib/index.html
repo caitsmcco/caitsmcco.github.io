@@ -1645,7 +1645,7 @@
         return;
       }
 
-      const W = 260, H = 360, ML = 26, MR = 8, MT = 12, MB = 30;
+      const W = 320, H = 360, ML = 26, MR = 8, MT = 12, MB = 30;
       const iW = W - ML - MR, iH = H - MT - MB;
 
       const svg = d3.select('#bar-acc')
@@ -1736,7 +1736,7 @@
         // This guarantees symmetric growth with no collision logic needed.
         const rowH = Math.abs(y(0) - y(1));
         const vJitterMax = rowH * 0.28;
-        const step = DOT_R * 2.1;
+        const step = DOT_R * 1.6;
 
         // Group allSorted by diff to assign slots within each row
         const byDiffFinal = d3.group(allSorted, r => r.diff);
