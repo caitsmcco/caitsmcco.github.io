@@ -1797,31 +1797,58 @@
       return { r: rank, s: suit };
     }
 
-    // ── Load CSV — use recorded handPoints and cribPoints directly ──────
-    d3.csv('edited.csv').then(rows => {
+    // ── Derive dist data from allGames (called after data loads) ────────
+    // Uses the same dealer logic as renderCards: round 1 crib points
+    // determine who dealt first, then alternate every round.
+    // Hand: every row contributes one hand score (0 if blank/missing).
+    // Crib: exactly one per round — the dealer's recorded cribPoints
+    //       (0 if they scored nothing, blank rows skipped entirely).
+    function buildDistData(games) {
       const handScores = {}, cribScores = {};
       let handN = 0, cribN = 0;
 
-      rows.forEach(row => {
-        const hp = +row.handPoints;
-        if (!isNaN(hp) && row.handPoints !== '' && hp >= 0 && hp <= 29) {
-          const s = Math.round(hp);
-          handScores[s] = (handScores[s] || 0) + 1;
-          handN++;
-        }
-        // Crib only exists for the dealer each round — skip zeros
-        const cp = +row.cribPoints;
-        if (!isNaN(cp) && row.cribPoints !== '' && cp > 0 && cp <= 29) {
-          const s = Math.round(cp);
-          cribScores[s] = (cribScores[s] || 0) + 1;
-          cribN++;
-        }
+      games.forEach(game => {
+        // Determine who dealt round 1 from crib points
+        const round1 = game.rounds.find(r => r.round === 1);
+        const p1DealtFirst = round1
+          ? (round1.p1crib > 0 ? true : round1.p2crib > 0 ? false : true)
+          : true;
+
+        game.rounds.forEach(rd => {
+          // ── Hand scores (one per player per round, 0 if blank) ──────
+          [rd.p1hand, rd.p2hand].forEach(hp => {
+            const s = Math.round(hp);
+            if (s >= 0 && s <= 29) {
+              handScores[s] = (handScores[s] || 0) + 1;
+              handN++;
+            }
+          });
+
+          // ── Crib score (dealer only, include zeros) ─────────────────
+          const p1IsDealer = (rd.round % 2 === 1) === p1DealtFirst;
+          // Use raw rows to get the actual recorded cribPoints string
+          // so we can distinguish "blank/missing" (non-dealer, skip)
+          // from "0" (dealer scored nothing, include).
+          const rawRows = game._raw ? game._raw.filter(r => +r.Round === rd.round) : [];
+          const byP = Object.fromEntries(rawRows.map(r => [r.Name, r]));
+          const dealerRow = byP[p1IsDealer ? game.p1name : game.p2name];
+
+          if (dealerRow) {
+            const raw = dealerRow.cribPoints;
+            // Only include if the cell is present (even if 0); skip truly blank rows
+            if (raw !== undefined && raw !== null && raw.trim() !== '') {
+              const cs = Math.round(+raw);
+              if (cs >= 0 && cs <= 29) {
+                cribScores[cs] = (cribScores[cs] || 0) + 1;
+                cribN++;
+              }
+            }
+          }
+        });
       });
 
-      renderDistChart(handScores, handN, cribScores, cribN);
-    }).catch(() => {
-      renderDistChart({}, 0, {}, 0);
-    });
+      return { handScores, handN, cribScores, cribN };
+    }
 
     // ── Chart: score distribution ─────────────────────────────────────
     // Gold (full width, behind): random dealing baseline
@@ -1882,7 +1909,7 @@
       });
 
       // Each column is split in half: hand on the left, crib on the right
-      const hw = x.bandwidth() * 0.47;
+      const hw = x.bandwidth() * 0.3;
       const handX = s => x(s) + x.bandwidth() * 0.01;
       const cribX = s => x(s) + x.bandwidth() * 0.52;
 
@@ -2104,6 +2131,9 @@
       renderBarAvg(allGames);
       renderBarMax(allGames);
       renderBarAcc(allGames);
+
+      const { handScores, handN, cribScores, cribN } = buildDistData(allGames);
+      renderDistChart(handScores, handN, cribScores, cribN);
 
       const first = games[0];
       if (first) {
