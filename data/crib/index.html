@@ -1734,39 +1734,25 @@
 
         allSorted.forEach((r, ri) => {
           const baseCy = y(r.diff);
-          // Vertical jitter: deterministic per dot
-          const vSeed = r.diff * 97 + ri * 53 + a.player.charCodeAt(0);
+          // Vertical jitter only — deterministic per dot
+          const vSeed  = r.diff * 97 + ri * 53 + a.player.charCodeAt(0);
           const vJitter = (prng(vSeed) * 2 - 1) * vJitterMax;
           const cy = baseCy + vJitter;
 
           // Collision uses baseCy so all dots in the same diff row
-          // compete for horizontal slots together regardless of their vJitter
+          // compete for horizontal slots together regardless of vJitter
           const nearby = placed.filter(p => Math.abs(p.baseCy - baseCy) < DOT_R * 2.2);
 
-          // Build candidate horizontal offsets: start near centre,
-          // use pseudo-random ordering so dots don't always fan left then right
-          const step = DOT_R * 2.1;
+          // Strict centre-outward slots: 0, +step, -step, +2step, -2step …
+          // This guarantees even spread — no shuffling here
+          const step = DOT_R * 1.5;
           const slots = [0];
           for (let s = step; s <= halfMax; s += step) slots.push(s, -s);
 
-          // Shuffle the slots with a per-row seed for more organic spread
-          const slotSeed = r.diff * 41 + a.player.charCodeAt(0);
-          const shuffled = [...slots];
-          for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(prng(slotSeed + i) * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-          }
-          // Always try centre first for the first dot in a row
-          if (nearby.length === 0) shuffled.unshift(0);
-
           let chosen = halfMax;
-          for (const offset of shuffled) {
+          for (const offset of slots) {
             if (Math.abs(offset) > halfMax) continue;
-            const tx = cx + offset;
-            const collision = nearby.some(p => {
-              const dx = p.cx - tx;
-              return Math.abs(dx) < DOT_R * 2.1;
-            });
+            const collision = nearby.some(p => Math.abs(p.cx - (cx + offset)) < DOT_R * 2.1);
             if (!collision) { chosen = offset; break; }
           }
 
