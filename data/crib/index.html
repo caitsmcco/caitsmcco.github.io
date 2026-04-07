@@ -501,12 +501,11 @@
     <div class="dist-caption">
       <p>The gold bars show the theoretical probability of each hand score across all 12,994,800 possible cribbage hands, based on random dealing with no strategy (<a href="https://en.wikipedia.org/wiki/Cribbage_statistics" target="_blank" style="color:var(--gold);text-decoration:none;">Wikipedia: Cribbage statistics</a>). The red bars show how often each score actually appeared in our games. Differences reflect two things: <strong>strategic discarding</strong> — players actively choose which cards to keep, pushing scores away from the random baseline — and <strong>miscounts</strong>, where a hand was recorded with the wrong value. Scores of 19, 25, 26, and 27 are <strong>mathematically impossible</strong> in cribbage; any hand showing those values is a guaranteed miscount.</p>
     </div>
-
-    <div class="panel">
-      <div class="pt">Hand counting accuracy</div>
-      <svg id="bar-acc"></svg>
-      <div id="bar-acc-note" style="font-size:.6rem;color:var(--muted);margin-top:.2rem;line-height:1.5;"></div>
-    </div>
+  </div>
+  <div class="panel">
+    <div class="pt">Hand counting accuracy</div>
+    <svg id="bar-acc"></svg>
+    <div id="bar-acc-note" style="font-size:.6rem;color:var(--muted);margin-top:.2rem;line-height:1.5;"></div>
   </div>
 
   <div class="section-heading">References</div>
@@ -1801,13 +1800,13 @@
         realScores[score] = (realScores[score]||0) + 1;
         realN++;
       });
-      drawScoreChart(realScores, realN);
+      renderDistChart(realScores, realN);
     }).catch(() => {
-      drawScoreChart({}, 0);
+      renderDistChart({}, 0);
     });
 
     // ── Chart: score distribution ────────────────────────────────────
-    function drawScoreChart(realS, realN) {
+    function renderDistChart(realS, realN) {
       const el  = document.getElementById('dist-scores');
       const W   = el.parentElement.clientWidth || 700;
       const H   = 200;
@@ -2071,7 +2070,6 @@
       renderBarAvg(allGames);
       renderBarMax(allGames);
       renderBarAcc(allGames);
-      renderDistChart(allGames);
 
       const first = games[0];
       if (first) {
