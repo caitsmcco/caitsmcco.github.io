@@ -1734,12 +1734,14 @@
 
         allSorted.forEach((r, ri) => {
           const baseCy = y(r.diff);
-          // Vertical jitter: deterministic per dot, alternates sign
+          // Vertical jitter: deterministic per dot
           const vSeed = r.diff * 97 + ri * 53 + a.player.charCodeAt(0);
           const vJitter = (prng(vSeed) * 2 - 1) * vJitterMax;
           const cy = baseCy + vJitter;
 
-          const nearby = placed.filter(p => Math.abs(p.cy - cy) < DOT_R * 2.2);
+          // Collision uses baseCy so all dots in the same diff row
+          // compete for horizontal slots together regardless of their vJitter
+          const nearby = placed.filter(p => Math.abs(p.baseCy - baseCy) < DOT_R * 2.2);
 
           // Build candidate horizontal offsets: start near centre,
           // use pseudo-random ordering so dots don't always fan left then right
@@ -1762,13 +1764,13 @@
             if (Math.abs(offset) > halfMax) continue;
             const tx = cx + offset;
             const collision = nearby.some(p => {
-              const dx = p.cx - tx, dy = p.cy - cy;
-              return Math.sqrt(dx * dx + dy * dy) < DOT_R * 2.1;
+              const dx = p.cx - tx;
+              return Math.abs(dx) < DOT_R * 2.1;
             });
             if (!collision) { chosen = offset; break; }
           }
 
-          placed.push({ cx: cx + chosen, cy });
+          placed.push({ cx: cx + chosen, cy, baseCy });
 
           g.append('circle')
             .attr('cx', cx + chosen).attr('cy', cy)
