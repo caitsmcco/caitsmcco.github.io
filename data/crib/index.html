@@ -185,10 +185,10 @@
     }
 
     /* Force both SVGs in the dist-row to the same pixel height */
-    #dist-svg, #bar-acc {
+    #dist-hand, #dist-crib, #bar-acc {
       display: block;
       width: 100%;
-      height: 240px;
+      height: 160px;
     }
 
     /* ── Filter + sort bar controls ────────────────────────────────────── */
@@ -498,16 +498,26 @@
   <h2>Distributions and Accuracy</h2>
   <div class="dist-row ">
     <div class="dist-panel">
-      <div class="dist-title">Hand score distribution</div>
-      <svg id="dist-scores" width="100%" height="200"></svg>
-      <div class="dist-legend">
+      <!-- Hand vs Random -->
+      <div class="dist-title">Hand score vs random dealing</div>
+      <svg id="dist-hand" width="100%"></svg>
+      <div class="dist-legend" style="margin-bottom:.8rem;">
         <span><span class="dist-legend-swatch" style="background:#c8973a;opacity:.75"></span>Random dealing</span>
         <span><span class="dist-legend-swatch" style="background:#e5dad9"></span>Hand points</span>
-        <span><span class="dist-legend-swatch" style="background:#7b9bb5"></span>Crib points</span>
-        <span><span class="dist-legend-swatch" style="background:#2e2a22;border:1px solid #4a4030;"></span>Impossible score</span>
+        <span><span class="dist-legend-swatch" style="background:#2e2a22;border:1px solid #4a4030;"></span>Impossible</span>
       </div>
+
+      <!-- Crib vs Random -->
+      <div class="dist-title">Crib score vs random dealing</div>
+      <svg id="dist-crib" width="100%"></svg>
+      <div class="dist-legend">
+        <span><span class="dist-legend-swatch" style="background:#c8973a;opacity:.75"></span>Random dealing</span>
+        <span><span class="dist-legend-swatch" style="background:#7b9bb5"></span>Crib points</span>
+        <span><span class="dist-legend-swatch" style="background:#2e2a22;border:1px solid #4a4030;"></span>Impossible</span>
+      </div>
+
       <div class="dist-caption">
-        <p>The gold bars show the theoretical probability of each score across all 12,994,800 possible cribbage hands, assuming random dealing with no strategy (<a href="https://en.wikipedia.org/wiki/Cribbage_statistics" target="_blank" style="color:var(--gold);text-decoration:none;">Wikipedia: Cribbage statistics</a>). The off-white bars show our recorded <strong>hand points</strong> and the blue bars show our recorded <strong>crib points</strong>. Hand points skew higher than random because players <strong>strategically keep</strong> their best cards and discard weaker ones into the crib. The crib distribution is more random since both players contribute to it. Scores of 19, 25, 26, and 27 are <strong>mathematically impossible</strong> in cribbage; any hand showing those values is a guaranteed miscount.</p>
+        <p>Gold bars show the theoretical probability across all 12,994,800 possible hands with random dealing (<a href="https://en.wikipedia.org/wiki/Cribbage_statistics" target="_blank" style="color:var(--gold);text-decoration:none;">Wikipedia</a>). Hand points skew higher because players <strong>strategically keep</strong> their best cards. The crib is more evenly distributed since both players discard into it. Scores of 19, 25, 26, and 27 are <strong>mathematically impossible</strong>; any hand showing those values is a miscount.</p>
       </div>
     </div>
     <div class="panel">
@@ -1850,24 +1860,21 @@
       return { handScores, handN, cribScores, cribN };
     }
 
-    // ── Chart: score distribution ─────────────────────────────────────
-    // Gold (full width, behind): random dealing baseline
-    // Off-white (left half):     recorded hand points
-    // Blue-grey (right half):    recorded crib points
-    function renderDistChart(handS, handN, cribS, cribN) {
-      const el  = document.getElementById('dist-scores');
+    // ── Chart: score distribution (shared renderer) ───────────────────
+    // elId: SVG element id | realS: score→count | realN: total | realColor: bar colour
+    function renderDistChart(elId, realS, realN, realColor) {
+      const el  = document.getElementById(elId);
       const W   = el.parentElement.clientWidth || 700;
-      const H   = 200;
-      const ML=34, MR=10, MT=12, MB=22;
+      const H   = 160;
+      const ML=34, MR=10, MT=10, MB=20;
       const iW  = W-ML-MR, iH = H-MT-MB;
       el.setAttribute('viewBox', `0 0 ${W} ${H}`);
       el.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
       const scores   = d3.range(0, 30);
       const theorPct = scores.map(s => WIKI_COUNTS[s] / WIKI_TOTAL * 100);
-      const handPct  = scores.map(s => handN ? (handS[s]||0) / handN * 100 : 0);
-      const cribPct  = scores.map(s => cribN ? (cribS[s]||0) / cribN * 100 : 0);
-      const maxPct   = Math.max(d3.max(theorPct), d3.max(handPct), d3.max(cribPct), 1);
+      const realPct  = scores.map(s => realN ? (realS[s]||0) / realN * 100 : 0);
+      const maxPct   = Math.max(d3.max(theorPct), d3.max(realPct), 1);
 
       const x = d3.scaleBand().domain(scores).range([0, iW]).padding(0.08);
       const y = d3.scaleLinear().domain([0, maxPct * 1.12]).range([iH, 0]);
@@ -1878,14 +1885,14 @@
 
       // Y axis + gridlines
       g.append('g')
-        .call(d3.axisLeft(y).ticks(5).tickSize(-iW).tickFormat(d => d.toFixed(0)+'%'))
+        .call(d3.axisLeft(y).ticks(4).tickSize(-iW).tickFormat(d => d.toFixed(0)+'%'))
         .call(ax => {
           ax.select('.domain').remove();
           ax.selectAll('.tick line').attr('stroke','#2e2a22').attr('stroke-dasharray','2,2');
           ax.selectAll('text').attr('fill','#7a7060').attr('font-size',6.5).attr('font-family',FONT);
         });
 
-      // Impossible score background shading
+      // Impossible score backgrounds
       scores.forEach(s => {
         if (!IMPOSSIBLE.has(s)) return;
         g.append('rect')
@@ -1893,13 +1900,13 @@
           .attr('width', x.bandwidth()).attr('height', iH)
           .attr('fill', '#2d2b24').attr('rx', 1);
         g.append('text')
-          .attr('x', x(s) + x.bandwidth()/2).attr('y', 5)
+          .attr('x', x(s) + x.bandwidth()/2).attr('y', 4)
           .attr('text-anchor','middle').attr('dominant-baseline','hanging')
-          .attr('fill','#4a4030').attr('font-size',6).attr('font-family',FONT)
+          .attr('fill','#4a4030').attr('font-size',5.5).attr('font-family',FONT)
           .text('✕');
       });
 
-      // Gold baseline (full column width, behind everything)
+      // Gold baseline (full column width, behind)
       scores.forEach((s, i) => {
         if (IMPOSSIBLE.has(s) || !theorPct[i]) return;
         g.append('rect')
@@ -1908,33 +1915,18 @@
           .attr('fill','#c8973a').attr('opacity', 0.5).attr('rx', 1);
       });
 
-      // Each column is split in half: hand on the left, crib on the right
-      const hw = x.bandwidth() * 0.36;
-      const handX = s => x(s) + x.bandwidth() * 0.04;
-      const cribX = s => x(s) + x.bandwidth() * 0.57;
-
-      // Hand bars (off-white, left half)
-      if (handN > 0) {
+      // Real series (narrower, centred over the gold bar)
+      if (realN > 0) {
+        const rw = x.bandwidth() * 0.55;
+        const rx = s => x(s) + (x.bandwidth() - rw) / 2;
         scores.forEach((s, i) => {
-          const pct = handPct[i];
+          const pct = realPct[i];
           if (!pct) return;
-          const fill = IMPOSSIBLE.has(s) ? '#ff4444' : '#e5dad9';
+          const fill = IMPOSSIBLE.has(s) ? '#ff4444' : realColor;
           g.append('rect')
-            .attr('x', handX(s)).attr('y', y(pct))
-            .attr('width', hw).attr('height', Math.max(iH - y(pct), 0))
-            .attr('fill', fill).attr('opacity', IMPOSSIBLE.has(s) ? 1 : 0.9).attr('rx', 1);
-        });
-      }
-
-      // Crib bars (blue-grey, right half)
-      if (cribN > 0) {
-        scores.forEach((s, i) => {
-          const pct = cribPct[i];
-          if (!pct) return;
-          g.append('rect')
-            .attr('x', cribX(s)).attr('y', y(pct))
-            .attr('width', hw).attr('height', Math.max(iH - y(pct), 0))
-            .attr('fill', '#7b9bb5').attr('opacity', 0.88).attr('rx', 1);
+            .attr('x', rx(s)).attr('y', y(pct))
+            .attr('width', rw).attr('height', Math.max(iH - y(pct), 0))
+            .attr('fill', fill).attr('opacity', IMPOSSIBLE.has(s) ? 1 : 0.88).attr('rx', 1);
         });
       }
 
@@ -2133,7 +2125,8 @@
       renderBarAcc(allGames);
 
       const { handScores, handN, cribScores, cribN } = buildDistData(allGames);
-      renderDistChart(handScores, handN, cribScores, cribN);
+      renderDistChart('dist-hand', handScores, handN, '#e5dad9');
+      renderDistChart('dist-crib', cribScores, cribN, '#7b9bb5');
 
       const first = games[0];
       if (first) {
