@@ -43,17 +43,18 @@
     nav {
       display: flex;
       align-items: center;
-      gap: 2rem;
-      padding: .6rem 1.8rem;
+      gap: 1.5rem;
+      padding: .6rem var(--page);
       background: var(--bg2);
       border-bottom: 1px solid var(--border);
-      margin-bottom: 1.5rem;
+      margin-bottom: var(--gap);
+      flex-wrap: wrap;
     }
 
     .nav-brand {
       font-family: 'Playfair Display', serif;
       color: var(--gold);
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       font-weight: 600;
       letter-spacing: .04em;
       text-decoration: none;
@@ -62,8 +63,8 @@
     nav a {
       color: var(--muted);
       text-decoration: none;
-      font-size: .85rem;
-      letter-spacing: .08em;
+      font-size: .78rem;
+      letter-spacing: .07em;
       text-transform: uppercase;
       transition: color .15s;
     }
@@ -71,27 +72,29 @@
     nav a:hover  { color: var(--text); }
     nav a.active { color: var(--gold); }
 
-    /* ── Page header ───────────────────────────────────────────── */
+    /* ── Page header ───────────────────────────────────────────────────── */
     .page-header {
-      padding: 0 1.8rem;
-      margin-bottom: 1.5rem;
+      padding: 0 var(--page);
+      margin-bottom: var(--gap);
     }
 
     h1 {
       font-family: 'Playfair Display', serif;
-      font-size: 2rem;
+      font-size: 1.8rem;
       font-weight: 600;
       color: var(--gold);
       letter-spacing: .04em;
-      margin-bottom: .2rem;
+      margin-bottom: .15rem;
     }
 
     .subtitle {
-      font-size: .85rem;
+      font-size: .78rem;
       color: var(--muted);
-      letter-spacing: .1em;
+      letter-spacing: .08em;
       text-transform: uppercase;
+      line-height: 1.6;
     }
+
 
     /* ── Section title ─────────────────────────────────────────── */
     .pt {
@@ -364,6 +367,7 @@
       display:flex;
       flex-wrap: wrap;
       align-items: center;
+      justify-content: center;
       gap: 4px;
       margin-bottom: 6px;
     }

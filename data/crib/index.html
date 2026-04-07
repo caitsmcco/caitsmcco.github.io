@@ -83,7 +83,7 @@
       margin-bottom: .15rem;
     }
 
-    .subtitle {
+    h2 {
       font-size: .78rem;
       color: var(--muted);
       letter-spacing: .08em;
@@ -422,13 +422,17 @@
   <nav>
     <a class="nav-brand">Cribbage</a>
     <a href="..\crib" class="active">Dashboard</a>
-    <a href="about/">About Cribbage</a>
+    <a href="about/">Scoring Guide</a>
     <a href="collect/" >Collect Data</a>
   </nav>
 
   <div class="page-header">
     <h1>A Semesters Worth of Cribbage</h1>
-    <div class="subtitle">Cribbage is a game of pairs, runs, sets of fifteens, mental strategy and luck.<br>When you're playing there is plenty to be curious about…</div>
+    <p style="font-size:.82rem;color:var(--muted);line-height:1.7;max-width:90%;">
+      Cribbage is a game of pairs, runs, sets of fifteens, mental strategy and luck, if you need a refresher check out the <a href="about/">Scoring Guide</a>.
+      <br>While you are playing there is plenty of room to blunder, either from a miscount ⚠ or a misplay. 
+      <br>This dashboard serves as a place to dive back into previous games and analyze each and every hand, and see the outcomes averages and distributions of some real cribbage games.
+    </p>
   </div>
 
   <div class="page-body">
@@ -439,7 +443,7 @@
     <!-- LEFT: game heatmap -->
     <div class="panel" name="heatmap">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;">
-        <div class="pt" style="margin-bottom:0;">Games</div>
+        <div class="pt" style="margin-bottom:0;">Games Overview</div>
         <div class="sort-bar" id="sort-bar"></div>
       </div>
       <div class="filter-bar" id="filter-bar" style="margin-bottom:.5rem;"></div>
@@ -474,6 +478,7 @@
   </div>
 
   <!-- ── Bottom row: trend charts ──────────────────────────────────────── -->
+  <h2>Apparent Player Trends</h2>
   <div class="bottom-row">
     <div class="panel">
       <div class="pt">Win / loss by player</div>
@@ -490,22 +495,25 @@
   </div>
 
   <!-- ── Bottom panel row: dist (wide) + accuracy (narrow) ────────────── -->
-  <div class="dist-panel">
-    <div class="dist-title">Hand score distribution</div>
-    <svg id="dist-scores" width="100%" height="200"></svg>
-    <div class="dist-legend">
-      <span><span class="dist-legend-swatch" style="background:#c8973a;opacity:.75"></span>Random Dealing</span>
-      <span><span class="dist-legend-swatch" style="background:#e5dad9"></span>Our games</span>
-      <span><span class="dist-legend-swatch" style="background:#2e2a22;border:1px solid #4a4030;"></span>Impossible score</span>
+  <h2>Distributions and Accuracy</h2>
+  <div class="dist-row ">
+    <div class="dist-panel">
+      <div class="dist-title">Hand score distribution</div>
+      <svg id="dist-scores" width="100%" height="200"></svg>
+      <div class="dist-legend">
+        <span><span class="dist-legend-swatch" style="background:#c8973a;opacity:.75"></span>Random Dealing</span>
+        <span><span class="dist-legend-swatch" style="background:#e5dad9"></span>Our games</span>
+        <span><span class="dist-legend-swatch" style="background:#2e2a22;border:1px solid #4a4030;"></span>Impossible score</span>
+      </div>
+      <div class="dist-caption">
+        <p>The gold bars show the theoretical probability of each hand score across all 12,994,800 possible cribbage hands, based on random dealing with no strategy (<a href="https://en.wikipedia.org/wiki/Cribbage_statistics" target="_blank" style="color:var(--gold);text-decoration:none;">Wikipedia: Cribbage statistics</a>). The red bars show how often each score actually appeared in our games. Differences reflect two things: <strong>strategic discarding</strong> — players actively choose which cards to keep, pushing scores away from the random baseline — and <strong>miscounts</strong>, where a hand was recorded with the wrong value. Scores of 19, 25, 26, and 27 are <strong>mathematically impossible</strong> in cribbage; any hand showing those values is a guaranteed miscount.</p>
+      </div>
     </div>
-    <div class="dist-caption">
-      <p>The gold bars show the theoretical probability of each hand score across all 12,994,800 possible cribbage hands, based on random dealing with no strategy (<a href="https://en.wikipedia.org/wiki/Cribbage_statistics" target="_blank" style="color:var(--gold);text-decoration:none;">Wikipedia: Cribbage statistics</a>). The red bars show how often each score actually appeared in our games. Differences reflect two things: <strong>strategic discarding</strong> — players actively choose which cards to keep, pushing scores away from the random baseline — and <strong>miscounts</strong>, where a hand was recorded with the wrong value. Scores of 19, 25, 26, and 27 are <strong>mathematically impossible</strong> in cribbage; any hand showing those values is a guaranteed miscount.</p>
+    <div class="panel">
+      <div class="pt">Hand counting accuracy</div>
+      <svg id="bar-acc"></svg>
+      <div id="bar-acc-note" style="font-size:.6rem;color:var(--muted);margin-top:.2rem;line-height:1.5;"></div>
     </div>
-  </div>
-  <div class="panel">
-    <div class="pt">Hand counting accuracy</div>
-    <svg id="bar-acc"></svg>
-    <div id="bar-acc-note" style="font-size:.6rem;color:var(--muted);margin-top:.2rem;line-height:1.5;"></div>
   </div>
 
   <div class="section-heading">References</div>

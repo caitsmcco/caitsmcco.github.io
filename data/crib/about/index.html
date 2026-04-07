@@ -81,7 +81,7 @@
       letter-spacing: .04em;
       margin-bottom: .15rem;
     }
-    
+
     .subtitle { font-size: .85rem; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
 
     .content { padding: 0 1.8rem; display: flex; flex-direction: column; gap: 1rem; }
@@ -425,20 +425,6 @@
     </div>
     
   </div><!-- /rules-grid combos -->
-
-  <!-- ── Distribution chart ────────────────────────────────────── -->
-  <div class="dist-panel">
-    <div class="dist-title">Hand score distribution</div>
-    <svg id="dist-scores" width="100%" height="200"></svg>
-    <div class="dist-legend">
-      <span><span class="dist-legend-swatch" style="background:#c8973a;opacity:.75"></span>All possible hands</span>
-      <span><span class="dist-legend-swatch" style="background:#e85d4a"></span>Our games</span>
-      <span><span class="dist-legend-swatch" style="background:#2e2a22;border:1px solid #4a4030;"></span>Impossible score</span>
-    </div>
-    <div class="dist-caption">
-      <p>The gold bars show the theoretical probability of each hand score across all 12,994,800 possible cribbage hands, based on random dealing with no strategy (<a href="https://en.wikipedia.org/wiki/Cribbage_statistics" target="_blank" style="color:var(--gold);text-decoration:none;">Wikipedia: Cribbage statistics</a>). The red bars show how often each score actually appeared in our games. Differences reflect two things: <strong>strategic discarding</strong> — players actively choose which cards to keep, pushing scores away from the random baseline — and <strong>miscounts</strong>, where a hand was recorded with the wrong value. Scores of 19, 25, 26, and 27 are <strong>mathematically impossible</strong> in cribbage; any hand showing those values is a guaranteed miscount.</p>
-    </div>
-  </div>
   
   <!-- ── References ───────────────────────────────────────────── -->
   <div class="section-heading">References</div>
@@ -569,139 +555,6 @@
       }, 5000);
     }
     EXAMPLES.forEach(startRotator);
-
-
-    // ═══════════════════════════════════════════════════════════════
-    //  HAND SCORE DISTRIBUTION
-    //  Theoretical counts from Wikipedia: Cribbage statistics
-    //  (12,994,800 total possible hands, random discard assumption)
-    //  Overlaid with recorded handPoints from edited.csv
-    // ═══════════════════════════════════════════════════════════════
-
-    // Exact counts per score 0–29 from Wikipedia
-    const WIKI_COUNTS = {
-       0:1009008,  1:99792,   2:2813796, 3:505008,  4:2855676,
-       5:697508,   6:1800268, 7:751324,  8:1137236, 9:361224,
-      10:388740,  11:51680,  12:317340, 13:19656,  14:90100,
-      15:9168,    16:58248,  17:11196,  18:2708,   19:0,
-      20:8068,    21:2496,   22:444,    23:356,    24:3680,
-      25:0,       26:0,      27:0,      28:76,     29:4,
-    };
-    const WIKI_TOTAL   = 12994800;
-    // Scores impossible in standard cribbage (0 hands in the table)
-    const IMPOSSIBLE   = new Set([19, 25, 26, 27]);
-
-    // ── CSV card parser ──────────────────────────────────────────────
-    function parseCsvCard(s) {
-      if (!s) return null;
-      s = s.trim();
-      if (s === '--' || s === 'XX' || s === '') return null;
-      const suit = s.slice(-1).toUpperCase();
-      if (!['H','D','C','S'].includes(suit)) return null;
-      const rank = s.slice(0,-1).toUpperCase();
-      if (!['A','2','3','4','5','6','7','8','9','10','J','Q','K'].includes(rank)) return null;
-      return { r: rank, s: suit };
-    }
-
-    // ── Load CSV — use recorded handPoints directly ──────────────────
-    d3.csv('../edited.csv').then(rows => {
-      const realScores = {};
-      let   realN      = 0;
-      rows.forEach(row => {
-        const hp = row.handPoints !== undefined ? +row.handPoints : NaN;
-        if (isNaN(hp) || row.handPoints === '' || row.handPoints === undefined) return;
-        const score = Math.round(hp);
-        if (score < 0 || score > 29) return;
-        realScores[score] = (realScores[score]||0) + 1;
-        realN++;
-      });
-      drawScoreChart(realScores, realN);
-    }).catch(() => {
-      drawScoreChart({}, 0);
-    });
-
-    // ── Chart: score distribution ────────────────────────────────────
-    function drawScoreChart(realS, realN) {
-      const el  = document.getElementById('dist-scores');
-      const W   = el.parentElement.clientWidth || 700;
-      const H   = 200;
-      const ML=34, MR=10, MT=12, MB=22;
-      const iW  = W-ML-MR, iH = H-MT-MB;
-      el.setAttribute('viewBox', `0 0 ${W} ${H}`);
-      el.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-
-      const scores    = d3.range(0, 30);
-      const theorPct  = scores.map(s => WIKI_COUNTS[s] / WIKI_TOTAL * 100);
-      const realPct   = scores.map(s => realN ? (realS[s]||0) / realN * 100 : 0);
-      const maxPct    = Math.max(d3.max(theorPct), d3.max(realPct), 1);
-
-      const x = d3.scaleBand().domain(scores).range([0, iW]).padding(0.08);
-      const y = d3.scaleLinear().domain([0, maxPct * 1.12]).range([iH, 0]);
-
-      const svg = d3.select(el);
-      svg.selectAll('*').remove();
-      const g = svg.append('g').attr('transform', `translate(${ML},${MT})`);
-
-      // Y axis + gridlines
-      g.append('g')
-        .call(d3.axisLeft(y).ticks(5).tickSize(-iW).tickFormat(d => d.toFixed(0)+'%'))
-        .call(ax => {
-          ax.select('.domain').remove();
-          ax.selectAll('.tick line').attr('stroke','#2e2a22').attr('stroke-dasharray','2,2');
-          ax.selectAll('text').attr('fill','#7a7060').attr('font-size',6.5).attr('font-family',FONT);
-        });
-
-      // Impossible score background shading — subtle dark fill
-      scores.forEach(s => {
-        if (!IMPOSSIBLE.has(s)) return;
-        g.append('rect')
-          .attr('x', x(s)).attr('y', 0)
-          .attr('width', x.bandwidth()).attr('height', iH)
-          .attr('fill', '#1a1810').attr('rx', 1);
-        // Small "✕" label at the top of the impossible column
-        g.append('text')
-          .attr('x', x(s) + x.bandwidth()/2).attr('y', 5)
-          .attr('text-anchor','middle').attr('dominant-baseline','hanging')
-          .attr('fill','#4a4030').attr('font-size',6).attr('font-family',FONT)
-          .text('✕');
-      });
-
-      // Theoretical bars (gold)
-      scores.forEach((s, i) => {
-        if (IMPOSSIBLE.has(s)) return;
-        const pct = theorPct[i];
-        if (!pct) return;
-        g.append('rect')
-          .attr('x', x(s)).attr('y', y(pct))
-          .attr('width', x.bandwidth()).attr('height', Math.max(iH - y(pct), 0))
-          .attr('fill','#c8973a').attr('opacity', 0.6).attr('rx', 1);
-      });
-
-      // Real bars (red, narrower, centred) — drawn on top
-      if (realN > 0) {
-        const rw = x.bandwidth() * 0.5;
-        scores.forEach((s, i) => {
-          const pct = realPct[i];
-          if (!pct) return;
-          // Impossible-score real bar gets a warning red to make miscounts obvious
-          const fill = IMPOSSIBLE.has(s) ? '#ff4444' : '#e85d4a';
-          g.append('rect')
-            .attr('x', x(s) + x.bandwidth()*0.25).attr('y', y(pct))
-            .attr('width', rw).attr('height', Math.max(iH - y(pct), 0))
-            .attr('fill', fill).attr('opacity', IMPOSSIBLE.has(s) ? 1 : 0.85).attr('rx', 1);
-        });
-      }
-
-      // X axis — every integer label, rotated for readability
-      g.append('g').attr('transform', `translate(0,${iH})`)
-        .call(d3.axisBottom(x).tickValues(d3.range(0,30)).tickSize(0))
-        .call(ax => {
-          ax.select('.domain').remove();
-          ax.selectAll('text')
-            .attr('fill', d => IMPOSSIBLE.has(d) ? '#4a4030' : '#7a7060')
-            .attr('font-size', 6).attr('font-family', FONT);
-        });
-    }
 
   </script>
 
