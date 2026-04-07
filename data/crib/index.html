@@ -1745,7 +1745,7 @@
 
           // Strict centre-outward slots: 0, +step, -step, +2step, -2step …
           // This guarantees even spread — no shuffling here
-          const step = DOT_R * 1.5;
+          const step = DOT_R * 1.1;
           const slots = [0];
           for (let s = step; s <= halfMax; s += step) slots.push(s, -s);
 
