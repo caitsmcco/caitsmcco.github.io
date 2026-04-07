@@ -91,6 +91,43 @@
       line-height: 1.6;
     }
 
+    
+    .section-heading {
+      font-size: .7rem; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--muted); margin: 1rem 0 .5rem;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-heading::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ── Distribution chart ─────────────────────────────────────── */
+    .dist-panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .9rem 1.1rem;
+    }
+    .dist-title {
+      font-size: .7rem; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: .5rem;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .dist-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .dist-legend {
+      display: flex; gap: 1.2rem; margin-top: .5rem;
+      font-size: .65rem; color: var(--muted); align-items: center;
+    }
+    .dist-legend span { display: flex; align-items: center; gap: 4px; }
+    .dist-legend-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+    .dist-caption {
+      margin-top: .7rem;
+      font-size: .72rem;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 860px;
+    }
+    .dist-caption strong { color: var(--text); font-weight: 530}
+    .dist-caption p { margin: 0; }
+
     /* ── Page chrome — wraps all content below the header ─────────────── */
     .page-body {
       padding: 0 var(--page);
@@ -158,6 +195,7 @@
     .filter-bar {
       display: flex;
       align-items: center;
+      justify-content: right;
       gap: .3rem;
       flex-wrap: wrap;
     }
@@ -197,7 +235,7 @@
 
     /* ── Score bar ─────────────────────────────────────────────────────── */
     .score-bar { font-size: .85rem; }
-    .si { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .si { padding-top:1rem; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
     .sd { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
     .sn { color: var(--muted); min-width: 52px; }
     .sv { font-weight: 500; }
@@ -452,18 +490,37 @@
   </div>
 
   <!-- ── Bottom panel row: dist (wide) + accuracy (narrow) ────────────── -->
-  <div class="dist-row">
-    <div class="panel" id="dist-panel">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">
-        <div class="pt" style="margin-bottom:0;">Hand score distribution</div>
-        <div id="dist-legend" style="display:flex;gap:.9rem;font-size:.6rem;color:var(--muted);align-items:center;"></div>
-      </div>
-      <svg id="dist-svg" width="100%"></svg>
+  <div class="dist-panel">
+    <div class="dist-title">Hand score distribution</div>
+    <svg id="dist-scores" width="100%" height="200"></svg>
+    <div class="dist-legend">
+      <span><span class="dist-legend-swatch" style="background:#c8973a;opacity:.75"></span>Random Dealing</span>
+      <span><span class="dist-legend-swatch" style="background:#e5dad9"></span>Our games</span>
+      <span><span class="dist-legend-swatch" style="background:#2e2a22;border:1px solid #4a4030;"></span>Impossible score</span>
     </div>
-    <div class="panel">
-      <div class="pt">Hand counting accuracy</div>
-      <svg id="bar-acc"></svg>
-      <div id="bar-acc-note" style="font-size:.6rem;color:var(--muted);margin-top:.2rem;line-height:1.5;"></div>
+    <div class="dist-caption">
+      <p>The gold bars show the theoretical probability of each hand score across all 12,994,800 possible cribbage hands, based on random dealing with no strategy (<a href="https://en.wikipedia.org/wiki/Cribbage_statistics" target="_blank" style="color:var(--gold);text-decoration:none;">Wikipedia: Cribbage statistics</a>). The red bars show how often each score actually appeared in our games. Differences reflect two things: <strong>strategic discarding</strong> — players actively choose which cards to keep, pushing scores away from the random baseline — and <strong>miscounts</strong>, where a hand was recorded with the wrong value. Scores of 19, 25, 26, and 27 are <strong>mathematically impossible</strong> in cribbage; any hand showing those values is a guaranteed miscount.</p>
+    </div>
+  </div>
+
+  <div class="section-heading">References</div>
+  <div style="font-size:.72rem;color:var(--muted);line-height:2;padding-bottom:.5rem;">
+    <div>
+      <span style="color:var(--muted);margin-right:.5rem;">1.</span>
+      Scoring rules based on:
+      <a href="https://rubl.com/rules/cribbage-scoring-chart.html" target="_blank"
+           style="color:var(--gold);text-decoration:none;">
+           rubl.com/rules/cribbage-scoring-chart.html
+        </a>
+      </div>
+      <div>
+        <span style="color:var(--muted);margin-right:.5rem;">2.</span>
+        Hand score distribution data from:
+        <a href="https://en.wikipedia.org/wiki/Cribbage_statistics" target="_blank"
+        style="color:var(--gold);text-decoration:none;">
+        en.wikipedia.org/wiki/Cribbage_statistics
+      </a>
+      — Lumetta, S. S. (2007). "Amusing Cribbage Facts."
     </div>
   </div>
 
@@ -1694,18 +1751,14 @@
     }
 
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  MISCOUNT EXPLORER — full list of miscounted hands below the dashboard
-    // ═══════════════════════════════════════════════════════════════════════
-
-    // ═══════════════════════════════════════════════════════════════════════
+     // ═══════════════════════════════════════════════════════════════
     //  HAND SCORE DISTRIBUTION
-    //  Gold bars = all 12,994,800 possible hands (Wikipedia exact counts).
-    //  Stacked coloured bars = our recorded handPoints, split by player.
-    //  Impossible scores (19, 25, 26, 27) shown with dim background.
-    // ═══════════════════════════════════════════════════════════════════════
+    //  Theoretical counts from Wikipedia: Cribbage statistics
+    //  (12,994,800 total possible hands, random discard assumption)
+    //  Overlaid with recorded handPoints from edited.csv
+    // ═══════════════════════════════════════════════════════════════
 
-    // Exact counts from Wikipedia: Cribbage statistics
+    // Exact counts per score 0–29 from Wikipedia
     const WIKI_COUNTS = {
        0:1009008,  1:99792,   2:2813796, 3:505008,  4:2855676,
        5:697508,   6:1800268, 7:751324,  8:1137236, 9:361224,
@@ -1714,148 +1767,120 @@
       20:8068,    21:2496,   22:444,    23:356,    24:3680,
       25:0,       26:0,      27:0,      28:76,     29:4,
     };
-    const WIKI_TOTAL = 12994800;
-    const IMPOSSIBLE = new Set([19, 25, 26, 27]);
+    const WIKI_TOTAL   = 12994800;
+    // Scores impossible in standard cribbage (0 hands in the table)
+    const IMPOSSIBLE   = new Set([19, 25, 26, 27]);
 
-    function renderDistChart(games) {
-      const svgEl  = document.getElementById('dist-svg');
-      const legEl  = document.getElementById('dist-legend');
-      if (!svgEl) return;
+    // ── CSV card parser ──────────────────────────────────────────────
+    function parseCsvCard(s) {
+      if (!s) return null;
+      s = s.trim();
+      if (s === '--' || s === 'XX' || s === '') return null;
+      const suit = s.slice(-1).toUpperCase();
+      if (!['H','D','C','S'].includes(suit)) return null;
+      const rank = s.slice(0,-1).toUpperCase();
+      if (!['A','2','3','4','5','6','7','8','9','10','J','Q','K'].includes(rank)) return null;
+      return { r: rank, s: suit };
+    }
 
-      // ── Tally handPoints per player from _raw rows ─────────────────
-      // playerScores[playerName][score] = count
-      const playerScores = {};
-      const playerOrder  = [];  // insertion order = display order
-
-      games.forEach(game => {
-        if (!game._raw) return;
-        game._raw.forEach(row => {
-          const name = row.Name;
-          const hp   = row.handPoints !== undefined ? +row.handPoints : NaN;
-          if (isNaN(hp) || row.handPoints === '' || row.handPoints === undefined) return;
-          const score = Math.round(hp);
-          if (score < 0 || score > 29) return;
-          if (!playerScores[name]) {
-            playerScores[name] = {};
-            playerOrder.push(name);
-          }
-          playerScores[name][score] = (playerScores[name][score] || 0) + 1;
-        });
+    // ── Load CSV — use recorded handPoints directly ──────────────────
+    d3.csv('../edited.csv').then(rows => {
+      const realScores = {};
+      let   realN      = 0;
+      rows.forEach(row => {
+        const hp = row.handPoints !== undefined ? +row.handPoints : NaN;
+        if (isNaN(hp) || row.handPoints === '' || row.handPoints === undefined) return;
+        const score = Math.round(hp);
+        if (score < 0 || score > 29) return;
+        realScores[score] = (realScores[score]||0) + 1;
+        realN++;
       });
+      drawScoreChart(realScores, realN);
+    }).catch(() => {
+      drawScoreChart({}, 0);
+    });
 
-      const players = playerOrder;
-      const totalReal = players.reduce((s, p) =>
-        s + Object.values(playerScores[p]).reduce((a, b) => a + b, 0), 0);
+    // ── Chart: score distribution ────────────────────────────────────
+    function drawScoreChart(realS, realN) {
+      const el  = document.getElementById('dist-scores');
+      const W   = el.parentElement.clientWidth || 700;
+      const H   = 200;
+      const ML=34, MR=10, MT=12, MB=22;
+      const iW  = W-ML-MR, iH = H-MT-MB;
+      el.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      el.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
-      // ── Layout ──────────────────────────────────────────────────────
-      const W   = svgEl.parentElement.clientWidth || 900;
-      const H   = 190;
-      const ML  = 34, MR = 12, MT = 14, MB = 22;
-      const iW  = W - ML - MR, iH = H - MT - MB;
+      const scores    = d3.range(0, 30);
+      const theorPct  = scores.map(s => WIKI_COUNTS[s] / WIKI_TOTAL * 100);
+      const realPct   = scores.map(s => realN ? (realS[s]||0) / realN * 100 : 0);
+      const maxPct    = Math.max(d3.max(theorPct), d3.max(realPct), 1);
 
-      svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
-      svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      const x = d3.scaleBand().domain(scores).range([0, iW]).padding(0.08);
+      const y = d3.scaleLinear().domain([0, maxPct * 1.12]).range([iH, 0]);
 
-      const scores   = d3.range(0, 30);
-      const theorPct = scores.map(s => WIKI_COUNTS[s] / WIKI_TOTAL * 100);
-
-      // Max y = whichever series is taller
-      const realPct  = scores.map(s =>
-        totalReal ? players.reduce((sum, p) => sum + (playerScores[p]?.[s] || 0), 0) / totalReal * 100 : 0
-      );
-      const maxPct = Math.max(d3.max(theorPct), d3.max(realPct), 1);
-
-      const x = d3.scaleBand().domain(scores).range([0, iW]).padding(0.1);
-      const y = d3.scaleLinear().domain([0, maxPct * 1.1]).range([iH, 0]);
-
-      const svg = d3.select(svgEl);
+      const svg = d3.select(el);
       svg.selectAll('*').remove();
       const g = svg.append('g').attr('transform', `translate(${ML},${MT})`);
 
-      // Y axis
+      // Y axis + gridlines
       g.append('g')
-        .call(d3.axisLeft(y).ticks(5).tickSize(-iW).tickFormat(d => d.toFixed(0) + '%'))
+        .call(d3.axisLeft(y).ticks(5).tickSize(-iW).tickFormat(d => d.toFixed(0)+'%'))
         .call(ax => {
           ax.select('.domain').remove();
-          ax.selectAll('.tick line').attr('stroke', '#2e2a22').attr('stroke-dasharray', '2,2');
-          ax.selectAll('text').attr('fill', '#7a7060').attr('font-size', 7).attr('font-family', FONT);
+          ax.selectAll('.tick line').attr('stroke','#2e2a22').attr('stroke-dasharray','2,2');
+          ax.selectAll('text').attr('fill','#7a7060').attr('font-size',6.5).attr('font-family',FONT);
         });
 
-      // Impossible score backgrounds
+      // Impossible score background shading — subtle dark fill
       scores.forEach(s => {
         if (!IMPOSSIBLE.has(s)) return;
         g.append('rect')
           .attr('x', x(s)).attr('y', 0)
           .attr('width', x.bandwidth()).attr('height', iH)
-          .attr('fill', '#1c1a14').attr('rx', 1);
+          .attr('fill', '#1a1810').attr('rx', 1);
+        // Small "✕" label at the top of the impossible column
         g.append('text')
-          .attr('x', x(s) + x.bandwidth() / 2).attr('y', 4)
-          .attr('text-anchor', 'middle').attr('dominant-baseline', 'hanging')
-          .attr('fill', '#3a3525').attr('font-size', 5.5).attr('font-family', FONT)
+          .attr('x', x(s) + x.bandwidth()/2).attr('y', 5)
+          .attr('text-anchor','middle').attr('dominant-baseline','hanging')
+          .attr('fill','#4a4030').attr('font-size',6).attr('font-family',FONT)
           .text('✕');
       });
 
-      // Theoretical bars (light grey, behind everything)
+      // Theoretical bars (gold)
       scores.forEach((s, i) => {
-        if (IMPOSSIBLE.has(s) || !theorPct[i]) return;
+        if (IMPOSSIBLE.has(s)) return;
+        const pct = theorPct[i];
+        if (!pct) return;
         g.append('rect')
-          .attr('x', x(s)).attr('y', y(theorPct[i]))
-          .attr('width', x.bandwidth()).attr('height', Math.max(iH - y(theorPct[i]), 0))
-          .attr('fill', '#a09880').attr('opacity', 0.28).attr('rx', 1);
+          .attr('x', x(s)).attr('y', y(pct))
+          .attr('width', x.bandwidth()).attr('height', Math.max(iH - y(pct), 0))
+          .attr('fill','#c8973a').attr('opacity', 0.6).attr('rx', 1);
       });
 
-      // Stacked player bars — each player's slice stacked on top of prior
-      if (totalReal > 0) {
-        scores.forEach(s => {
-          let yOffset = iH;  // start at bottom, stack upward
-          players.forEach(player => {
-            const count = playerScores[player]?.[s] || 0;
-            if (!count) return;
-            const pct = count / totalReal * 100;
-            const bh  = Math.max(iH - y(pct), 0);
-            const col = (PCOL[player] || PCOL.Caitlin).peg;
-            g.append('rect')
-              .attr('x', x(s) + x.bandwidth() * 0.15)
-              .attr('y', yOffset - bh)
-              .attr('width', x.bandwidth() * 0.7)
-              .attr('height', bh)
-              .attr('fill', col)
-              .attr('opacity', 0.88)
-              .attr('rx', 1);
-            yOffset -= bh;
-          });
+      // Real bars (red, narrower, centred) — drawn on top
+      if (realN > 0) {
+        const rw = x.bandwidth() * 0.5;
+        scores.forEach((s, i) => {
+          const pct = realPct[i];
+          if (!pct) return;
+          // Impossible-score real bar gets a warning red to make miscounts obvious
+          const fill = IMPOSSIBLE.has(s) ? '#ff4444' : '#e85d4a';
+          g.append('rect')
+            .attr('x', x(s) + x.bandwidth()*0.25).attr('y', y(pct))
+            .attr('width', rw).attr('height', Math.max(iH - y(pct), 0))
+            .attr('fill', fill).attr('opacity', IMPOSSIBLE.has(s) ? 1 : 0.85).attr('rx', 1);
         });
       }
 
-      // X axis — label every integer, dim impossible ones
+      // X axis — every integer label, rotated for readability
       g.append('g').attr('transform', `translate(0,${iH})`)
-        .call(d3.axisBottom(x).tickValues(scores).tickSize(0))
+        .call(d3.axisBottom(x).tickValues(d3.range(0,30)).tickSize(0))
         .call(ax => {
           ax.select('.domain').remove();
           ax.selectAll('text')
-            .attr('fill', d => IMPOSSIBLE.has(d) ? '#3a3525' : '#7a7060')
+            .attr('fill', d => IMPOSSIBLE.has(d) ? '#4a4030' : '#7a7060')
             .attr('font-size', 6).attr('font-family', FONT);
         });
-
-      // ── Legend ──────────────────────────────────────────────────────
-      legEl.innerHTML = '';
-      // Theoretical swatch
-      const mkSwatch = (col, opacity, label) => {
-        const sp = document.createElement('span');
-        sp.style.cssText = 'display:flex;align-items:center;gap:4px;';
-        const sw = document.createElement('span');
-        sw.style.cssText = `width:10px;height:10px;border-radius:2px;background:${col};opacity:${opacity};flex-shrink:0;display:inline-block;`;
-        sp.appendChild(sw);
-        sp.appendChild(document.createTextNode(label));
-        legEl.appendChild(sp);
-      };
-      mkSwatch('#a09880', 0.5, 'All possible hands');
-      players.forEach(p => {
-        mkSwatch(playerPeg(p), 0.88, p);
-        // Also colour the label text
-        const lastSpan = legEl.lastElementChild;
-        if (lastSpan) lastSpan.style.color = playerLight(p);
-      });
     }
 
 

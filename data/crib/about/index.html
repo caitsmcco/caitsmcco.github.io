@@ -10,6 +10,7 @@
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* ── Design tokens ─────────────────────────────────────────────────── */
     :root {
       --bg:     #222f1e;
       --bg2:    #151a14;
@@ -18,33 +19,69 @@
       --text:   #e8dfc8;
       --muted:  #7a7060;
       --gold:   #c8973a;
+
+      /* Single source of truth for all spacing */
+      --gap:    1rem;       /* gap between panels */
+      --page:   1.25rem;   /* page edge padding   */
     }
 
+    /* ── Base ──────────────────────────────────────────────────────────── */
     body {
       background: var(--bg);
       color: var(--text);
       font-family: 'IBM Plex Mono', monospace;
       min-height: 100vh;
-      padding: 0 0 4rem;
+      padding-bottom: 3rem;
     }
 
+    /* ── Nav ───────────────────────────────────────────────────────────── */
     nav {
-      display: flex; align-items: center; gap: 2rem;
-      padding: .6rem 1.8rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      padding: .6rem var(--page);
       background: var(--bg2);
       border-bottom: 1px solid var(--border);
-      margin-bottom: 1.5rem;
+      margin-bottom: var(--gap);
+      flex-wrap: wrap;
     }
+
     .nav-brand {
-      font-family: 'Playfair Display', serif; color: var(--gold);
-      font-size: 1.1rem; font-weight: 600; letter-spacing: .04em; text-decoration: none;
+      font-family: 'Playfair Display', serif;
+      color: var(--gold);
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-decoration: none;
     }
-    nav a { color: var(--muted); text-decoration: none; font-size: .85rem; letter-spacing: .08em; text-transform: uppercase; transition: color .15s; }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: .78rem;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      transition: color .15s;
+    }
+
     nav a:hover  { color: var(--text); }
     nav a.active { color: var(--gold); }
 
-    .page-header { padding: 0 1.8rem; margin-bottom: 2rem; }
-    h1 { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 600; color: var(--gold); letter-spacing: .04em; margin-bottom: .2rem; }
+    /* ── Page header ───────────────────────────────────────────────────── */
+    .page-header {
+      padding: 0 var(--page);
+      margin-bottom: var(--gap);
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: .04em;
+      margin-bottom: .15rem;
+    }
+    
     .subtitle { font-size: .85rem; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
 
     .content { padding: 0 1.8rem; display: flex; flex-direction: column; gap: 1rem; }
@@ -159,7 +196,6 @@
     <a href="../">Dashboard</a>
     <a href="../about" class="active">About Cribbage</a>
     <a href="../collect/">Collect Data</a>
-    <a href="../wawa5.html">Testing New Things</a>
   </nav>
 
   <div class="page-header">
