@@ -1803,7 +1803,7 @@
 
     function renderBarMax(games) {
       clearChart('bar-max');
-      const { svg, ViW, ViH } = trendSvg('bar-max');
+      const svg = trendSvg('bar-max');
       const g = svg.append('g').attr('transform', `translate(${VML},${VMT})`);
 
       const players = allPlayers(games);
