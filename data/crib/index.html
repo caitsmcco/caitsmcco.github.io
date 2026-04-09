@@ -304,6 +304,15 @@
     .rd-cards--played { gap: 5px; }
     .rd-play-slot     { display: flex; flex-direction: column; align-items: center; gap: 1px; }
     .rd-play-num      { font-size: .48rem; color: var(--muted); line-height: 1; }
+    .rd-go-marker {
+      width: 48px; height: 70px;
+      border-radius: 3px;
+      border: 1px dashed var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .55rem; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
 
     .card--cut      { box-shadow: 0 0 0 2px var(--gold); }
     .card--cut-mini { opacity: .5; transform: scale(.82); transform-origin: bottom left; box-shadow: 0 0 0 1.5px var(--gold); }
@@ -595,7 +604,7 @@
     const PCOL = {
       Caitlin: { peg: '#c0392b', light: '#e85d4a' },
       Sarah:   { peg: '#6113a5', light: '#a855f7' },
-      Colban:  { peg: '#9b4f7a', light: '#d47ab5' },
+      Colban:  { peg: '#b223a4', light: '#e055d0' },
       James:   { peg: '#185fa5', light: '#3a8fd4' },
       Darren:  { peg: '#0e7c55', light: '#10b981' },
     };
@@ -985,8 +994,9 @@
       const c2lite = (PCOL[game.p2name] || PCOL.Colban).light;
 
       const handCards = row => row
-        ? ['p1','p2','p3','p4','p5','p6','p7'].map(f => parseCard(row[f])).filter(Boolean)
+        ? ['p1','p2','p3','p4','p5','p6','p7'].map(f => parseCard(row[f]))
         : [];
+      // hand = first 4 non-null; played = p5-p7 with nulls preserved as go markers
       const cribCards = row => row
         ? [parseCard(row.d1), parseCard(row.d2)].filter(Boolean)
         : [];
@@ -1137,14 +1147,15 @@
             </div>
             <div class="rd-section-label">hand + cut</div>
             <div class="rd-cards">
-              ${h.slice(0,4).map(c => card(c)).join('')}
+              ${h.slice(0,4).filter(Boolean).map(c => card(c)).join('')}
               ${cutCard ? card(cutCard, 'card--cut-mini') : ''}
             </div>
-            ${h.length > 4 ? `
+            ${h.slice(4).some(c => c !== null) ? `
             <div class="rd-section-label">played</div>
             <div class="rd-cards rd-cards--played">
-              ${h.slice(4).map((c,i) => `<div class="rd-play-slot">
-                <span class="rd-play-num">${i+1}</span>${card(c)}
+              ${h.slice(4).map((c, i) => `<div class="rd-play-slot">
+                <span class="rd-play-num">${i+1}</span>
+                ${c ? card(c) : `<div class="rd-go-marker" title="go">go</div>`}
               </div>`).join('')}
             </div>` : ''}
             ${verdictHtml}
