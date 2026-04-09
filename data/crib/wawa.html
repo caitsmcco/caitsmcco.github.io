@@ -313,7 +313,7 @@
     /* ── Play sequence — vertical divider between player columns ───────── */
     .rd-play-divider {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       align-self: stretch;
       padding: 0 .3rem;
     }
@@ -322,8 +322,6 @@
       flex-direction: column;
       align-items: center;
       opacity: 0.55;
-      height: 100%;
-      justify-content: center;
       width: 100%;
     }
     .rd-play-seq {
@@ -331,46 +329,36 @@
       flex-direction: column;
       align-items: center;
       gap: 3px;
-      flex: 1;
       width: 100%;
-      justify-content: space-evenly;
     }
-    /* Each card+total pair grows equally to fill the column */
     .rd-play-card-wrap {
       display: flex;
-      flex: 1;
-      width: 100%;
       justify-content: center;
-      align-items: stretch;
+      width: 100%;
     }
-    /* Compact chip — rank top-left, total bottom-right, both inside the card */
     .rd-play-card {
       width: 24px !important;
+      height: 32px !important;
       border-radius: 3px !important;
       padding: 2px !important;
       justify-content: space-between !important;
-      align-items: stretch !important;
+      align-items: center !important;
       flex-direction: column !important;
       flex-shrink: 0;
-      flex: 1;
-      min-height: 22px;
-      max-height: 42px;
-      height: auto !important;
-      position: relative;
     }
     .rd-play-rank {
       font-size: 9px;
       font-weight: 700;
       font-family: 'IBM Plex Mono', monospace;
       line-height: 1;
-      align-self: flex-start;
+      color: #1a1814 !important;
     }
     .rd-play-total {
-      font-size: 7px;
+      font-size: 8px;
       font-weight: 700;
       font-family: 'IBM Plex Mono', monospace;
       line-height: 1;
-      align-self: flex-end;
+      color: #1a1814 !important;
     }
     /* Horizontal separator between sub-rounds */
     .card-sep {
@@ -378,6 +366,8 @@
       height: 1px;
       background: var(--border);
       margin: 1px 0;
+      flex-shrink: 0;
+    }
       flex-shrink: 0;
     }
     .rd-scores { display: flex; flex-direction: column; min-height: 48px; gap: 4px; margin-top: 3px; }
@@ -1329,11 +1319,10 @@
             runTotal = 0;
           }
           runTotal += val;
-          const textColor = c.red ? '#c0392b' : '#1a1814';
           return `<div class="rd-play-card-wrap">
-            <div class="card rd-play-card" style="box-shadow:0 0 0 2px ${color};position:relative;padding:2px;">
-              <span class="rd-play-rank" style="color:${textColor}">${c.rank}</span>
-              <span class="rd-play-total" style="color:${textColor}">${runTotal}</span>
+            <div class="card rd-play-card" style="box-shadow:0 0 0 2px ${color};">
+              <span class="rd-play-total">${runTotal}</span>
+              <span class="rd-play-rank">${c.rank}</span>
             </div>
           </div>`;
         }
