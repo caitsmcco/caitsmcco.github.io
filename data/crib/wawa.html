@@ -1225,7 +1225,13 @@
         let runTotal   = 0;   // running count for current sub-round, resets after separator
 
         function cardHtml(c, color) {
-          runTotal += peg(c.rank);
+          const val = peg(c.rank);
+          // If adding this card would exceed 31, it starts a new sub-round
+          if (runTotal + val > 31 && items.length) {
+            items.push('<div class="card-sep"></div>');
+            runTotal = 0;
+          }
+          runTotal += val;
           playNum++;
           return `<div class="rd-play-card-wrap">
             <span class="rd-play-card-num">${playNum}</span>
