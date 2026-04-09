@@ -359,12 +359,12 @@
     }
     /* Flat borderless total bar — flush below the rank chip */
     .rd-play-total {
-      width: 20px;
+      width: 28px;
       z-index: 2;
       border-radius:6px;  
       text-align: center;
       font-size: 8px;
-      font-weight: 600;
+      font-weight: 500;
       font-family: 'IBM Plex Mono', monospace;
       line-height: 1;
       padding: 2px 0;
@@ -542,8 +542,8 @@
         <div class="sort-bar" id="sort-bar"></div>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;gap:.5rem;">
-        <span style="display:flex;align-items:center;gap:5px;font-size:.62rem;color:#d4a030;white-space:nowrap;flex-shrink:0;">
-          <span style="font-size:.85rem;line-height:1;">⚠</span> hand miscount
+        <span style="display:flex;align-items:center;gap:5px;font-size:.62rem;color:#ffd16e;white-space:nowrap;flex-shrink:0;">
+          ⚠ hand miscount
         </span>
         <div class="filter-bar" id="filter-bar"></div>
       </div>
@@ -2882,9 +2882,9 @@
                 .attr('dominant-baseline', 'hanging')
                 .attr('font-size', Math.min(CELL_H * 0.48, 12))
                 .attr('font-family', FONT)
-                .attr('fill', '#d4a030')
+                .attr('fill', '#ffd16e')
                 .attr('pointer-events', 'none')
-                .attr('opacity', 0.95)
+                .attr('opacity', 1)
                 .text('⚠');
             }
 
