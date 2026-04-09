@@ -194,7 +194,7 @@
     #bar-acc, #bar-crib-acc {
       display: block;
       width: 100%;
-      height: 175px;
+      height: 220px;
     }
 
     /* ── Filter + sort bar controls ────────────────────────────────────── */
@@ -1803,25 +1803,32 @@
 
     function renderBarMax(games) {
       clearChart('bar-max');
-      const svg = trendSvg('bar-max');
+      const { svg, ViW, ViH } = trendSvg('bar-max');
       const g = svg.append('g').attr('transform', `translate(${VML},${VMT})`);
 
       const players = allPlayers(games);
 
       const data = players.map(player => {
-        const rounds = games.flatMap(gm => {
+        let best = { peg:0, hand:0, crib:0, total:0, game:null, rd:null };
+        games.forEach(gm => {
           const isP1 = gm.p1name === player, isP2 = gm.p2name === player;
-          if (!isP1 && !isP2) return [];
-          return gm.rounds.map(r => ({
-            peg:  isP1 ? r.p1pegged : r.p2pegged,
-            hand: isP1 ? r.p1hand   : r.p2hand,
-            crib: isP1 ? r.p1crib   : r.p2crib,
-            total: (isP1 ? r.p1pegged : r.p2pegged)
-                 + (isP1 ? r.p1hand   : r.p2hand)
-                 + (isP1 ? r.p1crib   : r.p2crib),
-          }));
+          if (!isP1 && !isP2) return;
+          gm.rounds.forEach(r => {
+            const total = (isP1 ? r.p1pegged : r.p2pegged)
+                        + (isP1 ? r.p1hand   : r.p2hand)
+                        + (isP1 ? r.p1crib   : r.p2crib);
+            if (total > best.total) {
+              best = {
+                peg:  isP1 ? r.p1pegged : r.p2pegged,
+                hand: isP1 ? r.p1hand   : r.p2hand,
+                crib: isP1 ? r.p1crib   : r.p2crib,
+                total,
+                game: gm,
+                rd:   r,
+              };
+            }
+          });
         });
-        const best = rounds.reduce((b, r) => r.total > b.total ? r : b, { peg:0, hand:0, crib:0, total:0 });
         return { player, ...best };
       }).filter(d => d.total > 0);
 
@@ -1846,6 +1853,9 @@
         const bx   = x(d.player), bw = x.bandwidth();
         let yOff   = ViH;
 
+        const barTop = y(d.total);
+        const barHeight = ViH - barTop;
+
         [['peg', d.peg, 0.5], ['hand', d.hand, 0.75], ['crib', d.crib, 1]].forEach(([seg, val, op]) => {
           if (!val) return;
           const bh = ViH - y(val);
@@ -1861,11 +1871,46 @@
           yOff -= bh;
         });
 
-        // Total label above bar — use light colour
-        g.append('text').attr('x', bx + bw/2).attr('y', y(d.total) - 3)
+        // Total label above bar
+        g.append('text').attr('x', bx + bw/2).attr('y', barTop - 3)
           .attr('text-anchor', 'middle').attr('fill', lbl)
           .attr('font-size', 6.5).attr('font-weight', '500').attr('font-family', FONT)
           .text(d.total);
+
+        // Invisible hit rect for hover + click — covers the full bar height
+        if (d.game && d.rd) {
+          const tip = document.getElementById('tooltip');
+          const hitRect = g.append('rect')
+            .attr('x', bx).attr('y', barTop)
+            .attr('width', bw).attr('height', barHeight)
+            .attr('fill', 'transparent')
+            .attr('rx', 2)
+            .style('cursor', 'pointer');
+
+          hitRect.on('mouseenter', function(event) {
+            // Brighten bar by drawing a white overlay
+            g.append('rect').attr('class', 'bar-hover-overlay')
+              .attr('x', bx).attr('y', barTop)
+              .attr('width', bw).attr('height', barHeight)
+              .attr('fill', 'white').attr('opacity', 0.12).attr('rx', 2)
+              .attr('pointer-events', 'none');
+            tip.innerHTML = `
+              <div class="tth">${ordinal(d.game.gameNum)} game · Round ${d.rd.round}</div>
+              <div>Best round — <strong style="color:${lbl}">${d.total} pts</strong></div>`;
+            tip.classList.add('vis');
+          });
+          hitRect.on('mousemove', function(event) {
+            tip.style.left = (event.clientX + 14) + 'px';
+            tip.style.top  = (event.clientY - 10) + 'px';
+          });
+          hitRect.on('mouseleave', function() {
+            g.selectAll('.bar-hover-overlay').remove();
+            tip.classList.remove('vis');
+          });
+          hitRect.on('click', function() {
+            activateCell(d.game, d.rd, false);
+          });
+        }
       });
 
       // Legend
@@ -1902,7 +1947,7 @@
 
       const accEl = document.getElementById('bar-acc');
       const W = accEl.parentElement.clientWidth || 320;
-      const H = 175, ML = 26, MR = 8, MT = 10, MB = 26;
+      const H = 220, ML = 26, MR = 8, MT = 10, MB = 26;
       const iW = W - ML - MR, iH = H - MT - MB;
 
       const svg = d3.select(accEl)
@@ -2031,6 +2076,11 @@
                 <div style="color:${col};margin-top:2px;">${diffLabel}</div>`;
               tip.classList.add('vis');
             });
+            node.addEventListener('click', () => {
+              const game = allGames.find(g => g.date === r.date);
+              const rd   = game && game.rounds.find(rr => rr.round === r.round);
+              if (game && rd) activateCell(game, rd, false);
+            });
             node.addEventListener('mousemove', e => {
               tip.style.left = (e.clientX + 14) + 'px';
               tip.style.top  = (e.clientY - 10) + 'px';
@@ -2078,7 +2128,7 @@
 
       const accEl = document.getElementById('bar-crib-acc');
       const W = accEl.parentElement.clientWidth || 320;
-      const H = 175, ML = 26, MR = 8, MT = 10, MB = 26;
+      const H = 220, ML = 26, MR = 8, MT = 10, MB = 26;
       const iW = W - ML - MR, iH = H - MT - MB;
 
       const svg = d3.select(accEl)
@@ -2182,6 +2232,11 @@
                 <div>Recorded <strong>${r.recorded}</strong> · Calculated <strong>${r.calculated}</strong></div>
                 <div style="color:${col};margin-top:2px;">${diffLabel}</div>`;
               tip.classList.add('vis');
+            });
+            node.addEventListener('click', () => {
+              const game = allGames.find(g => g.date === r.date);
+              const rd   = game && game.rounds.find(rr => rr.round === r.round);
+              if (game && rd) activateCell(game, rd, false);
             });
             node.addEventListener('mousemove', e => {
               tip.style.left = (e.clientX + 14) + 'px';
