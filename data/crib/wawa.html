@@ -1060,6 +1060,13 @@
       const scored1 = hc1 ? scoreHand(hc1.hand, hc1.cut) : null;
       const scored2 = hc2 ? scoreHand(hc2.hand, hc2.cut) : null;
 
+      // Score the crib — all 4 discard cards + cut, isCrib=true (no 4-card flush)
+      const cribFour = [...d1, ...d2];
+      const cribCut  = cutCard;
+      const scoredCrib = (cribFour.length === 4 && cribCut)
+        ? scoreHand(cribFour, cribCut, true)
+        : null;
+
       const peg1   = rd.p1pegged, hand1 = rd.p1hand, crib1 = rd.p1crib;
       const peg2   = rd.p2pegged, hand2 = rd.p2hand, crib2 = rd.p2crib;
       const total1 = peg1 + hand1 + crib1;
@@ -1138,6 +1145,34 @@
         return `<div class="sc-total" style="border-color:${color};color:${color};">${total} pts</div>`;
       }
 
+      function cribPill(recorded, color) {
+        const pct = Math.round((recorded / barMax) * 100);
+        const tipData = scoredCrib ? JSON.stringify({
+          fifteens: scoredCrib.fifteens,
+          pairs:    scoredCrib.pairs,
+          runs:     scoredCrib.runs,
+          flush:    scoredCrib.flush,
+          nob:      scoredCrib.nob,
+          calc:     scoredCrib.total,
+          recorded,
+          color,
+        }) : null;
+
+        if (recorded <= 0) return `
+          <div class="sc-pill sc-pill--zero">
+            <span class="sc-pill-label">crib</span>
+            <div class="sc-pill-bar"><div class="sc-pill-fill" style="width:0%"></div></div>
+            <span class="sc-pill-val" style="color:var(--muted)">0</span>
+          </div>`;
+        return `
+          <div class="sc-pill" style="--pill-color:${color}; cursor:${tipData ? 'pointer' : 'default'};"
+               ${tipData ? `data-crib-tip='${tipData}'` : ''}>
+            <span class="sc-pill-label">crib</span>
+            <div class="sc-pill-bar"><div class="sc-pill-fill" style="width:${pct}%"></div></div>
+            <span class="sc-pill-val">${recorded}</span>
+          </div>`;
+      }
+
       function cribSection(dealerColor) {
         return `
           <div class="rd-section-label rd-crib-label">
@@ -1191,7 +1226,7 @@
             <div class="rd-scores">
               ${scorePill('peg',  peg,  colorPeg)}
               ${handPill(hand, scored, colorPeg, pillId)}
-              ${crib > 0 ? scorePill('crib', crib, colorPeg) : ''}
+              ${crib > 0 ? cribPill(crib, colorPeg) : ''}
             </div>
             <div class="rd-section-label">hand + cut</div>
             <div class="rd-cards">
@@ -1296,35 +1331,38 @@
 
       // Attach hover listeners for the score breakdown tooltip
       const tip = document.getElementById('score-tip');
-      el.querySelectorAll('[data-tip]').forEach(elem => {
-        elem.addEventListener('mouseenter', e => {
-          const d = JSON.parse(elem.dataset.tip);
-          const hasMiscount = d.calc !== d.recorded;
-          const diffLabel = d.recorded - d.calc;
 
-          tip.innerHTML = `
-            <div class="score-tip-title">Hand breakdown</div>
-            ${d.fifteens ? `<div class="score-tip-row"><span class="score-tip-key">Fifteens</span><span>${d.fifteens}</span></div>` : ''}
-            ${d.pairs     ? `<div class="score-tip-row"><span class="score-tip-key">Pairs</span><span>${d.pairs}</span></div>` : ''}
-            ${d.runs      ? `<div class="score-tip-row"><span class="score-tip-key">Runs</span><span>${d.runs}</span></div>` : ''}
-            ${d.flush     ? `<div class="score-tip-row"><span class="score-tip-key">Flush</span><span>${d.flush}</span></div>` : ''}
-            ${d.nob       ? `<div class="score-tip-row"><span class="score-tip-key">Nob</span><span>${d.nob}</span></div>` : ''}
-            ${(!d.fifteens && !d.pairs && !d.runs && !d.flush && !d.nob)
-              ? `<div class="score-tip-row"><span class="score-tip-key">No scoring combos</span><span>0</span></div>` : ''}
-            <div class="score-tip-row total"><span class="score-tip-key">Calculated</span><span style="color:${d.color}">${d.calc}</span></div>
-            ${hasMiscount ? `<div class="score-tip-row mismatch">
-              <span class="score-tip-key">Recorded</span>
-              <span>${d.recorded} (${diffLabel > 0 ? '+' : ''}${diffLabel})</span>
-            </div>` : ''}
-          `;
-          tip.classList.add('vis');
+      function attachScoreTip(selector, title) {
+        el.querySelectorAll(selector).forEach(elem => {
+          elem.addEventListener('mouseenter', e => {
+            const raw = selector === '[data-tip]' ? elem.dataset.tip : elem.dataset.cribTip;
+            const d = JSON.parse(raw);
+            const hasMiscount = d.calc !== d.recorded;
+            const diffLabel = d.recorded - d.calc;
+            tip.innerHTML = `
+              <div class="score-tip-title">${title}</div>
+              ${d.fifteens ? `<div class="score-tip-row"><span class="score-tip-key">Fifteens</span><span>${d.fifteens}</span></div>` : ''}
+              ${d.pairs    ? `<div class="score-tip-row"><span class="score-tip-key">Pairs</span><span>${d.pairs}</span></div>` : ''}
+              ${d.runs     ? `<div class="score-tip-row"><span class="score-tip-key">Runs</span><span>${d.runs}</span></div>` : ''}
+              ${d.flush    ? `<div class="score-tip-row"><span class="score-tip-key">Flush</span><span>${d.flush}</span></div>` : ''}
+              ${d.nob      ? `<div class="score-tip-row"><span class="score-tip-key">Nob</span><span>${d.nob}</span></div>` : ''}
+              ${(!d.fifteens && !d.pairs && !d.runs && !d.flush && !d.nob)
+                ? `<div class="score-tip-row"><span class="score-tip-key">No scoring combos</span><span>0</span></div>` : ''}
+              <div class="score-tip-row total"><span class="score-tip-key">Calculated</span><span style="color:${d.color}">${d.calc}</span></div>
+              ${hasMiscount ? `<div class="score-tip-row mismatch"><span class="score-tip-key">Recorded</span><span>${d.recorded} (${diffLabel > 0 ? '+' : ''}${diffLabel})</span></div>` : ''}
+            `;
+            tip.classList.add('vis');
+          });
+          elem.addEventListener('mousemove', e => {
+            tip.style.left = (e.clientX + 14) + 'px';
+            tip.style.top  = (e.clientY - 10) + 'px';
+          });
+          elem.addEventListener('mouseleave', () => tip.classList.remove('vis'));
         });
-        elem.addEventListener('mousemove', e => {
-          tip.style.left = (e.clientX + 14) + 'px';
-          tip.style.top  = (e.clientY - 10) + 'px';
-        });
-        elem.addEventListener('mouseleave', () => tip.classList.remove('vis'));
-      });
+      }
+
+      attachScoreTip('[data-tip]',      'Hand breakdown');
+      attachScoreTip('[data-crib-tip]', 'Crib breakdown');
     }
 
 
