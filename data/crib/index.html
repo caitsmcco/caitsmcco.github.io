@@ -2281,7 +2281,8 @@
       const CELL_H  = Math.floor((availH - games.length * 3) / games.length);
       const ROW_H   = CELL_H + 3;
 
-      const totalW  = LEFT + maxR * COL_W;
+      const RIGHT   = 20;   // padding for the ★ winner label after the last cell
+      const totalW  = LEFT + maxR * COL_W + RIGHT;
       const totalH  = TOP + games.length * ROW_H + BOT;
 
       svg
