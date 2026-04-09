@@ -315,29 +315,22 @@
       align-items: center;
       justify-content: center;
       gap: 3px;
-    }
-    .rd-play-seq-label {
-      font-size: .52rem;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: .2rem;
-      text-align: center;
+      padding: 4px 0 6px;
     }
     .rd-play-seq-wrap {
-      padding-bottom: .35rem;
       border-bottom: 1px solid var(--border);
     }
     .rd-play-card-wrap {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 1px;
+      gap: 2px;
     }
     .rd-play-total {
-      font-size: .44rem;
-      color: var(--muted);
+      font-size: .52rem;
+      color: var(--text);
       line-height: 1;
+      font-weight: 500;
     }
     /* Compact rank-only chip — no suit, smaller than a hand card */
     .rd-play-card {
@@ -351,6 +344,7 @@
       font-size: 11px !important;
       align-self: auto !important;
       line-height: 1 !important;
+      color: #1a1814 !important;
     }
     .card-sep {
       width: 1px;
@@ -1274,7 +1268,6 @@
         if (!items.length) return '';
 
         return `<div class="rd-play-seq-wrap">
-            <div class="rd-play-seq-label">Play sequence</div>
             <div class="rd-play-seq">${items.join('')}</div>
           </div>`;
       }
