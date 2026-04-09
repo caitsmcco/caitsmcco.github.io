@@ -338,36 +338,39 @@
     /* Each card+total pair grows equally to fill the column */
     .rd-play-card-wrap {
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1px;
       flex: 1;
       width: 100%;
       justify-content: center;
+      align-items: stretch;
     }
-    .rd-play-total {
-      font-size: .44rem;
-      color: var(--text);
-      line-height: 1;
-      font-weight: 500;
-    }
-    /* Compact rank-only chip — grows in height to fill its row */
+    /* Compact chip — rank top-left, total bottom-right, both inside the card */
     .rd-play-card {
       width: 24px !important;
       border-radius: 3px !important;
-      padding: 1px !important;
-      justify-content: center !important;
+      padding: 2px !important;
+      justify-content: space-between !important;
+      align-items: stretch !important;
+      flex-direction: column !important;
       flex-shrink: 0;
       flex: 1;
-      min-height: 20px;
+      min-height: 22px;
       max-height: 42px;
       height: auto !important;
+      position: relative;
     }
-    .rd-play-card .cr {
-      font-size: 10px !important;
-      align-self: auto !important;
-      line-height: 1 !important;
-      color: #1a1814 !important;
+    .rd-play-rank {
+      font-size: 9px;
+      font-weight: 700;
+      font-family: 'IBM Plex Mono', monospace;
+      line-height: 1;
+      align-self: flex-start;
+    }
+    .rd-play-total {
+      font-size: 7px;
+      font-weight: 700;
+      font-family: 'IBM Plex Mono', monospace;
+      line-height: 1;
+      align-self: flex-end;
     }
     /* Horizontal separator between sub-rounds */
     .card-sep {
@@ -1326,12 +1329,12 @@
             runTotal = 0;
           }
           runTotal += val;
-          // No play number, no suit — rank + running total only
+          const textColor = c.red ? '#c0392b' : '#1a1814';
           return `<div class="rd-play-card-wrap">
-            <div class="card rd-play-card" style="box-shadow:0 0 0 2px ${color}">
-              <span class="cr">${c.rank}</span>
+            <div class="card rd-play-card" style="box-shadow:0 0 0 2px ${color};position:relative;padding:2px;">
+              <span class="rd-play-rank" style="color:${textColor}">${c.rank}</span>
+              <span class="rd-play-total" style="color:${textColor}">${runTotal}</span>
             </div>
-            <span class="rd-play-total">${runTotal}</span>
           </div>`;
         }
 
