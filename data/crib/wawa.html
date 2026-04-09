@@ -191,10 +191,8 @@
       height: 160px;
     }
 
-    #bar-acc, #bar-crib-acc {
-      display: block;
-      width: 100%;
-      height: 220px;
+    #bar-acc {
+      height: 360px;
     }
 
     /* ── Filter + sort bar controls ────────────────────────────────────── */
@@ -264,7 +262,7 @@
 
     /* ── Round breakdown panel ─────────────────────────────────────────── */
     .rd-empty { color: var(--muted); font-size: .82rem; padding: .5rem 0; font-style: italic; }
-    .rd-wrap  { display: flex; flex-direction: column; gap: .6rem; margin-top: 0; }
+    .rd-wrap  { display: flex; flex-direction: column; gap: .6rem; margin-top: .4rem; }
 
     .rd-players {
       display: grid;
@@ -310,83 +308,8 @@
     .card--cut      { box-shadow: 0 0 0 2px var(--gold); }
     .card--cut-mini { opacity: .5; transform: scale(.82); transform-origin: bottom left; box-shadow: 0 0 0 1.5px var(--gold); }
 
-    /* ── Play sequence — vertical divider between player columns ───────── */
-    .rd-play-divider {
-      display: flex;
-      align-items: flex-start;
-      align-self: stretch;
-      padding: 0 .3rem;
-    }
-    .rd-play-seq-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      opacity: 0.55;
-      width: 100%;
-    }
-    .rd-play-seq {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0;
-      width: 100%;
-    }
-    /* Each slot: square rank chip + flat total bar, no gap between them */
-    .rd-play-card-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 100%;
-    }
-    /* Square rank chip — same width and height */
-    .rd-play-card {
-      width: 26px !important;
-      height: 26px !important;
-      border-radius: 3px !important;
-      padding: 2px !important;
-      justify-content: center !important;
-      align-items: center !important;
-      flex-direction: column !important;
-      flex-shrink: 0;
-      border: 1px solid #3a3020 !important;
-    }
-    .rd-play-rank {
-      font-size: 10px;
-      font-weight: 700;
-      font-family: 'IBM Plex Mono', monospace;
-      line-height: 1;
-      color: #1a1814 !important;
-    }
-    /* Flat borderless total bar — flush below the rank chip */
-    .rd-play-total {
-      width: 28px;
-      z-index: 2;
-      border-radius:6px;  
-      text-align: center;
-      font-size: 8px;
-      font-weight: 500;
-      font-family: 'IBM Plex Mono', monospace;
-      line-height: 1;
-      padding: 2px 0;
-      background: #f5f0e8;
-      color: #1a1814;
-    }
-    /* Horizontal separator between sub-rounds */
-    .card-sep {
-      width: 20px;
-      height: 1px;
-      background: var(--border);
-      margin: 3px 0;
-      flex-shrink: 0;
-    }
-
-    .rd-scores { 
-        display: flex; 
-        flex-direction: column; 
-        min-height: 48px; 
-        gap: 4px; 
-        margin-top: 3px; 
-    }
+    /* ── Score pills ───────────────────────────────────────────────────── */
+    .rd-scores { display: flex; flex-direction: column; min-height: 48px; gap: 4px; margin-top: 3px; }
 
     .sc-pill {
       display: grid;
@@ -542,8 +465,8 @@
         <div class="sort-bar" id="sort-bar"></div>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;gap:.5rem;">
-        <span style="display:flex;align-items:center;gap:5px;font-size:.62rem;color:#ffd16e;white-space:nowrap;flex-shrink:0;">
-          ⚠ hand miscount
+        <span style="display:flex;align-items:center;gap:5px;font-size:.62rem;color:#d4a030;white-space:nowrap;flex-shrink:0;">
+          <span style="font-size:.85rem;line-height:1;">⚠</span> hand miscount
         </span>
         <div class="filter-bar" id="filter-bar"></div>
       </div>
@@ -624,9 +547,8 @@
       <div class="pt">Hand Counting Accuracy</div>
       <svg id="bar-acc"></svg>
       <div id="bar-acc-note" style="font-size:.6rem;color:var(--muted);margin-top:.2rem;line-height:1.5;"></div>
-      <div class="pt" style="margin-top:.5rem;">Crib Counting Accuracy</div>
-      <svg id="bar-crib-acc"></svg>
-      <div id="bar-crib-acc-note" style="font-size:.6rem;color:var(--muted);margin-top:.2rem;line-height:1.5;"></div>
+      <div class="dist-caption">
+      </div>
     </div>
   </div>
 
@@ -1081,13 +1003,6 @@
       const scored1 = hc1 ? scoreHand(hc1.hand, hc1.cut) : null;
       const scored2 = hc2 ? scoreHand(hc2.hand, hc2.cut) : null;
 
-      // Score the crib — all 4 discard cards + cut, isCrib=true (no 4-card flush)
-      const cribFour = [...d1, ...d2];
-      const cribCut  = cutCard;
-      const scoredCrib = (cribFour.length === 4 && cribCut)
-        ? scoreHand(cribFour, cribCut, true)
-        : null;
-
       const peg1   = rd.p1pegged, hand1 = rd.p1hand, crib1 = rd.p1crib;
       const peg2   = rd.p2pegged, hand2 = rd.p2hand, crib2 = rd.p2crib;
       const total1 = peg1 + hand1 + crib1;
@@ -1166,64 +1081,7 @@
         return `<div class="sc-total" style="border-color:${color};color:${color};">${total} pts</div>`;
       }
 
-      function cribPill(recorded, color) {
-        const pct = Math.round((recorded / barMax) * 100);
-        const tipData = scoredCrib ? JSON.stringify({
-          fifteens: scoredCrib.fifteens,
-          pairs:    scoredCrib.pairs,
-          runs:     scoredCrib.runs,
-          flush:    scoredCrib.flush,
-          nob:      scoredCrib.nob,
-          calc:     scoredCrib.total,
-          recorded,
-          color,
-        }) : null;
-
-        if (recorded <= 0) return `
-          <div class="sc-pill sc-pill--zero">
-            <span class="sc-pill-label">crib</span>
-            <div class="sc-pill-bar"><div class="sc-pill-fill" style="width:0%"></div></div>
-            <span class="sc-pill-val" style="color:var(--muted)">0</span>
-          </div>`;
-        return `
-          <div class="sc-pill" style="--pill-color:${color}; cursor:${tipData ? 'pointer' : 'default'};"
-               ${tipData ? `data-crib-tip='${tipData}'` : ''}>
-            <span class="sc-pill-label">crib</span>
-            <div class="sc-pill-bar"><div class="sc-pill-fill" style="width:${pct}%"></div></div>
-            <span class="sc-pill-val">${recorded}</span>
-          </div>`;
-      }
-
-      function cribSection(dealerColor, recordedCrib) {
-        const hasCribMiscount = scoredCrib && recordedCrib > 0 && scoredCrib.total !== recordedCrib;
-        const cribDiff  = hasCribMiscount ? recordedCrib - scoredCrib.total : 0;
-        const cribDiffColor = cribDiff > 0 ? '#db9f90' : '#88aacc';
-        const cribDiffLabel = cribDiff > 0 ? `+${cribDiff} over` : `${cribDiff} under`;
-
-        let cribVerdictHtml = '';
-        if (hasCribMiscount) {
-          const parts = [];
-          if (scoredCrib.fifteens) parts.push(`${scoredCrib.fifteens} from fifteens`);
-          if (scoredCrib.pairs)    parts.push(`${scoredCrib.pairs} from pairs`);
-          if (scoredCrib.runs)     parts.push(`${scoredCrib.runs} from runs`);
-          if (scoredCrib.flush)    parts.push(`${scoredCrib.flush} flush`);
-          if (scoredCrib.nob)      parts.push(`${scoredCrib.nob} nob`);
-          if (!parts.length)       parts.push('no scoring combinations');
-
-          cribVerdictHtml = `
-            <div class="mc-verdict mc-verdict--inline">
-              <div class="mc-diff-row">
-                <span class="mc-recorded">Recorded <strong style="color:var(--text)">${recordedCrib}</strong></span>
-                <span class="mc-arrow">→</span>
-                <span>Should be <strong style="color:${cribDiffColor}">${scoredCrib.total}</strong></span>
-                <span style="font-size:.65rem;color:${cribDiffColor};margin-left:.2rem">(${cribDiffLabel})</span>
-              </div>
-              <div class="mc-breakdown">
-                ${parts.join(' · ')} = <span>${scoredCrib.total}</span>
-              </div>
-            </div>`;
-        }
-
+      function cribSection(dealerColor) {
         return `
           <div class="rd-section-label rd-crib-label">
             crib
@@ -1232,9 +1090,7 @@
             ${d1.map(c => card(c, 'card--crib', c1)).join('')}
             ${d2.map(c => card(c, 'card--crib', c2)).join('')}
             ${!d1.length && !d2.length ? '<span class="rd-dash">—</span>' : ''}
-            ${cutCard ? card(cutCard, 'card--cut-mini') : ''}
-          </div>
-          ${cribVerdictHtml}`;
+          </div>`;
       }
 
       function playerColumn(name, colorPeg, colorLite, h, peg, hand, crib, total, isDealer, scored, pillId) {
@@ -1272,12 +1128,12 @@
           <div class="rd-player">
             <div class="rd-player-name-row">
               <span class="rd-player-name" style="color:${colorLite}">${name}</span>
-              <span class="rd-player-total" style="color:${colorLite}">${total} pts</span>
+              <span class="rd-player-total" style="color:${colorPeg}">${total} pts</span>
             </div>
             <div class="rd-scores">
               ${scorePill('peg',  peg,  colorPeg)}
               ${handPill(hand, scored, colorPeg, pillId)}
-              ${crib > 0 ? cribPill(crib, colorPeg) : ''}
+              ${crib > 0 ? scorePill('crib', crib, colorPeg) : ''}
             </div>
             <div class="rd-section-label">hand + cut</div>
             <div class="rd-cards">
@@ -1292,80 +1148,7 @@
               </div>`).join('')}
             </div>` : ''}
             ${verdictHtml}
-            ${isDealer ? cribSection(colorPeg, crib) : ''}
-          </div>`;
-      }
-
-      // Build the interleaved play sequence.
-      //
-      // p1-p7 are ALL played cards in order — nulls mean that player
-      // didn't play on that turn (go or the sub-round ended for them).
-      // We interleave by position: dealer[0] then non-dealer[0], etc.
-      // When BOTH players have null at a position, that signals a
-      // sub-round boundary → render a card-sep divider.
-      // When only one is null, that player said "go" — skip their slot
-      // silently and continue to the next position.
-      function buildPlaySequence() {
-        const dealerRow      = p1IsDealer ? r1 : r2;
-        const nonDealerRow   = p1IsDealer ? r2 : r1;
-        const dealerColor    = p1IsDealer ? c1 : c2;
-        const nonDealerColor = p1IsDealer ? c2 : c1;
-
-        const fields = ['p1','p2','p3','p4','p5','p6','p7'];
-        const dCards  = fields.map(f => dealerRow    ? parseCard(dealerRow[f])    : null);
-        const ndCards = fields.map(f => nonDealerRow ? parseCard(nonDealerRow[f]) : null);
-
-        let lastIdx = -1;
-        for (let i = fields.length - 1; i >= 0; i--) {
-          if (dCards[i] || ndCards[i]) { lastIdx = i; break; }
-        }
-        if (lastIdx < 0) return '';
-
-        // pip value for pegging: A=1, 2-9=face, 10/J/Q/K=10
-        const peg = rank => ['J','Q','K'].includes(rank) ? 10 : rank === 'A' ? 1 : parseInt(rank, 10);
-
-        const items = [];
-        let needsSep = false;
-        let runTotal = 0;
-
-        function cardHtml(c, color) {
-          const val = peg(c.rank);
-          if (runTotal + val > 31 && items.length) {
-            items.push('<div class="card-sep"></div>');
-            runTotal = 0;
-          }
-          runTotal += val;
-          return `<div class="rd-play-card-wrap">
-            <div class="card rd-play-card" style="box-shadow:0 0 0 2px ${color};">
-              <span class="rd-play-rank">${c.rank}</span>
-            </div>
-            <div class="rd-play-total">${runTotal}</div>
-          </div>`;
-        }
-
-        for (let i = 0; i <= lastIdx; i++) {
-          const dc  = dCards[i];
-          const ndc = ndCards[i];
-
-          if (!dc && !ndc) {
-            needsSep = true;
-            continue;
-          }
-
-          if (needsSep && items.length) {
-            items.push('<div class="card-sep"></div>');
-            needsSep = false;
-            runTotal = 0;  // reset running total after sub-round boundary
-          }
-
-          if (dc)  items.push(cardHtml(dc,  dealerColor));
-          if (ndc) items.push(cardHtml(ndc, nonDealerColor));
-        }
-
-        if (!items.length) return '';
-
-        return `<div class="rd-play-seq-wrap">
-            <div class="rd-play-seq">${items.join('')}</div>
+            ${isDealer ? cribSection(colorPeg) : ''}
           </div>`;
       }
 
@@ -1373,7 +1156,7 @@
         <div class="rd-wrap">
           <div class="rd-players">
             ${playerColumn(game.p1name, c1, c1lite, h1, peg1, hand1, crib1, total1, p1IsDealer, scored1, 'pill-p1')}
-            <div class="rd-play-divider">${buildPlaySequence()}</div>
+            <div class="rd-divider"></div>
             ${playerColumn(game.p2name, c2, c2lite, h2, peg2, hand2, crib2, total2, !p1IsDealer, scored2, 'pill-p2')}
           </div>
         </div>
@@ -1381,38 +1164,35 @@
 
       // Attach hover listeners for the score breakdown tooltip
       const tip = document.getElementById('score-tip');
+      el.querySelectorAll('[data-tip]').forEach(elem => {
+        elem.addEventListener('mouseenter', e => {
+          const d = JSON.parse(elem.dataset.tip);
+          const hasMiscount = d.calc !== d.recorded;
+          const diffLabel = d.recorded - d.calc;
 
-      function attachScoreTip(selector, title) {
-        el.querySelectorAll(selector).forEach(elem => {
-          elem.addEventListener('mouseenter', e => {
-            const raw = selector === '[data-tip]' ? elem.dataset.tip : elem.dataset.cribTip;
-            const d = JSON.parse(raw);
-            const hasMiscount = d.calc !== d.recorded;
-            const diffLabel = d.recorded - d.calc;
-            tip.innerHTML = `
-              <div class="score-tip-title">${title}</div>
-              ${d.fifteens ? `<div class="score-tip-row"><span class="score-tip-key">Fifteens</span><span>${d.fifteens}</span></div>` : ''}
-              ${d.pairs    ? `<div class="score-tip-row"><span class="score-tip-key">Pairs</span><span>${d.pairs}</span></div>` : ''}
-              ${d.runs     ? `<div class="score-tip-row"><span class="score-tip-key">Runs</span><span>${d.runs}</span></div>` : ''}
-              ${d.flush    ? `<div class="score-tip-row"><span class="score-tip-key">Flush</span><span>${d.flush}</span></div>` : ''}
-              ${d.nob      ? `<div class="score-tip-row"><span class="score-tip-key">Nob</span><span>${d.nob}</span></div>` : ''}
-              ${(!d.fifteens && !d.pairs && !d.runs && !d.flush && !d.nob)
-                ? `<div class="score-tip-row"><span class="score-tip-key">No scoring combos</span><span>0</span></div>` : ''}
-              <div class="score-tip-row total"><span class="score-tip-key">Calculated</span><span style="color:${d.color}">${d.calc}</span></div>
-              ${hasMiscount ? `<div class="score-tip-row mismatch"><span class="score-tip-key">Recorded</span><span>${d.recorded} (${diffLabel > 0 ? '+' : ''}${diffLabel})</span></div>` : ''}
-            `;
-            tip.classList.add('vis');
-          });
-          elem.addEventListener('mousemove', e => {
-            tip.style.left = (e.clientX + 14) + 'px';
-            tip.style.top  = (e.clientY - 10) + 'px';
-          });
-          elem.addEventListener('mouseleave', () => tip.classList.remove('vis'));
+          tip.innerHTML = `
+            <div class="score-tip-title">Hand breakdown</div>
+            ${d.fifteens ? `<div class="score-tip-row"><span class="score-tip-key">Fifteens</span><span>${d.fifteens}</span></div>` : ''}
+            ${d.pairs     ? `<div class="score-tip-row"><span class="score-tip-key">Pairs</span><span>${d.pairs}</span></div>` : ''}
+            ${d.runs      ? `<div class="score-tip-row"><span class="score-tip-key">Runs</span><span>${d.runs}</span></div>` : ''}
+            ${d.flush     ? `<div class="score-tip-row"><span class="score-tip-key">Flush</span><span>${d.flush}</span></div>` : ''}
+            ${d.nob       ? `<div class="score-tip-row"><span class="score-tip-key">Nob</span><span>${d.nob}</span></div>` : ''}
+            ${(!d.fifteens && !d.pairs && !d.runs && !d.flush && !d.nob)
+              ? `<div class="score-tip-row"><span class="score-tip-key">No scoring combos</span><span>0</span></div>` : ''}
+            <div class="score-tip-row total"><span class="score-tip-key">Calculated</span><span style="color:${d.color}">${d.calc}</span></div>
+            ${hasMiscount ? `<div class="score-tip-row mismatch">
+              <span class="score-tip-key">Recorded</span>
+              <span>${d.recorded} (${diffLabel > 0 ? '+' : ''}${diffLabel})</span>
+            </div>` : ''}
+          `;
+          tip.classList.add('vis');
         });
-      }
-
-      attachScoreTip('[data-tip]',      'Hand breakdown');
-      attachScoreTip('[data-crib-tip]', 'Crib breakdown');
+        elem.addEventListener('mousemove', e => {
+          tip.style.left = (e.clientX + 14) + 'px';
+          tip.style.top  = (e.clientY - 10) + 'px';
+        });
+        elem.addEventListener('mouseleave', () => tip.classList.remove('vis'));
+      });
     }
 
 
@@ -1572,66 +1352,9 @@
     }
 
 
-    function computeCribAccuracy(games) {
-      const records = [];
-
-      games.forEach(game => {
-        game._raw && game.rounds.forEach(rd => {
-          const rawRows = game._raw.filter(r => +r.Round === rd.round);
-          const byP = Object.fromEntries(rawRows.map(r => [r.Name, r]));
-
-          const round1 = game.rounds.find(r => r.round === 1);
-          const p1DealtFirst = round1
-            ? (round1.p1crib > 0 ? true : round1.p2crib > 0 ? false : true)
-            : true;
-          const p1IsDealer = (rd.round % 2 === 1) === p1DealtFirst;
-
-          const dealerName   = p1IsDealer ? game.p1name : game.p2name;
-          const dealerRow    = byP[dealerName];
-          const nonDealerRow = byP[p1IsDealer ? game.p2name : game.p1name];
-          const recorded     = p1IsDealer ? rd.p1crib : rd.p2crib;
-
-          if (!recorded || recorded <= 0) return;
-
-          const d1 = dealerRow    ? [parseCard(dealerRow.d1),    parseCard(dealerRow.d2)   ].filter(Boolean) : [];
-          const d2 = nonDealerRow ? [parseCard(nonDealerRow.d1), parseCard(nonDealerRow.d2)].filter(Boolean) : [];
-          const cribFour = [...d1, ...d2];
-          const cut = dealerRow    ? parseCard(dealerRow.cc)
-                    : nonDealerRow ? parseCard(nonDealerRow.cc) : null;
-
-          if (cribFour.length !== 4 || !cut) return;
-
-          const scored = scoreHand(cribFour, cut, true);
-          if (!scored) return;
-
-          records.push({
-            player:     dealerName,
-            recorded:   recorded || 0,
-            calculated: scored.total,
-            diff:       (recorded || 0) - scored.total,
-            gameNum:    game.gameNum,
-            date:       game.date,
-            round:      rd.round,
-          });
-        });
-      });
-
-      const players = [...new Set(records.map(r => r.player))];
-      return players.map(player => {
-        const recs = records.filter(r => r.player === player);
-        const avgDiff = d3.mean(recs, r => r.diff) || 0;
-        const pct = recs.length
-          ? (recs.filter(r => r.diff === 0).length / recs.length) * 100
-          : 0;
-        const overCount  = recs.filter(r => r.diff > 0).length;
-        const underCount = recs.filter(r => r.diff < 0).length;
-        return { player, avgDiff, pct, n: recs.length, overCount, underCount, records: recs };
-      });
-    }
-
-
     // ═══════════════════════════════════════════════════════════════════════
     //  SHARED CHART HELPERS
+    // ═══════════════════════════════════════════════════════════════════════
 
     function clearChart(id) {
       d3.select('#' + id).selectAll('*').remove();
@@ -1723,7 +1446,7 @@
         .call(d3.axisBottom(x).tickSize(0))
         .call(ax => axisStyle(ax));
       xAxis.selectAll('text').each(function(d) {
-        d3.select(this).attr('fill', playerLight(d)).attr('font-size', 7);
+        d3.select(this).attr('fill', playerLight(d));
       });
 
       g.append('g')
@@ -1856,26 +1579,19 @@
       const players = allPlayers(games);
 
       const data = players.map(player => {
-        let best = { peg:0, hand:0, crib:0, total:0, game:null, rd:null };
-        games.forEach(gm => {
+        const rounds = games.flatMap(gm => {
           const isP1 = gm.p1name === player, isP2 = gm.p2name === player;
-          if (!isP1 && !isP2) return;
-          gm.rounds.forEach(r => {
-            const total = (isP1 ? r.p1pegged : r.p2pegged)
-                        + (isP1 ? r.p1hand   : r.p2hand)
-                        + (isP1 ? r.p1crib   : r.p2crib);
-            if (total > best.total) {
-              best = {
-                peg:  isP1 ? r.p1pegged : r.p2pegged,
-                hand: isP1 ? r.p1hand   : r.p2hand,
-                crib: isP1 ? r.p1crib   : r.p2crib,
-                total,
-                game: gm,
-                rd:   r,
-              };
-            }
-          });
+          if (!isP1 && !isP2) return [];
+          return gm.rounds.map(r => ({
+            peg:  isP1 ? r.p1pegged : r.p2pegged,
+            hand: isP1 ? r.p1hand   : r.p2hand,
+            crib: isP1 ? r.p1crib   : r.p2crib,
+            total: (isP1 ? r.p1pegged : r.p2pegged)
+                 + (isP1 ? r.p1hand   : r.p2hand)
+                 + (isP1 ? r.p1crib   : r.p2crib),
+          }));
         });
+        const best = rounds.reduce((b, r) => r.total > b.total ? r : b, { peg:0, hand:0, crib:0, total:0 });
         return { player, ...best };
       }).filter(d => d.total > 0);
 
@@ -1887,7 +1603,7 @@
         .call(d3.axisBottom(x).tickSize(0))
         .call(ax => axisStyle(ax));
       xAxisM.selectAll('text').each(function(d) {
-        d3.select(this).attr('fill', playerLight(d)).attr('font-size', 7);
+        d3.select(this).attr('fill', playerLight(d));
       });
       g.append('g')
         .call(d3.axisLeft(y).ticks(4).tickSize(-ViW))
@@ -1899,9 +1615,6 @@
         const lbl  = playerLight(d.player);
         const bx   = x(d.player), bw = x.bandwidth();
         let yOff   = ViH;
-
-        const barTop = y(d.total);
-        const barHeight = ViH - barTop;
 
         [['peg', d.peg, 0.5], ['hand', d.hand, 0.75], ['crib', d.crib, 1]].forEach(([seg, val, op]) => {
           if (!val) return;
@@ -1918,46 +1631,11 @@
           yOff -= bh;
         });
 
-        // Total label above bar
-        g.append('text').attr('x', bx + bw/2).attr('y', barTop - 3)
+        // Total label above bar — use light colour
+        g.append('text').attr('x', bx + bw/2).attr('y', y(d.total) - 3)
           .attr('text-anchor', 'middle').attr('fill', lbl)
           .attr('font-size', 6.5).attr('font-weight', '500').attr('font-family', FONT)
           .text(d.total);
-
-        // Invisible hit rect for hover + click — covers the full bar height
-        if (d.game && d.rd) {
-          const tip = document.getElementById('tooltip');
-          const hitRect = g.append('rect')
-            .attr('x', bx).attr('y', barTop)
-            .attr('width', bw).attr('height', barHeight)
-            .attr('fill', 'transparent')
-            .attr('rx', 2)
-            .style('cursor', 'pointer');
-
-          hitRect.on('mouseenter', function(event) {
-            // Brighten bar by drawing a white overlay
-            g.append('rect').attr('class', 'bar-hover-overlay')
-              .attr('x', bx).attr('y', barTop)
-              .attr('width', bw).attr('height', barHeight)
-              .attr('fill', 'white').attr('opacity', 0.12).attr('rx', 2)
-              .attr('pointer-events', 'none');
-            tip.innerHTML = `
-              <div class="tth">${ordinal(d.game.gameNum)} game · Round ${d.rd.round}</div>
-              <div>Best round — <strong style="color:${lbl}">${d.total} pts</strong></div>`;
-            tip.classList.add('vis');
-          });
-          hitRect.on('mousemove', function(event) {
-            tip.style.left = (event.clientX + 14) + 'px';
-            tip.style.top  = (event.clientY - 10) + 'px';
-          });
-          hitRect.on('mouseleave', function() {
-            g.selectAll('.bar-hover-overlay').remove();
-            tip.classList.remove('vis');
-          });
-          hitRect.on('click', function() {
-            selectRound(d.game, d.rd);
-          });
-        }
       });
 
       // Legend
@@ -1994,7 +1672,7 @@
 
       const accEl = document.getElementById('bar-acc');
       const W = accEl.parentElement.clientWidth || 320;
-      const H = 220, ML = 26, MR = 8, MT = 10, MB = 26;
+      const H = 360, ML = 26, MR = 8, MT = 12, MB = 30;
       const iW = W - ML - MR, iH = H - MT - MB;
 
       const svg = d3.select(accEl)
@@ -2041,7 +1719,7 @@
             .attr('opacity', d => d === 0 ? 0.4 : 1);
           ax.selectAll('text')
             .attr('fill', d => d === 0 ? '#9a8a70' : '#7a7060')
-            .attr('font-size', 9).attr('font-family', FONT);
+            .attr('font-size', 6.5).attr('font-family', FONT);
         });
 
       // ── Per-player beeswarm (miscounts only) ─────────────────────────────
@@ -2123,11 +1801,6 @@
                 <div style="color:${col};margin-top:2px;">${diffLabel}</div>`;
               tip.classList.add('vis');
             });
-            node.addEventListener('click', () => {
-              const game = allGames.find(g => g.date === r.date);
-              const rd   = game && game.rounds.find(rr => rr.round === r.round);
-              if (game && rd) selectRound(game, rd);
-            });
             node.addEventListener('mousemove', e => {
               tip.style.left = (e.clientX + 14) + 'px';
               tip.style.top  = (e.clientY - 10) + 'px';
@@ -2163,158 +1836,8 @@
     }
 
 
-    function renderBarCribAcc(games) {
-      clearChart('bar-crib-acc');
-      const note = document.getElementById('bar-crib-acc-note');
-      const accuracy = computeCribAccuracy(games);
-
-      if (!accuracy.length) {
-        note.textContent = 'Not enough crib data.';
-        return;
-      }
-
-      const accEl = document.getElementById('bar-crib-acc');
-      const W = accEl.parentElement.clientWidth || 320;
-      const H = 220, ML = 26, MR = 8, MT = 10, MB = 26;
-      const iW = W - ML - MR, iH = H - MT - MB;
-
-      const svg = d3.select(accEl)
-        .attr('viewBox', `0 0 ${W} ${H}`)
-        .attr('preserveAspectRatio', 'xMidYMid meet')
-        .attr('width', '100%')
-        .attr('height', null);
-
-      const g = svg.append('g').attr('transform', `translate(${ML},${MT})`);
-
-      const players    = accuracy.map(a => a.player);
-      const allDiffs   = accuracy.flatMap(a => a.records.map(r => r.diff));
-      const maxAbsDiff = Math.max(d3.max(allDiffs.map(Math.abs)) || 0, 1);
-
-      const x = d3.scaleBand().domain(players).range([0, iW]).padding(0.25);
-      const yExt = maxAbsDiff + 1.2;
-      const y    = d3.scaleLinear().domain([-yExt, yExt]).range([iH, 0]);
-      const DOT_R = 2.8;
-
-      g.append('g').attr('transform', `translate(0,${iH})`)
-        .call(d3.axisBottom(x).tickSize(0))
-        .call(ax => {
-          axisStyle(ax);
-          ax.selectAll('text').each(function(d) {
-            d3.select(this).attr('fill', playerLight(d)).attr('font-size', 7);
-          });
-        });
-
-      const yTicks = d3.range(-maxAbsDiff, maxAbsDiff + 1).filter(Number.isInteger);
-      g.append('g')
-        .call(d3.axisLeft(y).tickValues(yTicks).tickSize(-iW).tickFormat(d => d > 0 ? `+${d}` : `${d}`))
-        .call(ax => {
-          ax.select('.domain').remove();
-          ax.selectAll('.tick line')
-            .attr('stroke', d => d === 0 ? '#4a4030' : '#2e2a22')
-            .attr('stroke-dasharray', d => d === 0 ? null : '2,2')
-            .attr('stroke-width', d => d === 0 ? 1.0 : 0.8)
-            .attr('opacity', d => d === 0 ? 0.4 : 1);
-          ax.selectAll('text')
-            .attr('fill', d => d === 0 ? '#9a8a70' : '#7a7060')
-            .attr('font-size', 9).attr('font-family', FONT);
-        });
-
-      accuracy.forEach(a => {
-        const col   = playerPeg(a.player);
-        const light = playerLight(a.player);
-        const cx    = x(a.player) + x.bandwidth() / 2;
-        const halfMax = x.bandwidth() * 0.46;
-
-        const miscounts = a.records.filter(r => r.diff !== 0);
-
-        const prng = seed => {
-          let s = seed ^ 0xdeadbeef;
-          s = Math.imul(s ^ (s >>> 16), 0x45d9f3b);
-          s = Math.imul(s ^ (s >>> 16), 0x45d9f3b);
-          return ((s ^ (s >>> 16)) >>> 0) / 0xffffffff;
-        };
-
-        const byDiff = d3.group(miscounts, r => r.diff);
-        const allSorted = [];
-        [...byDiff.keys()].sort((a, b) => a - b).forEach(diff => {
-          const recs = [...byDiff.get(diff)];
-          for (let i = recs.length - 1; i > 0; i--) {
-            const seed = diff * 31 + i * 17 + a.player.charCodeAt(0);
-            const j = Math.floor(prng(seed) * (i + 1));
-            [recs[i], recs[j]] = [recs[j], recs[i]];
-          }
-          allSorted.push(...recs);
-        });
-
-        const rowH = Math.abs(y(0) - y(1));
-        const vJitterMax = rowH * 0.28;
-        const step = DOT_R * 1.3;
-
-        const byDiffFinal = d3.group(allSorted, r => r.diff);
-        byDiffFinal.forEach((recs, diff) => {
-          const baseCy = y(diff);
-          recs.forEach((r, rowIdx) => {
-            const slotNum = Math.floor((rowIdx + 1) / 2);
-            const sign    = rowIdx % 2 === 0 ? -1 : 1;
-            const offset  = rowIdx === 0 ? 0 : sign * slotNum * step;
-            const clipped = Math.max(-halfMax, Math.min(halfMax, offset));
-            const vSeed   = diff * 97 + rowIdx * 53 + a.player.charCodeAt(0);
-            const vJitter = (prng(vSeed) * 2 - 1) * vJitterMax;
-            const cy      = baseCy + vJitter;
-
-            const circle = g.append('circle')
-              .attr('cx', cx + clipped).attr('cy', cy)
-              .attr('r', DOT_R)
-              .attr('fill', col).attr('opacity', 0.82)
-              .attr('stroke-width', 0)
-              .style('cursor', 'pointer');
-
-            const tip = document.getElementById('tooltip');
-            const diffLabel = r.diff > 0 ? `+${r.diff} over` : `${r.diff} under`;
-            const node = circle.node();
-            node.addEventListener('mouseenter', () => {
-              circle.attr('opacity', 1).attr('stroke', '#e8dfc8').attr('stroke-width', 1);
-              tip.innerHTML = `
-                <div class="tth">${ordinal(r.gameNum)} game · Round ${r.round}</div>
-                <div>Recorded <strong>${r.recorded}</strong> · Calculated <strong>${r.calculated}</strong></div>
-                <div style="color:${col};margin-top:2px;">${diffLabel}</div>`;
-              tip.classList.add('vis');
-            });
-            node.addEventListener('click', () => {
-              const game = allGames.find(g => g.date === r.date);
-              const rd   = game && game.rounds.find(rr => rr.round === r.round);
-              if (game && rd) selectRound(game, rd);
-            });
-            node.addEventListener('mousemove', e => {
-              tip.style.left = (e.clientX + 14) + 'px';
-              tip.style.top  = (e.clientY - 10) + 'px';
-            });
-            node.addEventListener('mouseleave', () => {
-              circle.attr('opacity', 0.82).attr('stroke-width', 0);
-              tip.classList.remove('vis');
-            });
-          });
-        });
-
-        g.append('text')
-          .attr('x', cx).attr('y', y(0))
-          .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
-          .attr('fill', light).attr('font-size', 10).attr('font-weight', '400')
-          .attr('font-family', FONT)
-          .text(`${Math.round(a.pct)}%`);
-
-        const avgLabel = a.avgDiff > 0 ? `avg +${Math.round(a.avgDiff * 10) / 10}`
-          : a.avgDiff < 0 ? `avg ${Math.round(a.avgDiff * 10) / 10}`
-          : 'avg 0';
-        g.append('text')
-          .attr('x', cx).attr('y', iH + 17)
-          .attr('text-anchor', 'middle')
-          .attr('fill', '#7a7060').attr('font-size', 9).attr('font-family', FONT)
-          .text(avgLabel);
-      });
-
-      note.innerHTML = '';
-    }
+     // ═══════════════════════════════════════════════════════════════
+    //  HAND SCORE DISTRIBUTION
     //  Theoretical counts from Wikipedia: Cribbage statistics
     //  (12,994,800 total possible hands, random discard assumption)
     //  Overlaid with recorded handPoints from edited.csv
@@ -2427,7 +1950,7 @@
         .call(ax => {
           ax.select('.domain').remove();
           ax.selectAll('.tick line').attr('stroke','#2e2a22').attr('stroke-dasharray','2,2');
-          ax.selectAll('text').attr('fill','#7a7060').attr('font-size',9).attr('font-family',FONT);
+          ax.selectAll('text').attr('fill','#7a7060').attr('font-size',6.5).attr('font-family',FONT);
         });
 
       // Impossible score backgrounds
@@ -2475,7 +1998,7 @@
           ax.select('.domain').remove();
           ax.selectAll('text')
             .attr('fill', d => IMPOSSIBLE.has(d) ? '#4a4030' : '#7a7060')
-            .attr('font-size', 9).attr('font-family', FONT);
+            .attr('font-size', 7).attr('font-family', FONT);
         });
     }
 
@@ -2661,7 +2184,6 @@
       renderBarAvg(allGames);
       renderBarMax(allGames);
       renderBarAcc(allGames);
-      renderBarCribAcc(allGames);
 
       const { handScores, handN, cribScores, cribN } = buildDistData(allGames);
       renderDistChart('dist-hand', handScores, handN, '#e5dad9');
@@ -2713,14 +2235,6 @@
       document.getElementById('r-detail').textContent = `Round ${rd.round} · `;
 
       renderCards(rd, game);
-    }
-
-    // Selects a round from outside the heatmap — clears heatmap selection
-    // and re-renders it so the gold highlight is removed.
-    function selectRound(game, rd) {
-      selectedCell = null;
-      renderHeatmap(sortedGames());
-      activateCell(game, rd, false);
     }
 
 
@@ -2882,9 +2396,9 @@
                 .attr('dominant-baseline', 'hanging')
                 .attr('font-size', Math.min(CELL_H * 0.48, 12))
                 .attr('font-family', FONT)
-                .attr('fill', '#ffd16e')
+                .attr('fill', '#d4a030')
                 .attr('pointer-events', 'none')
-                .attr('opacity', 1)
+                .attr('opacity', 0.95)
                 .text('⚠');
             }
 
@@ -2893,9 +2407,17 @@
             // Hover: highlight row + show tooltip; preview round if nothing is selected
             node.addEventListener('mouseenter', () => {
               rowBg.attr('fill', 'rgba(255,255,255,.05)');
-              cell.attr('stroke', '#c8973a').attr('stroke-width', 2)
-                  .attr('fill', d3.color(fill) ? d3.color(fill).brighter(0.3) : fill);
+              cell.attr('stroke', '#c8973a').attr('stroke-width', 2);
               if (!selectedCell) activateCell(game, rd, true);
+
+              //const c2l = (PCOL[game.p2name] || PCOL.Colban).light;
+              //const hasMC = miscountKeys.has(`${game.date}|${rd.round}`);
+              //tip.innerHTML = `
+              //  <div class="tth">Round ${rd.round}</div>
+              //  <div class="tth">${ds}</div>
+              //  <div class="tth">${ts}</div>
+              //  ${hasMC ? `<div style="color:#d4a030;margin-top:3px;font-size:.85em">⚠ hand miscount this round</div>` : ''}`;
+              //tip.classList.add('vis');
             });
 
             // Track tooltip position with mouse
@@ -2910,9 +2432,7 @@
               const iS = selectedCell
                 && selectedCell.gameDate === game.date
                 && selectedCell.round   === rd.round;
-              cell.attr('stroke', iS ? '#c8973a' : '#0f0e0c')
-                  .attr('stroke-width', iS ? 2 : 1.5)
-                  .attr('fill', fill);
+              cell.attr('stroke', iS ? '#c8973a' : '#0f0e0c').attr('stroke-width', iS ? 2 : 1.5);
               tip.classList.remove('vis');
 
               // If a cell is selected, snap back to showing that round
