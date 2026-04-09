@@ -313,21 +313,26 @@
       display: flex;
       flex-wrap: wrap;
       align-items: flex-end;
-      gap: 4px;
-      margin-top: .5rem;
+      justify-content: center;
+      gap: 3px;
     }
     .rd-play-seq-label {
       font-size: .56rem;
       letter-spacing: .1em;
       text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: .3rem;
+      margin-bottom: .25rem;
+      text-align: center;
+    }
+    .rd-play-seq-wrap {
+      padding-bottom: .4rem;
+      border-bottom: 1px solid var(--border);
     }
     .rd-play-card-wrap {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 2px;
+      gap: 1px;
     }
     .rd-play-card-num {
       font-size: .42rem;
@@ -340,6 +345,13 @@
       line-height: 1;
       letter-spacing: .02em;
     }
+    .rd-play-seq .card {
+      width: 38px;
+      height: 54px;
+      font-size: .8rem;
+    }
+    .rd-play-seq .card .cr { font-size: 10px; }
+    .rd-play-seq .card .cs { font-size: 1.1rem; }
     .card-sep {
       width: 1px;
       height: 52px;
@@ -348,6 +360,7 @@
       flex-shrink: 0;
       align-self: center;
     }
+    .rd-play-seq .card-sep { height: 42px; }
     .rd-scores { display: flex; flex-direction: column; min-height: 48px; gap: 4px; margin-top: 3px; }
 
     .sc-pill {
@@ -1129,6 +1142,7 @@
             ${d1.map(c => card(c, 'card--crib', c1)).join('')}
             ${d2.map(c => card(c, 'card--crib', c2)).join('')}
             ${!d1.length && !d2.length ? '<span class="rd-dash">—</span>' : ''}
+            ${cutCard ? card(cutCard, 'card--cut-mini') : ''}
           </div>`;
       }
 
@@ -1263,7 +1277,7 @@
 
         if (!items.length) return '';
 
-        return `<div style="border-top:1px solid var(--border);padding-top:.5rem;margin-top:.1rem;">
+        return `<div class="rd-play-seq-wrap">
             <div class="rd-play-seq-label">Play sequence</div>
             <div class="rd-play-seq">${items.join('')}</div>
           </div>`;
@@ -1271,12 +1285,12 @@
 
       el.innerHTML = `
         <div class="rd-wrap">
+          ${buildPlaySequence()}
           <div class="rd-players">
             ${playerColumn(game.p1name, c1, c1lite, h1, peg1, hand1, crib1, total1, p1IsDealer, scored1, 'pill-p1')}
             <div class="rd-divider"></div>
             ${playerColumn(game.p2name, c2, c2lite, h2, peg2, hand2, crib2, total2, !p1IsDealer, scored2, 'pill-p2')}
           </div>
-          ${buildPlaySequence()}
         </div>
       `;
 
