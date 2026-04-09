@@ -337,7 +337,6 @@
       flex-direction: column;
       align-items: center;
       width: 100%;
-      margin-bottom: 3px;
     }
     /* Square rank chip — same width and height */
     .rd-play-card {
@@ -360,7 +359,9 @@
     }
     /* Flat borderless total bar — flush below the rank chip */
     .rd-play-total {
-      width: 26px;
+      width: 20px;
+      z-index: 2;
+      border-radius:6px;  
       text-align: center;
       font-size: 8px;
       font-weight: 600;
@@ -369,7 +370,6 @@
       padding: 2px 0;
       background: #f5f0e8;
       color: #1a1814;
-      border-radius: 0 0 2px 2px;
     }
     /* Horizontal separator between sub-rounds */
     .card-sep {
@@ -379,9 +379,14 @@
       margin: 3px 0;
       flex-shrink: 0;
     }
-      flex-shrink: 0;
+
+    .rd-scores { 
+        display: flex; 
+        flex-direction: column; 
+        min-height: 48px; 
+        gap: 4px; 
+        margin-top: 3px; 
     }
-    .rd-scores { display: flex; flex-direction: column; min-height: 48px; gap: 4px; margin-top: 3px; }
 
     .sc-pill {
       display: grid;
@@ -1267,7 +1272,7 @@
           <div class="rd-player">
             <div class="rd-player-name-row">
               <span class="rd-player-name" style="color:${colorLite}">${name}</span>
-              <span class="rd-player-total" style="color:${colorPeg}">${total} pts</span>
+              <span class="rd-player-total" style="color:${colorLite}">${total} pts</span>
             </div>
             <div class="rd-scores">
               ${scorePill('peg',  peg,  colorPeg)}
@@ -1718,7 +1723,7 @@
         .call(d3.axisBottom(x).tickSize(0))
         .call(ax => axisStyle(ax));
       xAxis.selectAll('text').each(function(d) {
-        d3.select(this).attr('fill', playerLight(d));
+        d3.select(this).attr('fill', playerLight(d)).attr('font-size', 7);
       });
 
       g.append('g')
@@ -1882,7 +1887,7 @@
         .call(d3.axisBottom(x).tickSize(0))
         .call(ax => axisStyle(ax));
       xAxisM.selectAll('text').each(function(d) {
-        d3.select(this).attr('fill', playerLight(d));
+        d3.select(this).attr('fill', playerLight(d)).attr('font-size', 7);
       });
       g.append('g')
         .call(d3.axisLeft(y).ticks(4).tickSize(-ViW))
@@ -2036,7 +2041,7 @@
             .attr('opacity', d => d === 0 ? 0.4 : 1);
           ax.selectAll('text')
             .attr('fill', d => d === 0 ? '#9a8a70' : '#7a7060')
-            .attr('font-size', 6.5).attr('font-family', FONT);
+            .attr('font-size', 9).attr('font-family', FONT);
         });
 
       // ── Per-player beeswarm (miscounts only) ─────────────────────────────
@@ -2195,7 +2200,7 @@
         .call(ax => {
           axisStyle(ax);
           ax.selectAll('text').each(function(d) {
-            d3.select(this).attr('fill', playerLight(d));
+            d3.select(this).attr('fill', playerLight(d)).attr('font-size', 7);
           });
         });
 
@@ -2211,7 +2216,7 @@
             .attr('opacity', d => d === 0 ? 0.4 : 1);
           ax.selectAll('text')
             .attr('fill', d => d === 0 ? '#9a8a70' : '#7a7060')
-            .attr('font-size', 6.5).attr('font-family', FONT);
+            .attr('font-size', 9).attr('font-family', FONT);
         });
 
       accuracy.forEach(a => {
@@ -2294,7 +2299,7 @@
         g.append('text')
           .attr('x', cx).attr('y', y(0))
           .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
-          .attr('fill', light).attr('font-size', 6.5).attr('font-weight', '600')
+          .attr('fill', light).attr('font-size', 10).attr('font-weight', '400')
           .attr('font-family', FONT)
           .text(`${Math.round(a.pct)}%`);
 
@@ -2422,7 +2427,7 @@
         .call(ax => {
           ax.select('.domain').remove();
           ax.selectAll('.tick line').attr('stroke','#2e2a22').attr('stroke-dasharray','2,2');
-          ax.selectAll('text').attr('fill','#7a7060').attr('font-size',6.5).attr('font-family',FONT);
+          ax.selectAll('text').attr('fill','#7a7060').attr('font-size',9).attr('font-family',FONT);
         });
 
       // Impossible score backgrounds
@@ -2470,7 +2475,7 @@
           ax.select('.domain').remove();
           ax.selectAll('text')
             .attr('fill', d => IMPOSSIBLE.has(d) ? '#4a4030' : '#7a7060')
-            .attr('font-size', 7).attr('font-family', FONT);
+            .attr('font-size', 9).attr('font-family', FONT);
         });
     }
 
