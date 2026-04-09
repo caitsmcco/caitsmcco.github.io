@@ -437,7 +437,7 @@
   <div class="page-body">
     <p style="font-size:.82rem;color:var(--muted);line-height:1.7;max-width:90%;">
       Cribbage is a game of pairs, runs, sets of fifteens, mental strategy and luck, if you need a refresher check out the <a href="about/" target="_blank" style="color:var(--gold);text-decoration:none;">scoring guide</a>.
-      <br>While you are playing there is plenty of room to blunder, either from a miscount <strong>⚠</strong> or a misplay. 
+      <br>While you are playing there is plenty of room to blunder, either from a miscount ⚠ or a misplay. 
       <br>This dashboard serves as a place to dive back into previous games and analyze each and every hand, and see the outcomes averages and distributions of some real cribbage games.
     </p>
     
@@ -450,7 +450,12 @@
         <div class="pt" style="margin-bottom:0;">Games Overview</div>
         <div class="sort-bar" id="sort-bar"></div>
       </div>
-      <div class="filter-bar" id="filter-bar" style="margin-bottom:.5rem;"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;gap:.5rem;">
+        <span style="display:flex;align-items:center;gap:5px;font-size:.62rem;color:#d4a030;white-space:nowrap;flex-shrink:0;">
+          <span style="font-size:.85rem;line-height:1;">⚠</span> hand miscount
+        </span>
+        <div class="filter-bar" id="filter-bar"></div>
+      </div>
       <div style="overflow-x:auto">
         <svg id="heatmap-svg"></svg>
       </div>
@@ -2361,16 +2366,15 @@
             // ── Miscount hazard sign ───────────────────────────────────────
             if (miscountKeys.has(`${game.date}|${rd.round}`)) {
               svg.append('text')
-                .attr('x', cx + CELL_W - 4)
-                .attr('y', gy + 5)
-                .attr('text-anchor', 'end')
-                .attr('dominant-baseline', 'hanging')
-                .attr('font-size', Math.min(CELL_H * 0.28, 7))
+                .attr('x', cx + CELL_W / 2)
+                .attr('y', gy + CELL_H / 2 + 1)
+                .attr('text-anchor', 'middle')
+                .attr('dominant-baseline', 'middle')
+                .attr('font-size', Math.min(CELL_H * 0.55, 14))
                 .attr('font-family', FONT)
-                .attr('fill', '#e5dad9')
+                .attr('fill', '#d4a030')
                 .attr('pointer-events', 'none')
-                .attr('opacity', 1)
-                .attr('font-weight', '700')
+                .attr('opacity', 0.9)
                 .text('⚠');
             }
 
