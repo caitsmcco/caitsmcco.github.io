@@ -321,38 +321,47 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 3px;
       opacity: 0.55;
       height: 100%;
       justify-content: center;
+      width: 100%;
     }
     .rd-play-seq {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 3px;
+      flex: 1;
+      width: 100%;
+      justify-content: space-evenly;
     }
+    /* Each card+total pair grows equally to fill the column */
     .rd-play-card-wrap {
       display: flex;
-      flex-direction: row;
+      flex-direction: column;
       align-items: center;
-      gap: 3px;
+      gap: 1px;
+      flex: 1;
+      width: 100%;
+      justify-content: center;
     }
     .rd-play-total {
-      font-size: .48rem;
+      font-size: .44rem;
       color: var(--text);
       line-height: 1;
       font-weight: 500;
-      min-width: 12px;
     }
-    /* Compact rank-only chip */
+    /* Compact rank-only chip — grows in height to fill its row */
     .rd-play-card {
       width: 24px !important;
-      height: 26px !important;
       border-radius: 3px !important;
       padding: 1px !important;
       justify-content: center !important;
       flex-shrink: 0;
+      flex: 1;
+      min-height: 20px;
+      max-height: 42px;
+      height: auto !important;
     }
     .rd-play-card .cr {
       font-size: 10px !important;
@@ -1176,7 +1185,36 @@
           </div>`;
       }
 
-      function cribSection(dealerColor) {
+      function cribSection(dealerColor, recordedCrib) {
+        const hasCribMiscount = scoredCrib && recordedCrib > 0 && scoredCrib.total !== recordedCrib;
+        const cribDiff  = hasCribMiscount ? recordedCrib - scoredCrib.total : 0;
+        const cribDiffColor = cribDiff > 0 ? '#db9f90' : '#88aacc';
+        const cribDiffLabel = cribDiff > 0 ? `+${cribDiff} over` : `${cribDiff} under`;
+
+        let cribVerdictHtml = '';
+        if (hasCribMiscount) {
+          const parts = [];
+          if (scoredCrib.fifteens) parts.push(`${scoredCrib.fifteens} from fifteens`);
+          if (scoredCrib.pairs)    parts.push(`${scoredCrib.pairs} from pairs`);
+          if (scoredCrib.runs)     parts.push(`${scoredCrib.runs} from runs`);
+          if (scoredCrib.flush)    parts.push(`${scoredCrib.flush} flush`);
+          if (scoredCrib.nob)      parts.push(`${scoredCrib.nob} nob`);
+          if (!parts.length)       parts.push('no scoring combinations');
+
+          cribVerdictHtml = `
+            <div class="mc-verdict mc-verdict--inline">
+              <div class="mc-diff-row">
+                <span class="mc-recorded">Recorded <strong style="color:var(--text)">${recordedCrib}</strong></span>
+                <span class="mc-arrow">→</span>
+                <span>Should be <strong style="color:${cribDiffColor}">${scoredCrib.total}</strong></span>
+                <span style="font-size:.65rem;color:${cribDiffColor};margin-left:.2rem">(${cribDiffLabel})</span>
+              </div>
+              <div class="mc-breakdown">
+                ${parts.join(' · ')} = <span>${scoredCrib.total}</span>
+              </div>
+            </div>`;
+        }
+
         return `
           <div class="rd-section-label rd-crib-label">
             crib
@@ -1186,7 +1224,8 @@
             ${d2.map(c => card(c, 'card--crib', c2)).join('')}
             ${!d1.length && !d2.length ? '<span class="rd-dash">—</span>' : ''}
             ${cutCard ? card(cutCard, 'card--cut-mini') : ''}
-          </div>`;
+          </div>
+          ${cribVerdictHtml}`;
       }
 
       function playerColumn(name, colorPeg, colorLite, h, peg, hand, crib, total, isDealer, scored, pillId) {
@@ -1244,7 +1283,7 @@
               </div>`).join('')}
             </div>` : ''}
             ${verdictHtml}
-            ${isDealer ? cribSection(colorPeg) : ''}
+            ${isDealer ? cribSection(colorPeg, crib) : ''}
           </div>`;
       }
 
@@ -1908,7 +1947,7 @@
             tip.classList.remove('vis');
           });
           hitRect.on('click', function() {
-            activateCell(d.game, d.rd, false);
+            selectRound(d.game, d.rd);
           });
         }
       });
@@ -2079,7 +2118,7 @@
             node.addEventListener('click', () => {
               const game = allGames.find(g => g.date === r.date);
               const rd   = game && game.rounds.find(rr => rr.round === r.round);
-              if (game && rd) activateCell(game, rd, false);
+              if (game && rd) selectRound(game, rd);
             });
             node.addEventListener('mousemove', e => {
               tip.style.left = (e.clientX + 14) + 'px';
@@ -2236,7 +2275,7 @@
             node.addEventListener('click', () => {
               const game = allGames.find(g => g.date === r.date);
               const rd   = game && game.rounds.find(rr => rr.round === r.round);
-              if (game && rd) activateCell(game, rd, false);
+              if (game && rd) selectRound(game, rd);
             });
             node.addEventListener('mousemove', e => {
               tip.style.left = (e.clientX + 14) + 'px';
@@ -2668,6 +2707,14 @@
       renderCards(rd, game);
     }
 
+    // Selects a round from outside the heatmap — clears heatmap selection
+    // and re-renders it so the gold highlight is removed.
+    function selectRound(game, rd) {
+      selectedCell = null;
+      renderHeatmap(sortedGames());
+      activateCell(game, rd, false);
+    }
+
 
     // ═══════════════════════════════════════════════════════════════════════
     //  HEATMAP
@@ -2838,17 +2885,9 @@
             // Hover: highlight row + show tooltip; preview round if nothing is selected
             node.addEventListener('mouseenter', () => {
               rowBg.attr('fill', 'rgba(255,255,255,.05)');
-              cell.attr('stroke', '#c8973a').attr('stroke-width', 2);
+              cell.attr('stroke', '#c8973a').attr('stroke-width', 2)
+                  .attr('fill', d3.color(fill) ? d3.color(fill).brighter(0.3) : fill);
               if (!selectedCell) activateCell(game, rd, true);
-
-              //const c2l = (PCOL[game.p2name] || PCOL.Colban).light;
-              //const hasMC = miscountKeys.has(`${game.date}|${rd.round}`);
-              //tip.innerHTML = `
-              //  <div class="tth">Round ${rd.round}</div>
-              //  <div class="tth">${ds}</div>
-              //  <div class="tth">${ts}</div>
-              //  ${hasMC ? `<div style="color:#d4a030;margin-top:3px;font-size:.85em">⚠ hand miscount this round</div>` : ''}`;
-              //tip.classList.add('vis');
             });
 
             // Track tooltip position with mouse
@@ -2863,7 +2902,9 @@
               const iS = selectedCell
                 && selectedCell.gameDate === game.date
                 && selectedCell.round   === rd.round;
-              cell.attr('stroke', iS ? '#c8973a' : '#0f0e0c').attr('stroke-width', iS ? 2 : 1.5);
+              cell.attr('stroke', iS ? '#c8973a' : '#0f0e0c')
+                  .attr('stroke-width', iS ? 2 : 1.5)
+                  .attr('fill', fill);
               tip.classList.remove('vis');
 
               // If a cell is selected, snap back to showing that round
