@@ -1380,15 +1380,18 @@
     }
 
     // Fixed internal viewBox dimensions for all trend charts
-    const VW = 260, VH = 170, VML = 28, VMR = 8, VMT = 14, VMB = 28;
-    const ViW = VW - VML - VMR, ViH = VH - VMT - VMB;
+    const VH = 170, VML = 28, VMR = 8, VMT = 14, VMB = 28;
 
     function trendSvg(id) {
-      return d3.select('#' + id)
+      const el = document.getElementById(id);
+      const VW = el.parentElement.clientWidth || 260;
+      const ViW = VW - VML - VMR, ViH = VH - VMT - VMB;
+      d3.select(el)
         .attr('viewBox', `0 0 ${VW} ${VH}`)
         .attr('preserveAspectRatio', 'xMidYMid meet')
         .attr('width', '100%')
         .attr('height', null);
+      return { svg: d3.select(el), VW, ViW, ViH };
     }
 
     function axisStyle(ax, isLeft = false) {
@@ -1432,7 +1435,7 @@
 
     function renderBar3(games) {
       clearChart('bar3');
-      const svg = trendSvg('bar3');
+      const { svg, ViW, ViH } = trendSvg('bar3');
       const g = svg.append('g').attr('transform', `translate(${VML},${VMT})`);
 
       // Collect wins/losses for every player in every game they played
@@ -1492,7 +1495,7 @@
 
     function renderBarAvg(games) {
       clearChart('bar-avg');
-      const svg = trendSvg('bar-avg');
+      const { svg, ViW, ViH } = trendSvg('bar-avg');
       const g = svg.append('g').attr('transform', `translate(${VML},${VMT})`);
 
       const players = allPlayers(games);
@@ -1584,7 +1587,7 @@
 
     function renderBarMax(games) {
       clearChart('bar-max');
-      const svg = trendSvg('bar-max');
+      const { svg, ViW, ViH } = trendSvg('bar-max');
       const g = svg.append('g').attr('transform', `translate(${VML},${VMT})`);
 
       const players = allPlayers(games);
@@ -1681,10 +1684,12 @@
         return;
       }
 
-      const W = 320, H = 360, ML = 26, MR = 8, MT = 12, MB = 30;
+      const H = 360, ML = 26, MR = 8, MT = 12, MB = 30;
+      const accEl = document.getElementById('bar-acc');
+      const W = accEl.parentElement.clientWidth || 320;
       const iW = W - ML - MR, iH = H - MT - MB;
 
-      const svg = d3.select('#bar-acc')
+      const svg = d3.select(accEl)
         .attr('viewBox', `0 0 ${W} ${H}`)
         .attr('preserveAspectRatio', 'xMidYMid meet')
         .attr('width', '100%')
