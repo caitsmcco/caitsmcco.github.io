@@ -330,7 +330,7 @@
 
     /* ── Miscount verdict ──────────────────────────────────────────────── */
     .mc-verdict--inline {
-      margin-top: .3rem; padding-top: .35rem; border-top: 1px solid var(--border);
+      margin-top: .3rem; padding: .35rem; border-color: #c8973a; border-width: 0.1rem ;border-top: 1px solid var(--border);
     }
     .mc-diff-row    { display: flex; align-items: baseline; gap: .3rem; font-size: .7rem; flex-wrap: wrap; }
     .mc-recorded    { color: var(--muted); }
@@ -437,7 +437,7 @@
   <div class="page-body">
     <p style="font-size:.82rem;color:var(--muted);line-height:1.7;max-width:90%;">
       Cribbage is a game of pairs, runs, sets of fifteens, mental strategy and luck, if you need a refresher check out the <a href="about/" target="_blank" style="color:var(--gold);text-decoration:none;">scoring guide</a>.
-      <br>While you are playing there is plenty of room to blunder, either from a miscount ⚠ or a misplay. 
+      <br>While you are playing there is plenty of room to blunder, either from a miscount <strong>⚠</strong> or a misplay. 
       <br>This dashboard serves as a place to dive back into previous games and analyze each and every hand, and see the outcomes averages and distributions of some real cribbage games.
     </p>
     
@@ -540,17 +540,18 @@
       Scoring rules based on:
       <a href="https://rubl.com/rules/cribbage-scoring-chart.html" target="_blank"
            style="color:var(--gold);text-decoration:none;">
-           rubl.com/rules/cribbage-scoring-chart.html
+           Cribbage Scoring Chart
         </a>
+        - Rubl.com Games (2004-2022).
       </div>
       <div>
         <span style="color:var(--muted);margin-right:.5rem;">2.</span>
         Hand score distribution data from:
-        <a href="https://en.wikipedia.org/wiki/Cribbage_statistics" target="_blank"
+        <a href="https://web.archive.org/web/20180116232822/http://web.engr.illinois.edu/~lumetta/humor/cribbage.html" target="_blank"
         style="color:var(--gold);text-decoration:none;">
-        en.wikipedia.org/wiki/Cribbage_statistics
+        Amusing Cribbage Facts
       </a>
-      — Lumetta, S. S. (2007). "Amusing Cribbage Facts."
+      — Lumetta, S. S. (2007).
     </div>
   </div>
 
@@ -1077,7 +1078,7 @@
         // Miscount verdict shown inline below the cards
         const hasMiscount = scored && scored.total !== hand;
         const diff = hasMiscount ? hand - scored.total : 0;
-        const diffColor   = diff > 0 ? '#d4a030' : '#8888cc';
+        const diffColor   = diff > 0 ? '#db9f90' : '#88aacc';
         const diffLabel   = diff > 0 ? `+${diff} over` : `${diff} under`;
 
         let verdictHtml = '';
@@ -1539,7 +1540,7 @@
             .attr('fill', col).attr('rx', 2).attr('opacity', 0.85);
           g.append('text').attr('x', bx + bw/2).attr('y', by - 2)
             .attr('text-anchor', 'middle').attr('fill', lbl)
-            .attr('font-size', 6).attr('font-family', FONT)
+            .attr('font-size', 5).attr('font-family', FONT)
             .text(Math.round(v.val * 10) / 10);
         });
       });
@@ -1678,7 +1679,7 @@
         .call(ax => {
           axisStyle(ax);
           ax.selectAll('text').each(function(d) {
-            d3.select(this).attr('fill', playerLight(d));
+            d3.select(this).attr('fill', playerLight(d)).attr('font-size', 7);
           });
         });
 
@@ -1794,7 +1795,7 @@
         g.append('text')
           .attr('x', cx).attr('y', y(0))
           .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
-          .attr('fill', light).attr('font-size', 9).attr('font-weight', '600')
+          .attr('fill', light).attr('font-size', 10).attr('font-weight', '400')
           .attr('font-family', FONT)
           .text(`${Math.round(a.pct)}%`);
 
@@ -1804,9 +1805,9 @@
           : 'avg 0';
 
         g.append('text')
-          .attr('x', cx).attr('y', iH + 15)
+          .attr('x', cx).attr('y', iH + 17)
           .attr('text-anchor', 'middle')
-          .attr('fill', '#7a7060').attr('font-size', 6).attr('font-family', FONT)
+          .attr('fill', '#7a7060').attr('font-size', 9).attr('font-family', FONT)
           .text(avgLabel);
       });
 
@@ -2366,9 +2367,10 @@
                 .attr('dominant-baseline', 'hanging')
                 .attr('font-size', Math.min(CELL_H * 0.28, 7))
                 .attr('font-family', FONT)
-                .attr('fill', '#d4a030')
+                .attr('fill', '#e5dad9')
                 .attr('pointer-events', 'none')
-                .attr('opacity', 0.9)
+                .attr('opacity', 1)
+                .attr('font-weight', '700')
                 .text('⚠');
             }
 
