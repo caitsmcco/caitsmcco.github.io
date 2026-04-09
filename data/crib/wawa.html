@@ -1177,42 +1177,71 @@
           </div>`;
       }
 
-      // Build the interleaved play sequence
-      // Dealer leads (plays first), non-dealer responds, alternating.
-      // p5/p6/p7 in each player's row are their played cards in order.
-      // A null value means a go or end of play — rendered as a separator.
+      // Build the interleaved play sequence.
+      //
+      // p1-p7 are ALL played cards in order — nulls mean that player
+      // didn't play on that turn (go or the sub-round ended for them).
+      // We interleave by position: dealer[0] then non-dealer[0], etc.
+      // When BOTH players have null at a position, that signals a
+      // sub-round boundary → render a card-sep divider.
+      // When only one is null, that player said "go" — skip their slot
+      // silently and continue to the next position.
       function buildPlaySequence() {
         const dealerRow      = p1IsDealer ? r1 : r2;
         const nonDealerRow   = p1IsDealer ? r2 : r1;
         const dealerColor    = p1IsDealer ? c1 : c2;
         const nonDealerColor = p1IsDealer ? c2 : c1;
 
-        const dPlayed  = ['p5','p6','p7'].map(f => dealerRow    ? parseCard(dealerRow[f])    : null);
-        const ndPlayed = ['p5','p6','p7'].map(f => nonDealerRow ? parseCard(nonDealerRow[f]) : null);
+        const fields = ['p1','p2','p3','p4','p5','p6','p7'];
+        const dCards  = fields.map(f => dealerRow    ? parseCard(dealerRow[f])    : null);
+        const ndCards = fields.map(f => nonDealerRow ? parseCard(nonDealerRow[f]) : null);
 
-        // Interleave: dealer[0], ndealer[0], dealer[1], ndealer[1], dealer[2], ndealer[2]
-        const seq = [];
-        for (let i = 0; i < 3; i++) {
-          seq.push({ card: dPlayed[i],  color: dealerColor });
-          seq.push({ card: ndPlayed[i], color: nonDealerColor });
+        // Walk through positions and build the display sequence
+        const items = [];
+        let playNum = 0;
+        let anyCards = false;
+
+        for (let i = 0; i < fields.length; i++) {
+          const dc  = dCards[i];
+          const ndc = ndCards[i];
+
+          if (!dc && !ndc) {
+            // Both null → sub-round boundary, add separator if we've seen cards
+            if (anyCards) {
+              items.push('<div class="card-sep"></div>');
+              anyCards = false;
+            }
+            continue;
+          }
+
+          // Dealer card for this position
+          if (dc) {
+            playNum++;
+            anyCards = true;
+            items.push(`<div class="rd-play-card-wrap">
+              <span class="rd-play-card-num">${playNum}</span>
+              <div class="card ${dc.red ? 'red' : 'black'}" style="box-shadow:0 0 0 2px ${dealerColor}">
+                <span class="cr">${dc.rank}</span><span class="cs">${SUIT[dc.suit]}</span>
+              </div>
+            </div>`);
+          }
+
+          // Non-dealer card for this position
+          if (ndc) {
+            playNum++;
+            anyCards = true;
+            items.push(`<div class="rd-play-card-wrap">
+              <span class="rd-play-card-num">${playNum}</span>
+              <div class="card ${ndc.red ? 'red' : 'black'}" style="box-shadow:0 0 0 2px ${nonDealerColor}">
+                <span class="cr">${ndc.rank}</span><span class="cs">${SUIT[ndc.suit]}</span>
+              </div>
+            </div>`);
+          }
         }
 
-        // Trim trailing nulls
-        while (seq.length && seq[seq.length - 1].card === null) seq.pop();
-        if (!seq.length) return '';
-
-        let playNum = 0;
-        const items = seq.map(({ card: c, color }) => {
-          if (!c) return '<div class="card-sep"></div>';
-          playNum++;
-          return `<div class="rd-play-card-wrap">
-            <span class="rd-play-card-num">${playNum}</span>
-            <div class="card ${c.red ? 'red' : 'black'}" style="box-shadow:0 0 0 2px ${color}">
-              <span class="cr">${c.rank}</span>
-              <span class="cs">${SUIT[c.suit]}</span>
-            </div>
-          </div>`;
-        });
+        // Remove trailing separator if any
+        while (items.length && items[items.length - 1].includes('card-sep')) items.pop();
+        if (!items.length) return '';
 
         return `<div style="border-top:1px solid var(--border);padding-top:.5rem;margin-top:.1rem;">
             <div class="rd-play-seq-label">Play sequence</div>
