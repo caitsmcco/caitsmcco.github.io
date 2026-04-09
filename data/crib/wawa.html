@@ -334,6 +334,20 @@
       color: var(--muted);
       line-height: 1;
     }
+    .rd-play-total {
+      font-size: .48rem;
+      color: var(--muted);
+      line-height: 1;
+      letter-spacing: .02em;
+    }
+    .card-sep {
+      width: 1px;
+      height: 52px;
+      background: var(--border);
+      margin: 0 4px;
+      flex-shrink: 0;
+      align-self: center;
+    }
     .rd-scores { display: flex; flex-direction: column; min-height: 48px; gap: 4px; margin-top: 3px; }
 
     .sc-pill {
@@ -1196,51 +1210,51 @@
         const dCards  = fields.map(f => dealerRow    ? parseCard(dealerRow[f])    : null);
         const ndCards = fields.map(f => nonDealerRow ? parseCard(nonDealerRow[f]) : null);
 
-        // Walk through positions and build the display sequence
-        const items = [];
-        let playNum = 0;
-        let anyCards = false;
+        let lastIdx = -1;
+        for (let i = fields.length - 1; i >= 0; i--) {
+          if (dCards[i] || ndCards[i]) { lastIdx = i; break; }
+        }
+        if (lastIdx < 0) return '';
 
-        for (let i = 0; i < fields.length; i++) {
+        // pip value for pegging: A=1, 2-9=face, 10/J/Q/K=10
+        const peg = rank => ['J','Q','K'].includes(rank) ? 10 : rank === 'A' ? 1 : parseInt(rank, 10);
+
+        const items = [];
+        let playNum    = 0;
+        let needsSep   = false;
+        let runTotal   = 0;   // running count for current sub-round, resets after separator
+
+        function cardHtml(c, color) {
+          runTotal += peg(c.rank);
+          playNum++;
+          return `<div class="rd-play-card-wrap">
+            <span class="rd-play-card-num">${playNum}</span>
+            <div class="card ${c.red ? 'red' : 'black'}" style="box-shadow:0 0 0 2px ${color}">
+              <span class="cr">${c.rank}</span><span class="cs">${SUIT[c.suit]}</span>
+            </div>
+            <span class="rd-play-total">${runTotal}</span>
+          </div>`;
+        }
+
+        for (let i = 0; i <= lastIdx; i++) {
           const dc  = dCards[i];
           const ndc = ndCards[i];
 
           if (!dc && !ndc) {
-            // Both null → sub-round boundary, add separator if we've seen cards
-            if (anyCards) {
-              items.push('<div class="card-sep"></div>');
-              anyCards = false;
-            }
+            needsSep = true;
             continue;
           }
 
-          // Dealer card for this position
-          if (dc) {
-            playNum++;
-            anyCards = true;
-            items.push(`<div class="rd-play-card-wrap">
-              <span class="rd-play-card-num">${playNum}</span>
-              <div class="card ${dc.red ? 'red' : 'black'}" style="box-shadow:0 0 0 2px ${dealerColor}">
-                <span class="cr">${dc.rank}</span><span class="cs">${SUIT[dc.suit]}</span>
-              </div>
-            </div>`);
+          if (needsSep && items.length) {
+            items.push('<div class="card-sep"></div>');
+            needsSep = false;
+            runTotal = 0;  // reset running total after sub-round boundary
           }
 
-          // Non-dealer card for this position
-          if (ndc) {
-            playNum++;
-            anyCards = true;
-            items.push(`<div class="rd-play-card-wrap">
-              <span class="rd-play-card-num">${playNum}</span>
-              <div class="card ${ndc.red ? 'red' : 'black'}" style="box-shadow:0 0 0 2px ${nonDealerColor}">
-                <span class="cr">${ndc.rank}</span><span class="cs">${SUIT[ndc.suit]}</span>
-              </div>
-            </div>`);
-          }
+          if (dc)  items.push(cardHtml(dc,  dealerColor));
+          if (ndc) items.push(cardHtml(ndc, nonDealerColor));
         }
 
-        // Remove trailing separator if any
-        while (items.length && items[items.length - 1].includes('card-sep')) items.pop();
         if (!items.length) return '';
 
         return `<div style="border-top:1px solid var(--border);padding-top:.5rem;margin-top:.1rem;">
