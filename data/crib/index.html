@@ -330,7 +330,21 @@
 
     /* ── Miscount verdict ──────────────────────────────────────────────── */
     .mc-verdict--inline {
-      margin-top: .3rem; padding: .35rem; border-color: #c8973a; border-width: 0.1rem ;border-top: 1px solid var(--border);
+      margin-top: .4rem;
+      padding: .4rem .6rem;
+      background: rgba(212, 160, 48, 0.08);
+      border-left: 3px solid #d4a030;
+      border-radius: 0 4px 4px 0;
+    }
+    .mc-verdict--inline::before {
+      content: '⚠ miscount';
+      display: block;
+      font-size: .55rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: #d4a030;
+      margin-bottom: .25rem;
+      font-weight: 600;
     }
     .mc-diff-row    { display: flex; align-items: baseline; gap: .3rem; font-size: .7rem; flex-wrap: wrap; }
     .mc-recorded    { color: var(--muted); }
@@ -2366,15 +2380,15 @@
             // ── Miscount hazard sign ───────────────────────────────────────
             if (miscountKeys.has(`${game.date}|${rd.round}`)) {
               svg.append('text')
-                .attr('x', cx + CELL_W / 2)
-                .attr('y', gy + CELL_H / 2 + 1)
-                .attr('text-anchor', 'middle')
-                .attr('dominant-baseline', 'middle')
-                .attr('font-size', Math.min(CELL_H * 0.55, 14))
+                .attr('x', cx + CELL_W - 3)
+                .attr('y', gy + 3)
+                .attr('text-anchor', 'end')
+                .attr('dominant-baseline', 'hanging')
+                .attr('font-size', Math.min(CELL_H * 0.48, 12))
                 .attr('font-family', FONT)
                 .attr('fill', '#d4a030')
                 .attr('pointer-events', 'none')
-                .attr('opacity', 0.9)
+                .attr('opacity', 0.95)
                 .text('⚠');
             }
 
