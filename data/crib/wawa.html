@@ -262,7 +262,7 @@
 
     /* ── Round breakdown panel ─────────────────────────────────────────── */
     .rd-empty { color: var(--muted); font-size: .82rem; padding: .5rem 0; font-style: italic; }
-    .rd-wrap  { display: flex; flex-direction: column; gap: .6rem; margin-top: .4rem; }
+    .rd-wrap  { display: flex; flex-direction: column; gap: .6rem; margin-top: 0; }
 
     .rd-players {
       display: grid;
@@ -312,20 +312,20 @@
     .rd-play-seq {
       display: flex;
       flex-wrap: wrap;
-      align-items: flex-end;
+      align-items: center;
       justify-content: center;
       gap: 3px;
     }
     .rd-play-seq-label {
-      font-size: .56rem;
+      font-size: .52rem;
       letter-spacing: .1em;
       text-transform: uppercase;
       color: var(--muted);
-      margin-bottom: .25rem;
+      margin-bottom: .2rem;
       text-align: center;
     }
     .rd-play-seq-wrap {
-      padding-bottom: .4rem;
+      padding-bottom: .35rem;
       border-bottom: 1px solid var(--border);
     }
     .rd-play-card-wrap {
@@ -334,33 +334,32 @@
       align-items: center;
       gap: 1px;
     }
-    .rd-play-card-num {
-      font-size: .42rem;
-      color: var(--muted);
-      line-height: 1;
-    }
     .rd-play-total {
-      font-size: .48rem;
+      font-size: .44rem;
       color: var(--muted);
       line-height: 1;
-      letter-spacing: .02em;
     }
-    .rd-play-seq .card {
-      width: 38px;
-      height: 54px;
-      font-size: .8rem;
+    /* Compact rank-only chip — no suit, smaller than a hand card */
+    .rd-play-card {
+      width: 26px !important;
+      height: 30px !important;
+      border-radius: 3px !important;
+      padding: 2px !important;
+      justify-content: center !important;
     }
-    .rd-play-seq .card .cr { font-size: 10px; }
-    .rd-play-seq .card .cs { font-size: 1.1rem; }
+    .rd-play-card .cr {
+      font-size: 11px !important;
+      align-self: auto !important;
+      line-height: 1 !important;
+    }
     .card-sep {
       width: 1px;
-      height: 52px;
+      height: 28px;
       background: var(--border);
-      margin: 0 4px;
+      margin: 0 3px;
       flex-shrink: 0;
       align-self: center;
     }
-    .rd-play-seq .card-sep { height: 42px; }
     .rd-scores { display: flex; flex-direction: column; min-height: 48px; gap: 4px; margin-top: 3px; }
 
     .sc-pill {
@@ -1234,23 +1233,20 @@
         const peg = rank => ['J','Q','K'].includes(rank) ? 10 : rank === 'A' ? 1 : parseInt(rank, 10);
 
         const items = [];
-        let playNum    = 0;
-        let needsSep   = false;
-        let runTotal   = 0;   // running count for current sub-round, resets after separator
+        let needsSep = false;
+        let runTotal = 0;
 
         function cardHtml(c, color) {
           const val = peg(c.rank);
-          // If adding this card would exceed 31, it starts a new sub-round
           if (runTotal + val > 31 && items.length) {
             items.push('<div class="card-sep"></div>');
             runTotal = 0;
           }
           runTotal += val;
-          playNum++;
+          // No play number, no suit — rank + running total only
           return `<div class="rd-play-card-wrap">
-            <span class="rd-play-card-num">${playNum}</span>
-            <div class="card ${c.red ? 'red' : 'black'}" style="box-shadow:0 0 0 2px ${color}">
-              <span class="cr">${c.rank}</span><span class="cs">${SUIT[c.suit]}</span>
+            <div class="card rd-play-card" style="box-shadow:0 0 0 2px ${color}">
+              <span class="cr">${c.rank}</span>
             </div>
             <span class="rd-play-total">${runTotal}</span>
           </div>`;
