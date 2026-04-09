@@ -304,15 +304,6 @@
     .rd-cards--played { gap: 5px; }
     .rd-play-slot     { display: flex; flex-direction: column; align-items: center; gap: 1px; }
     .rd-play-num      { font-size: .48rem; color: var(--muted); line-height: 1; }
-    .rd-go-marker {
-      width: 48px; height: 70px;
-      border-radius: 3px;
-      border: 1px dashed var(--border);
-      display: flex; align-items: center; justify-content: center;
-      font-size: .55rem; letter-spacing: .08em; text-transform: uppercase;
-      color: var(--muted);
-      flex-shrink: 0;
-    }
 
     .card--cut      { box-shadow: 0 0 0 2px var(--gold); }
     .card--cut-mini { opacity: .5; transform: scale(.82); transform-origin: bottom left; box-shadow: 0 0 0 1.5px var(--gold); }
@@ -604,7 +595,7 @@
     const PCOL = {
       Caitlin: { peg: '#c0392b', light: '#e85d4a' },
       Sarah:   { peg: '#6113a5', light: '#a855f7' },
-      Colban:  { peg: '#b223a4', light: '#e055d0' },
+      Colban:  { peg: '#918000', light: '#E3E049' },
       James:   { peg: '#185fa5', light: '#3a8fd4' },
       Darren:  { peg: '#0e7c55', light: '#10b981' },
     };
@@ -994,9 +985,8 @@
       const c2lite = (PCOL[game.p2name] || PCOL.Colban).light;
 
       const handCards = row => row
-        ? ['p1','p2','p3','p4','p5','p6','p7'].map(f => parseCard(row[f]))
+        ? ['p1','p2','p3','p4','p5','p6','p7'].map(f => parseCard(row[f])).filter(Boolean)
         : [];
-      // hand = first 4 non-null; played = p5-p7 with nulls preserved as go markers
       const cribCards = row => row
         ? [parseCard(row.d1), parseCard(row.d2)].filter(Boolean)
         : [];
@@ -1147,15 +1137,14 @@
             </div>
             <div class="rd-section-label">hand + cut</div>
             <div class="rd-cards">
-              ${h.slice(0,4).filter(Boolean).map(c => card(c)).join('')}
+              ${h.slice(0,4).map(c => card(c)).join('')}
               ${cutCard ? card(cutCard, 'card--cut-mini') : ''}
             </div>
-            ${h.slice(4).some(c => c !== null) ? `
+            ${h.length > 4 ? `
             <div class="rd-section-label">played</div>
             <div class="rd-cards rd-cards--played">
-              ${h.slice(4).map((c, i) => `<div class="rd-play-slot">
-                <span class="rd-play-num">${i+1}</span>
-                ${c ? card(c) : `<div class="rd-go-marker" title="go">go</div>`}
+              ${h.slice(4).map((c,i) => `<div class="rd-play-slot">
+                <span class="rd-play-num">${i+1}</span>${card(c)}
               </div>`).join('')}
             </div>` : ''}
             ${verdictHtml}
@@ -1380,18 +1369,15 @@
     }
 
     // Fixed internal viewBox dimensions for all trend charts
-    const VH = 170, VML = 28, VMR = 8, VMT = 14, VMB = 28;
+    const VW = 260, VH = 170, VML = 28, VMR = 8, VMT = 14, VMB = 28;
+    const ViW = VW - VML - VMR, ViH = VH - VMT - VMB;
 
     function trendSvg(id) {
-      const el = document.getElementById(id);
-      const VW = el.parentElement.clientWidth || 260;
-      const ViW = VW - VML - VMR, ViH = VH - VMT - VMB;
-      d3.select(el)
+      return d3.select('#' + id)
         .attr('viewBox', `0 0 ${VW} ${VH}`)
         .attr('preserveAspectRatio', 'xMidYMid meet')
         .attr('width', '100%')
         .attr('height', null);
-      return { svg: d3.select(el), VW, ViW, ViH };
     }
 
     function axisStyle(ax, isLeft = false) {
@@ -1435,7 +1421,7 @@
 
     function renderBar3(games) {
       clearChart('bar3');
-      const { svg, ViW, ViH } = trendSvg('bar3');
+      const svg = trendSvg('bar3');
       const g = svg.append('g').attr('transform', `translate(${VML},${VMT})`);
 
       // Collect wins/losses for every player in every game they played
@@ -1495,7 +1481,7 @@
 
     function renderBarAvg(games) {
       clearChart('bar-avg');
-      const { svg, ViW, ViH } = trendSvg('bar-avg');
+      const svg = trendSvg('bar-avg');
       const g = svg.append('g').attr('transform', `translate(${VML},${VMT})`);
 
       const players = allPlayers(games);
@@ -1587,7 +1573,7 @@
 
     function renderBarMax(games) {
       clearChart('bar-max');
-      const { svg, ViW, ViH } = trendSvg('bar-max');
+      const svg = trendSvg('bar-max');
       const g = svg.append('g').attr('transform', `translate(${VML},${VMT})`);
 
       const players = allPlayers(games);
@@ -1684,12 +1670,10 @@
         return;
       }
 
-      const H = 360, ML = 26, MR = 8, MT = 12, MB = 30;
-      const accEl = document.getElementById('bar-acc');
-      const W = accEl.parentElement.clientWidth || 320;
+      const W = 320, H = 360, ML = 26, MR = 8, MT = 12, MB = 30;
       const iW = W - ML - MR, iH = H - MT - MB;
 
-      const svg = d3.select(accEl)
+      const svg = d3.select('#bar-acc')
         .attr('viewBox', `0 0 ${W} ${H}`)
         .attr('preserveAspectRatio', 'xMidYMid meet')
         .attr('width', '100%')
@@ -2280,32 +2264,22 @@
       }
 
       // Layout constants
-      const FIXED_H   = 500;
-      const maxR      = d3.max(games, g => g.maxRound);
-      const LEFT      = 20;
-      const TOP       = 36;
-      const BOT       = 10;
+      const FIXED_H = 500;
+      const maxR    = d3.max(games, g => g.maxRound);
+      const LEFT    = 20;   // wider to fit ordinal label
+      const TOP     = 36;
+      const BOT     = 10;
 
-      // Measure the available pixel width of the SVG's parent so we can
-      // scale CELL_W to fill it exactly, then use a viewBox so the SVG
-      // always stretches to 100% width regardless of panel size.
-      const panelW    = document.getElementById('heatmap-svg').parentElement.clientWidth || 400;
-      const availW    = panelW - LEFT;
-      const COL_W     = Math.max(Math.floor(availW / maxR), 12);
-      const CELL_W    = COL_W - 3;
+      const availH  = FIXED_H - TOP - BOT;
+      const CELL_H  = Math.floor((availH - games.length * 3) / games.length);
+      const ROW_H   = CELL_H + 3;
+      const CELL_W  = 35;
+      const COL_W   = CELL_W + 3;
 
-      const availH    = FIXED_H - TOP - BOT;
-      const CELL_H    = Math.floor((availH - games.length * 3) / games.length);
-      const ROW_H     = CELL_H + 3;
+      const totalW = LEFT + maxR * COL_W;
+      const totalH = TOP + games.length * ROW_H + BOT;
 
-      const totalW    = LEFT + maxR * COL_W;
-      const totalH    = TOP + games.length * ROW_H + BOT;
-
-      svg
-        .attr('viewBox', `0 0 ${totalW} ${Math.max(totalH, FIXED_H)}`)
-        .attr('preserveAspectRatio', 'xMinYMin meet')
-        .attr('width', '100%')
-        .attr('height', null);
+      svg.attr('width', totalW).attr('height', Math.max(totalH, FIXED_H));
 
       // Max absolute score difference — used to normalise the colour scale
       const globalMax = d3.max(
