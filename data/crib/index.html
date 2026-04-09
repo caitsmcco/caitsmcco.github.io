@@ -595,7 +595,7 @@
     const PCOL = {
       Caitlin: { peg: '#c0392b', light: '#e85d4a' },
       Sarah:   { peg: '#6113a5', light: '#a855f7' },
-      Colban:  { peg: '#918000', light: '#E3E049' },
+      Colban:  { peg: '#9b4f7a', light: '#d47ab5' },
       James:   { peg: '#185fa5', light: '#3a8fd4' },
       Darren:  { peg: '#0e7c55', light: '#10b981' },
     };
@@ -2264,22 +2264,32 @@
       }
 
       // Layout constants
-      const FIXED_H = 500;
-      const maxR    = d3.max(games, g => g.maxRound);
-      const LEFT    = 20;   // wider to fit ordinal label
-      const TOP     = 36;
-      const BOT     = 10;
+      const FIXED_H   = 500;
+      const maxR      = d3.max(games, g => g.maxRound);
+      const LEFT      = 20;
+      const TOP       = 36;
+      const BOT       = 10;
 
-      const availH  = FIXED_H - TOP - BOT;
-      const CELL_H  = Math.floor((availH - games.length * 3) / games.length);
-      const ROW_H   = CELL_H + 3;
-      const CELL_W  = 35;
-      const COL_W   = CELL_W + 3;
+      // Measure the available pixel width of the SVG's parent so we can
+      // scale CELL_W to fill it exactly, then use a viewBox so the SVG
+      // always stretches to 100% width regardless of panel size.
+      const panelW    = document.getElementById('heatmap-svg').parentElement.clientWidth || 400;
+      const availW    = panelW - LEFT;
+      const COL_W     = Math.max(Math.floor(availW / maxR), 12);
+      const CELL_W    = COL_W - 3;
 
-      const totalW = LEFT + maxR * COL_W;
-      const totalH = TOP + games.length * ROW_H + BOT;
+      const availH    = FIXED_H - TOP - BOT;
+      const CELL_H    = Math.floor((availH - games.length * 3) / games.length);
+      const ROW_H     = CELL_H + 3;
 
-      svg.attr('width', totalW).attr('height', Math.max(totalH, FIXED_H));
+      const totalW    = LEFT + maxR * COL_W;
+      const totalH    = TOP + games.length * ROW_H + BOT;
+
+      svg
+        .attr('viewBox', `0 0 ${totalW} ${Math.max(totalH, FIXED_H)}`)
+        .attr('preserveAspectRatio', 'xMinYMin meet')
+        .attr('width', '100%')
+        .attr('height', null);
 
       // Max absolute score difference — used to normalise the colour scale
       const globalMax = d3.max(

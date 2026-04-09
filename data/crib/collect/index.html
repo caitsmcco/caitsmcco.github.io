@@ -3,30 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cribbage Dashboard</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <title>Collect Data — Cribbage</title>
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* ── Design tokens ─────────────────────────────────────────────────── */
+    /* ── Design tokens (shared with dashboard + about) ─────────── */
     :root {
-      --bg:     #222f1e;
-      --bg2:    #151a14;
-      --bg3:    #232018;
-      --border: #2e2a22;
-      --text:   #e8dfc8;
-      --muted:  #7a7060;
-      --gold:   #c8973a;
+      --bg:       #222f1e;
+      --bg2:      #151a14;
+      --bg3:      #232018;
+      --border:   #2e2a22;
+      --text:     #e8dfc8;
+      --muted:    #7a7060;
+      --gold:     #c8973a;
 
-      /* Single source of truth for all spacing */
-      --gap:    1rem;       /* gap between panels */
-      --page:   1.25rem;   /* page edge padding   */
+      /* Player accent colours */
+      --pa:       #185fa5;   /* Player A — blue */
+      --pa-hover: #0d3d6e;
+      --pb:       #c0392b;   /* Player B — red  */
+      --pb-hover: #7a1a14;
+
+      /* Card highlights */
+      --next-card:  #c8973a;   /* border on the slot waiting for the next card */
+      --played-card:#8B1A10;   /* border on a slot that has been filled         */
     }
 
-    /* ── Base ──────────────────────────────────────────────────────────── */
     body {
       background: var(--bg);
       color: var(--text);
@@ -35,7 +39,7 @@
       padding-bottom: 3rem;
     }
 
-    /* ── Nav ───────────────────────────────────────────────────────────── */
+    /* ── Nav ───────────────────────────────────────────────────── */
     nav {
       display: flex;
       align-items: center;
@@ -83,7 +87,7 @@
       margin-bottom: .15rem;
     }
 
-    h2 {
+    .subtitle {
       font-size: .78rem;
       color: var(--muted);
       letter-spacing: .08em;
@@ -91,65 +95,10 @@
       line-height: 1.6;
     }
 
-    
-    .section-heading {
-      font-size: .7rem; letter-spacing: .18em; text-transform: uppercase;
-      color: var(--muted); margin: 1rem 0 .5rem;
-      display: flex; align-items: center; gap: 10px;
-    }
-    .section-heading::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-    /* ── Distribution chart ─────────────────────────────────────── */
-    .dist-panel {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: .9rem 1.1rem;
-    }
-    .dist-title {
-      font-size: .7rem; letter-spacing: .12em; text-transform: uppercase;
-      color: var(--muted); margin-bottom: .5rem;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .dist-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-    .dist-legend {
-      display: flex; gap: 1.2rem; margin-top: .5rem;
-      font-size: .65rem; color: var(--muted); align-items: center;
-    }
-    .dist-legend span { display: flex; align-items: center; gap: 4px; }
-    .dist-legend-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
-    .dist-caption {
-      margin-top: .7rem;
-      font-size: .72rem;
-      color: var(--muted);
-      line-height: 1.7;
-      max-width: 860px;
-    }
-    .dist-caption strong { color: var(--text); font-weight: 530}
-    .dist-caption p { min-height: 80px;margin: 0; }
-
-    /* ── Page chrome — wraps all content below the header ─────────────── */
-    .page-body {
-      padding: 0 var(--page);
-      display: flex;
-      flex-direction: column;
-      gap: var(--gap);
-    }
-
-    /* ── Panel ─────────────────────────────────────────────────────────── */
-    .panel {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: .9rem 1rem;
-    }
-
-    /* Borderless — cribbage board column */
-    .panel2 { }
-
-    /* ── Section title ─────────────────────────────────────────────────── */
+    /* ── Section title ─────────────────────────────────────────── */
     .pt {
-      font-size: .68rem;
+      font-size: .75rem;
       letter-spacing: .12em;
       text-transform: uppercase;
       color: var(--muted);
@@ -158,2359 +107,878 @@
       align-items: center;
       gap: 8px;
     }
+
     .pt::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-    /* ── Top row: heatmap | board ──────────────────────────────────────── */
-    .top-row {
+    /* ── Panel ─────────────────────────────────────────────────── */
+    .panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .9rem 1.1rem;
+    }
+
+    /* ── Main 3-column layout ──────────────────────────────────── */
+    .game-grid {
       display: grid;
-      grid-template-columns: 2fr 3fr;
-      gap: var(--gap);
-      align-items: start;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem;
+      padding: 0 1.8rem;
+      margin-bottom: 1rem;
     }
 
-    /* ── Bottom row: 3 equal chart panels ─────────────────────────────── */
-    .bottom-row {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: var(--gap);
-      align-items: start;
+    /* ── Name-entry overlay ────────────────────────────────────── */
+    #nameEntry {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: .8rem;
+      padding: 1.2rem;
     }
 
-    /* ── Distribution + accuracy row ──────────────────────────────────── */
-    .dist-row {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: var(--gap);
-      align-items: start;
+    #nameEntry p {
+      font-size: .8rem;
+      color: var(--muted);
     }
 
-    /* Force both SVGs in the dist-row to the same pixel height */
-    #dist-hand, #dist-crib, #bar-acc {
-      display: block;
-      width: 100%;
-      height: 160px;
-    }
-
-    #bar-acc {
-      height: 360px;
-    }
-
-    /* ── Filter + sort bar controls ────────────────────────────────────── */
-    .filter-bar {
+    .name-row {
       display: flex;
       align-items: center;
-      justify-content: right;
-      gap: .3rem;
-      flex-wrap: wrap;
+      gap: .6rem;
+      font-size: .85rem;
+      color: var(--muted);
     }
 
-    .pill, .sort-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 2px 8px;
-      border-radius: 20px;
+    .name-input {
+      background: var(--bg3);
       border: 1px solid var(--border);
-      background: var(--bg2);
-      font-size: .6rem;
-      letter-spacing: .06em;
-      text-transform: uppercase;
-      cursor: pointer;
-      user-select: none;
+      border-radius: 5px;
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .85rem;
+      padding: .35rem .6rem;
+      width: 130px;
+      outline: none;
+      transition: border-color .15s;
+    }
+
+    .name-input:focus { border-color: var(--gold); }
+
+    /* ── Player panel shared ───────────────────────────────────── */
+    .player-panel { display: flex; flex-direction: column; gap: .6rem; }
+
+    .player-score-row {
+      display: flex;
+      align-items: baseline;
+      gap: .5rem;
+      margin-bottom: .4rem;
+    }
+
+    .player-name-label {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .total-score {
+      font-size: 1.4rem;
+      font-weight: 600;
+      font-family: 'Playfair Display', serif;
+      color: var(--gold);
+    }
+
+    /* Mode selector buttons (peg / hand / crib) */
+    .mode-buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      margin-bottom: .4rem;
+    }
+
+    .mode-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 5px;
       color: var(--muted);
       font-family: 'IBM Plex Mono', monospace;
-      transition: border-color .15s, color .15s, background .15s;
+      font-size: .7rem;
+      padding: .35rem .2rem;
+      cursor: pointer;
+      transition: background .12s, color .12s, border-color .12s;
+      text-align: center;
     }
 
-    .pill .pdot { width: 6px; height: 6px; border-radius: 50%; }
-
-    .pill.active, .sort-pill.active {
-      color: var(--text);
-      border-color: #5a5040;
-      background: var(--bg3);
-    }
-
-    .pill:hover, .sort-pill:hover {
+    .mode-btn:hover:not(:disabled) {
       border-color: var(--gold);
       color: var(--text);
     }
 
-    .sort-bar { display: flex; align-items: center; gap: .3rem; flex-wrap: wrap; }
-
-    /* ── Score bar ─────────────────────────────────────────────────────── */
-    .score-bar { font-size: .85rem; }
-    .si { padding-top:1rem; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-    .sd { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .sn { color: var(--muted); min-width: 52px; }
-    .sv { font-weight: 500; }
-    .sr { color: var(--muted); font-size: .85rem; }
-
-    /* ── Heatmap legend ────────────────────────────────────────────────── */
-    .legend {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      margin-top: .5rem;
-      font-size: .58rem;
-      color: var(--muted);
+    .mode-btn:disabled {
+      border-color: var(--gold);
+      color: var(--gold);
+      background: var(--bg2);
+      cursor: default;
     }
-    .lgc { width: 90px; height: 7px; border-radius: 3px; }
 
-    /* ── SVG containers ────────────────────────────────────────────────── */
-    #heatmap-svg { display: block; width: 100%; }
-    #board-svg   { width: 100%; display: block; }
-
-    /* ── Round breakdown panel ─────────────────────────────────────────── */
-    .rd-empty { color: var(--muted); font-size: .82rem; padding: .5rem 0; font-style: italic; }
-    .rd-wrap  { display: flex; flex-direction: column; gap: .6rem; margin-top: .4rem; }
-
-    .rd-players {
+    /* Point-addition buttons */
+    .add-grid {
       display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      gap: .5rem;
-      align-items: start;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
     }
 
-    .rd-divider { width: 1px; background: var(--border); align-self: stretch; margin: 0 .1rem; }
-
-    .rd-player-name-row {
-      display: flex;
-      align-items: baseline;
-      gap: .35rem;
-      flex-wrap: wrap;
-      margin-bottom: .08rem;
-    }
-
-    .rd-player-name  { font-size: .8rem; font-weight: 500; letter-spacing: .02em; }
-    .rd-player-total { font-size: .76rem; font-weight: 600; font-family: 'Playfair Display', serif; }
-
-    .rd-section-label {
-      font-size: .56rem;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      color: var(--muted);
-      padding-top: .5rem;
-    }
-
-    .rd-crib-label  { display: flex; align-items: center; gap: 5px; }
-    .rd-dealer-tag  {
-      font-size: .5rem; letter-spacing: .07em; text-transform: uppercase;
-      border: 1px solid; border-radius: 3px; padding: 0 3px; line-height: 1.5;
-    }
-
-    .card--crib { border-style: double; opacity: .95; }
-
-    .rd-cards         { display: flex; gap: 3px; flex-wrap: wrap; align-items: flex-end; }
-    .rd-cards--played { gap: 5px; }
-    .rd-play-slot     { display: flex; flex-direction: column; align-items: center; gap: 1px; }
-    .rd-play-num      { font-size: .48rem; color: var(--muted); line-height: 1; }
-
-    .card--cut      { box-shadow: 0 0 0 2px var(--gold); }
-    .card--cut-mini { opacity: .5; transform: scale(.82); transform-origin: bottom left; box-shadow: 0 0 0 1.5px var(--gold); }
-
-    /* ── Score pills ───────────────────────────────────────────────────── */
-    .rd-scores { display: flex; flex-direction: column; min-height: 48px; gap: 4px; margin-top: 3px; }
-
-    .sc-pill {
-      display: grid;
-      grid-template-columns: 26px 1fr 22px;
-      align-items: center;
-      gap: 5px;
-    }
-    .sc-pill--zero    { opacity: .3; }
-    .sc-pill--miscount { cursor: pointer; }
-
-    .sc-pill-label {
-      font-size: .55rem; letter-spacing: .06em; text-transform: uppercase;
-      color: var(--muted); text-align: right;
-    }
-    .sc-pill-bar  { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
-    .sc-pill-fill { height: 100%; background: var(--pill-color, var(--gold)); border-radius: 3px; transition: width .35s ease; }
-    .sc-pill-val  { font-size: .65rem; font-weight: 500; color: var(--pill-color, var(--muted)); text-align: right; }
-
-    /* ── Miscount verdict ──────────────────────────────────────────────── */
-    .mc-verdict--inline {
-      margin-top: .4rem;
-      padding: .4rem .6rem;
-      background: rgba(212, 160, 48, 0.08);
-      border-left: 3px solid #d4a030;
-      border-radius: 0 4px 4px 0;
-    }
-    .mc-verdict--inline::before {
-      content: '⚠ miscount';
-      display: block;
-      font-size: .55rem;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      color: #d4a030;
-      margin-bottom: .25rem;
-      font-weight: 600;
-    }
-    .mc-diff-row    { display: flex; align-items: baseline; gap: .3rem; font-size: .7rem; flex-wrap: wrap; }
-    .mc-recorded    { color: var(--muted); }
-    .mc-arrow       { color: var(--muted); font-size: .58rem; }
-    .mc-breakdown   { font-size: .63rem; color: var(--muted); line-height: 1.6; margin-top: .08rem; }
-    .mc-breakdown span { color: var(--text); }
-
-    /* ── Playing card ──────────────────────────────────────────────────── */
-    .card {
-      width: 48px;
-      height: 70px;
-      border-radius: 3px;
-      border: 1px solid #3a3020;
-      background: #f5f0e8;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-between;
-      padding: 2px;
-      font-weight: 700;
+    .add-btn {
+      border-radius: 5px;
+      border: 1px solid transparent;
       font-family: 'IBM Plex Mono', monospace;
-      flex-shrink: 0;
-      transition: transform .15s;
+      font-size: .72rem;
+      padding: .38rem 0;
+      cursor: pointer;
+      transition: background .12s;
     }
-    .card:hover { transform: translateY(-2px); }
-    .card .cr { font-size: 12px; line-height: 1; align-self: flex-start; }
-    .card .cs { font-size: 14px; line-height: 1; }
-    .card.red   .cr, .card.red   .cs { color: #c0392b; font-size: 1.7rem; }
-    .card.black .cr, .card.black .cs { color: #1a1814; font-size: 1.7rem; }
-    .card.blank { background: #1a1814; border-color: #2e2a22; }
 
-    /* ── Tooltips ──────────────────────────────────────────────────────── */
-    .tooltip {
-      position: fixed;
+    .add-btn-a {
+      background: var(--pa);
+      color: #e8f0fb;
+      border-color: #0d3d6e;
+    }
+
+    .add-btn-a:hover { background: var(--pa-hover); }
+
+    .add-btn-b {
+      background: var(--pb);
+      color: #fbe8e8;
+      border-color: #7a1a14;
+    }
+
+    .add-btn-b:hover { background: var(--pb-hover); }
+
+    .oops-btn {
+      grid-column: span 5;
       background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .72rem;
+      padding: .3rem;
+      cursor: pointer;
+      transition: color .12s, border-color .12s;
+    }
+
+    .oops-btn:hover { color: var(--text); border-color: var(--gold); }
+
+    /* ── Centre column: cards ──────────────────────────────────── */
+    .centre-col { display: flex; flex-direction: column; gap: .6rem; }
+
+    /* Slot buttons — crib cards, cut card, play order */
+    .slot-row {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .slot-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .72rem;
+      padding: .3rem .5rem;
+      cursor: pointer;
+      transition: background .12s, border-color .12s, color .12s;
+      min-width: 44px;
+    }
+
+    .slot-btn:disabled {
+      background: var(--bg2);
+      cursor: default;
+    }
+
+    /* played / filled slot */
+    .slot-btn.filled {
+      background: var(--bg3);
+      border-color: var(--played-card);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    /* Cut card slot */
+    #cc { width: 100%; }
+
+    /* Running total display */
+    .running-total {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      text-align: center;
+      padding: .5rem;
+      font-size: 1.1rem;
+      color: var(--gold);
+    }
+
+    .running-total-label {
+      font-size: .65rem;
+      color: var(--muted);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+
+    /* Go / End Play / New Round buttons */
+    .action-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .action-btn {
+      flex: 1;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .78rem;
+      padding: .5rem;
+      cursor: pointer;
+      transition: color .12s, border-color .12s;
+    }
+
+    .action-btn:hover { color: var(--text); border-color: var(--gold); }
+
+    .action-btn.primary {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    .action-btn.primary:hover { background: #2a1e08; }
+
+    /* ── Deck ──────────────────────────────────────────────────── */
+    .deck-panel {
+      padding: .9rem 1.1rem;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin: 0 1.8rem 1rem;
+    }
+
+    .deck-row {
+      display:flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    
+    .deck-btn {
+      width: 6.5%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .78rem;
+      padding: .28rem .45rem;
+      cursor: pointer;
+      transition: background .1s, border-color .1s, opacity .1s;
+      white-space: nowrap;
+    }
+
+    .deck-btn:disabled { opacity: .22; cursor: default; }
+
+    /* Suit colours */
+    .suit-s { color: #c0c8d8; }
+    .suit-d { color: #e85d4a; }
+    .suit-c { color: #6aaa6a; }
+    .suit-h { color: #e85d4a; }
+
+    .deck-btn:hover:not(:disabled) { border-color: var(--gold); }
+
+    /* ── Footer actions ────────────────────────────────────────── */
+    .footer-actions {
+      display: flex;
+      gap: .8rem;
+      padding: 0 1.8rem;
+    }
+
+    .footer-btn {
+      background: var(--bg2);
       border: 1px solid var(--border);
       border-radius: 6px;
-      padding: .4rem .65rem;
-      font-size: .75rem;
-      color: var(--text);
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity .12s;
-      z-index: 100;
-      line-height: 1.7;
-    }
-    .tooltip.vis { opacity: 1; }
-    .tth { color: var(--gold); font-weight: 500; margin-bottom: 1px; }
-
-    .score-tip {
-      position: fixed;
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: 7px;
-      padding: .5rem .75rem;
-      font-size: .72rem;
-      color: var(--text);
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity .12s;
-      z-index: 200;
-      line-height: 1.8;
-      min-width: 170px;
-      box-shadow: 0 4px 16px rgba(0,0,0,.4);
-    }
-    .score-tip.vis { opacity: 1; }
-    .score-tip-title {
-      font-size: .65rem; letter-spacing: .08em; text-transform: uppercase;
-      color: var(--gold); margin-bottom: .25rem; font-weight: 500;
-    }
-    .score-tip-row { display: flex; justify-content: space-between; gap: 1.2rem; }
-    .score-tip-row.total   { border-top: 1px solid var(--border); margin-top: .2rem; padding-top: .2rem; font-weight: 600; }
-    .score-tip-row.mismatch { color: #e0a030; border-top: 1px solid var(--border); margin-top: .2rem; padding-top: .2rem; }
-    .score-tip-key { color: var(--muted); }
-
-    /* ── Responsive breakpoints ────────────────────────────────────────── */
-    @media (max-width: 900px) {
-      .top-row    { grid-template-columns: 1fr; }
-      .bottom-row { grid-template-columns: repeat(2, 1fr); }
-      .dist-row   { grid-template-columns: 1fr; }
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .8rem;
+      padding: .5rem 1.2rem;
+      cursor: pointer;
+      transition: color .12s, border-color .12s;
     }
 
-    @media (max-width: 520px) {
-      :root { --page: .75rem; --gap: .65rem; }
-      .bottom-row { grid-template-columns: 1fr; }
-      h1 { font-size: 1.4rem; }
-    }
+    .footer-btn:hover { color: var(--text); border-color: var(--gold); }
 
+    .footer-btn.primary { border-color: var(--gold); color: var(--gold); }
+    .footer-btn.primary:hover { background: #2a1e08; }
+
+    /* ── Responsive ────────────────────────────────────────────── */
+    @media (max-width: 800px) {
+      .game-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
-
 <body>
+
+  <!-- ── Navigation ────────────────────────────────────────────── -->
   <nav>
     <a class="nav-brand">Cribbage</a>
-    <a href="..\crib" class="active">Dashboard</a>
-    <a href="about/">Scoring Guide</a>
-    <a href="collect/" >Collect Data</a>
+    <a href="../">Dashboard</a>
+    <a href="../about/">About Cribbage</a>
+    <a href="../collect" class="active">Collect Data</a>
   </nav>
 
   <div class="page-header">
-    <h1>A Semesters Worth of Cribbage</h1>
+    <h1>Collect Data</h1>
+    <div class="subtitle">Record a game round by round</div>
   </div>
-  
-  <div class="page-body">
-    <p style="font-size:.82rem;color:var(--muted);line-height:1.7;max-width:90%;">
-      Cribbage is a game of pairs, runs, sets of fifteens, mental strategy and luck, if you need a refresher check out the <a href="about/" target="_blank" style="color:var(--gold);text-decoration:none;">scoring guide</a>.
-      <br>While you are playing there is plenty of room to blunder, either from a miscount ⚠ or a misplay. 
-      <br>This dashboard serves as a place to dive back into previous games and analyze each and every hand, and see the outcomes averages and distributions of some real cribbage games.
-    </p>
-    
-  <!-- ── Top row: heatmap | board ──────────────────────────────────────── -->
-  <div class="top-row">
 
-    <!-- LEFT: game heatmap -->
-    <div class="panel" name="heatmap">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;">
-        <div class="pt" style="margin-bottom:0;">Games Overview</div>
-        <div class="sort-bar" id="sort-bar"></div>
+  <!-- ── Three-column game area ─────────────────────────────────── -->
+  <div class="game-grid">
+
+    <!-- ── Player A (left) ──────────────────────────────────────── -->
+    <div class="panel player-panel" id="playeraInfo">
+      <div class="pt">Player A</div>
+
+      <div class="player-score-row">
+        <span class="player-name-label" id="playeraName">Player 1</span>
+        <span>:</span>
+        <span class="total-score" id="pointa">0</span>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;gap:.5rem;">
-        <span style="display:flex;align-items:center;gap:5px;font-size:.62rem;color:#d4a030;white-space:nowrap;flex-shrink:0;">
-          <span style="font-size:.85rem;line-height:1;">⚠</span> hand miscount
-        </span>
-        <div class="filter-bar" id="filter-bar"></div>
+
+      <!-- Mode selector -->
+      <div class="mode-buttons">
+        <button class="mode-btn" id="peggedPointsA" disabled onclick="setMode('peggedPoints')">
+          Peg <span id="peggedPointsa">0</span>
+        </button>
+        <button class="mode-btn" id="handPointsA" onclick="setMode('handPoints')">
+          Hand <span id="handPointsa">0</span>
+        </button>
+        <button class="mode-btn" id="cribPointsA" onclick="setMode('cribPoints')">
+          Crib <span id="cribPointsa">0</span>
+        </button>
+        <button class="oops-btn" style="grid-column:auto;" onclick="zero('a')">↺ oops</button>
       </div>
-      <div style="overflow-x:auto">
-        <svg id="heatmap-svg"></svg>
-      </div>
-      <div class="legend">
-        <span id="leg-l">Opponent</span>
-        <canvas class="lgc" id="legend-canvas"></canvas>
-        <span id="leg-r">Caitlin leading</span>
+
+      <!-- Point buttons -->
+      <div class="add-grid">
+        <button class="add-btn add-btn-a" onclick="add('a',1)">+1</button>
+        <button class="add-btn add-btn-a" onclick="add('a',2)">+2</button>
+        <button class="add-btn add-btn-a" onclick="add('a',3)">+3</button>
+        <button class="add-btn add-btn-a" onclick="add('a',4)">+4</button>
+        <button class="add-btn add-btn-a" onclick="add('a',5)">+5</button>
+        <button class="add-btn add-btn-a" onclick="add('a',6)">+6</button>
+        <button class="add-btn add-btn-a" onclick="add('a',7)">+7</button>
+        <button class="add-btn add-btn-a" onclick="add('a',8)">+8</button>
+        <button class="add-btn add-btn-a" onclick="add('a',9)">+9</button>
+        <button class="add-btn add-btn-a" onclick="add('a',10)">+10</button>
+        <button class="add-btn add-btn-a" onclick="add('a',11)">+11</button>
+        <button class="add-btn add-btn-a" onclick="add('a',12)">+12</button>
+        <button class="add-btn add-btn-a" onclick="add('a',13)">+13</button>
+        <button class="add-btn add-btn-a" onclick="add('a',14)">+14</button>
+        <button class="add-btn add-btn-a" onclick="add('a',15)">+15</button>
+        <button class="add-btn add-btn-a" onclick="add('a',16)">+16</button>
+        <button class="add-btn add-btn-a" onclick="add('a',17)">+17</button>
+        <button class="add-btn add-btn-a" onclick="add('a',18)">+18</button>
+        <button class="add-btn add-btn-a" onclick="add('a',20)">+20</button>
+        <button class="add-btn add-btn-a" onclick="add('a',21)">+21</button>
+        <button class="add-btn add-btn-a" onclick="add('a',22)">+22</button>
+        <button class="add-btn add-btn-a" onclick="add('a',23)">+23</button>
+        <button class="add-btn add-btn-a" onclick="add('a',24)">+24</button>
+        <button class="add-btn add-btn-a" onclick="add('a',28)">+28</button>
+        <button class="add-btn add-btn-a" onclick="add('a',29)">+29</button>
       </div>
     </div>
 
-    <!-- RIGHT: cribbage board + score display + played cards -->
-    <div class="panel2" name="cribbageboard">
-      <div class="score-bar">
-        <div class="si">
-          <span class="sr" id="game-label"></span>
-          <span class="sr" id="r-detail">Round 0 ·</span>
-          <span class="sd" id="dot1"></span>
-          <span class="sn" id="p1-label">—</span>
-          <span class="sv" id="p1-score">0</span>
-          <span class="sr" id="p1-detail">·</span>
-          <span class="sd" id="dot2"></span>
-          <span class="sn" id="p2-label">·</span>
-          <span class="sv" id="p2-score">0</span>
+    <!-- ── Centre: card slots ────────────────────────────────────── -->
+    <div class="panel centre-col" id="main">
+
+      <!-- Name entry (shown until New Game is clicked) -->
+      <div id="nameEntry">
+        <p>Enter player names to begin</p>
+        <div class="name-row">
+          <input class="name-input" type="text" id="pNamea" placeholder="Player A">
+          <span style="color:var(--muted)">vs</span>
+          <input class="name-input" type="text" id="pNameb" placeholder="Player B">
         </div>
+        <button class="action-btn primary" onclick="enterName()">New Game</button>
       </div>
-      <svg id="board-svg" viewBox="-10 30 720 200"></svg>
-      <div id="cards-content"></div>
+
+      <!-- Card slots (hidden until game starts) -->
+      <div id="roundCards" style="display:none;">
+
+        <!-- Crib slots (4 discard cards) -->
+        <div class="pt">Crib</div>
+        <div class="slot-row">
+          <button name="C" class="slot-btn next_button" id="d1" disabled onclick="removeCard('d1')">C</button>
+          <button name="R" class="slot-btn next_button" id="d2" disabled onclick="removeCard('d2')">R</button>
+          <button name="I" class="slot-btn next_button" id="d3" disabled onclick="removeCard('d3')">I</button>
+          <button name="B" class="slot-btn next_button" id="d4" disabled onclick="removeCard('d4')">B</button>
+        </div>
+
+        <!-- Cut card -->
+        <div class="pt" style="margin-top:.4rem;">Cut card</div>
+        <div class="slot-row">
+          <button name="Cut Card" class="slot-btn next_button" id="cc" disabled onclick="removeCard('cc')">Cut Card</button>
+        </div>
+
+        <!-- Played cards -->
+        <div class="pt" style="margin-top:.4rem;">Play order</div>
+        <div class="slot-row" style="flex-direction:column; gap:4px;">
+          <div style="display:flex;gap:5px;">
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p1a')" id="p1a">p1a</button>
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p1b')" id="p1b">p1b</button>
+          </div>
+          <div style="display:flex;gap:5px;">
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p2a')" id="p2a">p2a</button>
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p2b')" id="p2b">p2b</button>
+          </div>
+          <div style="display:flex;gap:5px;">
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p3a')" id="p3a">p3a</button>
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p3b')" id="p3b">p3b</button>
+          </div>
+          <div style="display:flex;gap:5px;">
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p4a')" id="p4a">p4a</button>
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p4b')" id="p4b">p4b</button>
+          </div>
+          <div style="display:flex;gap:5px;">
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p5a')" id="p5a">p5a</button>
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p5b')" id="p5b">p5b</button>
+          </div>
+          <div style="display:flex;gap:5px;">
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p6a')" id="p6a">p6a</button>
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p6b')" id="p6b">p6b</button>
+          </div>
+          <div style="display:flex;gap:5px;">
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p7a')" id="p7a">p7a</button>
+            <button name="played" disabled class="slot-btn button_play" onclick="removeCard('p7b')" id="p7b">p7b</button>
+          </div>
+        </div>
+
+        <!-- GO / End Play -->
+        <div class="action-row" style="margin-top:.6rem;">
+          <button class="action-btn" onclick="addGo('GO')" id="GO">Go</button>
+          <button class="action-btn" onclick="endPlay()">End Play</button>
+        </div>
+
+        <!-- Running total -->
+        <div style="margin-top:.5rem;">
+          <div class="running-total-label">Running total</div>
+          <div class="running-total" id="runningTotal">0</div>
+        </div>
+
+      </div><!-- /roundCards -->
+    </div><!-- /centre-col -->
+
+    <!-- ── Player B (right) ──────────────────────────────────────── -->
+    <div class="panel player-panel" id="playerbInfo">
+      <div class="pt">Player B</div>
+
+      <div class="player-score-row">
+        <span class="player-name-label" id="playerbName">Player 2</span>
+        <span>:</span>
+        <span class="total-score" id="pointb">0</span>
+      </div>
+
+      <!-- Mode selector -->
+      <div class="mode-buttons">
+        <button class="mode-btn" id="peggedPointsB" disabled onclick="setMode('peggedPoints')">
+          Peg <span id="peggedPointsb">0</span>
+        </button>
+        <button class="mode-btn" id="handPointsB" onclick="setMode('handPoints')">
+          Hand <span id="handPointsb">0</span>
+        </button>
+        <button class="mode-btn" id="cribPointsB" onclick="setMode('cribPoints')">
+          Crib <span id="cribPointsb">0</span>
+        </button>
+        <button class="oops-btn" style="grid-column:auto;" onclick="zero('b')">↺ oops</button>
+      </div>
+
+      <!-- Point buttons -->
+      <div class="add-grid">
+        <button class="add-btn add-btn-b" onclick="add('b',1)">+1</button>
+        <button class="add-btn add-btn-b" onclick="add('b',2)">+2</button>
+        <button class="add-btn add-btn-b" onclick="add('b',3)">+3</button>
+        <button class="add-btn add-btn-b" onclick="add('b',4)">+4</button>
+        <button class="add-btn add-btn-b" onclick="add('b',5)">+5</button>
+        <button class="add-btn add-btn-b" onclick="add('b',6)">+6</button>
+        <button class="add-btn add-btn-b" onclick="add('b',7)">+7</button>
+        <button class="add-btn add-btn-b" onclick="add('b',8)">+8</button>
+        <button class="add-btn add-btn-b" onclick="add('b',9)">+9</button>
+        <button class="add-btn add-btn-b" onclick="add('b',10)">+10</button>
+        <button class="add-btn add-btn-b" onclick="add('b',11)">+11</button>
+        <button class="add-btn add-btn-b" onclick="add('b',12)">+12</button>
+        <button class="add-btn add-btn-b" onclick="add('b',13)">+13</button>
+        <button class="add-btn add-btn-b" onclick="add('b',14)">+14</button>
+        <button class="add-btn add-btn-b" onclick="add('b',15)">+15</button>
+        <button class="add-btn add-btn-b" onclick="add('b',16)">+16</button>
+        <button class="add-btn add-btn-b" onclick="add('b',17)">+17</button>
+        <button class="add-btn add-btn-b" onclick="add('b',18)">+18</button>
+        <button class="add-btn add-btn-b" onclick="add('b',20)">+20</button>
+        <button class="add-btn add-btn-b" onclick="add('b',21)">+21</button>
+        <button class="add-btn add-btn-b" onclick="add('b',22)">+22</button>
+        <button class="add-btn add-btn-b" onclick="add('b',23)">+23</button>
+        <button class="add-btn add-btn-b" onclick="add('b',24)">+24</button>
+        <button class="add-btn add-btn-b" onclick="add('b',28)">+28</button>
+        <button class="add-btn add-btn-b" onclick="add('b',29)">+29</button>
+      </div>
+    </div>
+
+  </div><!-- /game-grid -->
+
+  <!-- ── Deck ──────────────────────────────────────────────────── -->
+  <div class="deck-panel">
+    <div class="pt">Deck</div>
+    <div class="deck-row">
+      <button class="deck-btn button_deck" name="1"  onclick="addCard('AS')"  id="AS" ><span class="suit-s">A♠</span></button>
+      <button class="deck-btn button_deck" name="2"  onclick="addCard('2S')"  id="2S" ><span class="suit-s">2♠</span></button>
+      <button class="deck-btn button_deck" name="3"  onclick="addCard('3S')"  id="3S" ><span class="suit-s">3♠</span></button>
+      <button class="deck-btn button_deck" name="4"  onclick="addCard('4S')"  id="4S" ><span class="suit-s">4♠</span></button>
+      <button class="deck-btn button_deck" name="5"  onclick="addCard('5S')"  id="5S" ><span class="suit-s">5♠</span></button>
+      <button class="deck-btn button_deck" name="6"  onclick="addCard('6S')"  id="6S" ><span class="suit-s">6♠</span></button>
+      <button class="deck-btn button_deck" name="7"  onclick="addCard('7S')"  id="7S" ><span class="suit-s">7♠</span></button>
+      <button class="deck-btn button_deck" name="8"  onclick="addCard('8S')"  id="8S" ><span class="suit-s">8♠</span></button>
+      <button class="deck-btn button_deck" name="9"  onclick="addCard('9S')"  id="9S" ><span class="suit-s">9♠</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('10S')" id="10S"><span class="suit-s">10♠</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('JS')"  id="JS" ><span class="suit-s">J♠</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('QS')"  id="QS" ><span class="suit-s">Q♠</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('KS')"  id="KS" ><span class="suit-s">K♠</span></button>
+    </div>
+    <div class="deck-row">
+      <button class="deck-btn button_deck" name="1"  onclick="addCard('AD')"  id="AD" ><span class="suit-d">A♦</span></button>
+      <button class="deck-btn button_deck" name="2"  onclick="addCard('2D')"  id="2D" ><span class="suit-d">2♦</span></button>
+      <button class="deck-btn button_deck" name="3"  onclick="addCard('3D')"  id="3D" ><span class="suit-d">3♦</span></button>
+      <button class="deck-btn button_deck" name="4"  onclick="addCard('4D')"  id="4D" ><span class="suit-d">4♦</span></button>
+      <button class="deck-btn button_deck" name="5"  onclick="addCard('5D')"  id="5D" ><span class="suit-d">5♦</span></button>
+      <button class="deck-btn button_deck" name="6"  onclick="addCard('6D')"  id="6D" ><span class="suit-d">6♦</span></button>
+      <button class="deck-btn button_deck" name="7"  onclick="addCard('7D')"  id="7D" ><span class="suit-d">7♦</span></button>
+      <button class="deck-btn button_deck" name="8"  onclick="addCard('8D')"  id="8D" ><span class="suit-d">8♦</span></button>
+      <button class="deck-btn button_deck" name="9"  onclick="addCard('9D')"  id="9D" ><span class="suit-d">9♦</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('10D')" id="10D"><span class="suit-d">10♦</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('JD')"  id="JD" ><span class="suit-d">J♦</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('QD')"  id="QD" ><span class="suit-d">Q♦</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('KD')"  id="KD" ><span class="suit-d">K♦</span></button>
+    </div>
+    <div class="deck-row">
+      <button class="deck-btn button_deck" name="1"  onclick="addCard('AC')"  id="AC" ><span class="suit-c">A♣</span></button>
+      <button class="deck-btn button_deck" name="2"  onclick="addCard('2C')"  id="2C" ><span class="suit-c">2♣</span></button>
+      <button class="deck-btn button_deck" name="3"  onclick="addCard('3C')"  id="3C" ><span class="suit-c">3♣</span></button>
+      <button class="deck-btn button_deck" name="4"  onclick="addCard('4C')"  id="4C" ><span class="suit-c">4♣</span></button>
+      <button class="deck-btn button_deck" name="5"  onclick="addCard('5C')"  id="5C" ><span class="suit-c">5♣</span></button>
+      <button class="deck-btn button_deck" name="6"  onclick="addCard('6C')"  id="6C" ><span class="suit-c">6♣</span></button>
+      <button class="deck-btn button_deck" name="7"  onclick="addCard('7C')"  id="7C" ><span class="suit-c">7♣</span></button>
+      <button class="deck-btn button_deck" name="8"  onclick="addCard('8C')"  id="8C" ><span class="suit-c">8♣</span></button>
+      <button class="deck-btn button_deck" name="9"  onclick="addCard('9C')"  id="9C" ><span class="suit-c">9♣</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('10C')" id="10C"><span class="suit-c">10♣</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('JC')"  id="JC" ><span class="suit-c">J♣</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('QC')"  id="QC" ><span class="suit-c">Q♣</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('KC')"  id="KC" ><span class="suit-c">K♣</span></button>
+    </div>
+    <div class="deck-row">
+      <button class="deck-btn button_deck" name="1"  onclick="addCard('AH')"  id="AH" ><span class="suit-h">A♥</span></button>
+      <button class="deck-btn button_deck" name="2"  onclick="addCard('2H')"  id="2H" ><span class="suit-h">2♥</span></button>
+      <button class="deck-btn button_deck" name="3"  onclick="addCard('3H')"  id="3H" ><span class="suit-h">3♥</span></button>
+      <button class="deck-btn button_deck" name="4"  onclick="addCard('4H')"  id="4H" ><span class="suit-h">4♥</span></button>
+      <button class="deck-btn button_deck" name="5"  onclick="addCard('5H')"  id="5H" ><span class="suit-h">5♥</span></button>
+      <button class="deck-btn button_deck" name="6"  onclick="addCard('6H')"  id="6H" ><span class="suit-h">6♥</span></button>
+      <button class="deck-btn button_deck" name="7"  onclick="addCard('7H')"  id="7H" ><span class="suit-h">7♥</span></button>
+      <button class="deck-btn button_deck" name="8"  onclick="addCard('8H')"  id="8H" ><span class="suit-h">8♥</span></button>
+      <button class="deck-btn button_deck" name="9"  onclick="addCard('9H')"  id="9H" ><span class="suit-h">9♥</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('10H')" id="10H"><span class="suit-h">10♥</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('JH')"  id="JH" ><span class="suit-h">J♥</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('QH')"  id="QH" ><span class="suit-h">Q♥</span></button>
+      <button class="deck-btn button_deck" name="10" onclick="addCard('KH')"  id="KH" ><span class="suit-h">K♥</span></button>
     </div>
   </div>
 
-  <!-- ── Bottom row: trend charts ──────────────────────────────────────── -->
-  <h2>Apparent Player Trends</h2>
-  <div class="bottom-row">
-    <div class="panel">
-      <div class="pt">Win / loss by player</div>
-      <svg id="bar3"></svg>
-    </div>
-    <div class="panel">
-      <div class="pt">Avg points by type</div>
-      <svg id="bar-avg"></svg>
-    </div>
-    <div class="panel">
-      <div class="pt">Best round</div>
-      <svg id="bar-max"></svg>
-    </div>
+  <!-- ── Footer actions ─────────────────────────────────────────── -->
+  <div class="footer-actions">
+    <button class="footer-btn primary" onclick="newRound()">New Round</button>
+    <button class="footer-btn primary" onclick="endGame()">End Game</button>
+    <button class="footer-btn" onclick="download()">Download CSV</button>
   </div>
-
-  <!-- ── Bottom panel row: dist (wide) + accuracy (narrow) ────────────── -->
-  <h2>Distributions and Accuracy</h2>
-  <div class="dist-row ">
-    <div class="dist-panel">
-      <!-- Hand vs Random -->
-      <div class="dist-title">Hand Score vs All Possible Hands</div>
-      <svg id="dist-hand" width="100%"></svg>
-      <div class="dist-legend" style="margin-bottom:.8rem;">
-        <span><span class="dist-legend-swatch" style="background:#c8973a;opacity:.75"></span>Possible hands</span>
-        <span><span class="dist-legend-swatch" style="background:#e5dad9"></span>Our Hands</span>
-        <span><span class="dist-legend-swatch" style="background:#2e2a22;border:1px solid #4a4030;"></span>Impossible</span>
-      </div>
-
-      <!-- Crib vs Random -->
-      <div class="dist-title">Crib Score vs All Possible Hands</div>
-      <svg id="dist-crib" width="100%"></svg>
-      <div class="dist-legend">
-        <span><span class="dist-legend-swatch" style="background:#c8973a;opacity:.75"></span>All Possible Hands</span>
-        <span><span class="dist-legend-swatch" style="background:#e5dad9"></span>Our Cribs</span>
-        <span><span class="dist-legend-swatch" style="background:#2e2a22;border:1px solid #4a4030;"></span>Impossible</span>
-      </div>
-
-      <div class="dist-caption">
-        <p>Gold bars show the theoretical probability across all 12,994,800 possible hands with random dealing <a href="https://web.archive.org/web/20180116232822/http://web.engr.illinois.edu/~lumetta/humor/cribbage.html" target="_blank" style="color:var(--gold);text-decoration:none;">[1]</a>. Hand points skew higher because players strategically keep their best cards. The crib is more evenly distributed since both players discard into it. Scores of 19, 25, 26, and 27 are mathematically impossible. If someone claims to have scored that many points, there was a miscount.</p>
-      </div>
-    </div>
-    <div class="panel">
-      <div class="pt">Hand Counting Accuracy</div>
-      <svg id="bar-acc"></svg>
-      <div id="bar-acc-note" style="font-size:.6rem;color:var(--muted);margin-top:.2rem;line-height:1.5;"></div>
-      <div class="dist-caption">
-      </div>
-    </div>
-  </div>
-
-  <div class="section-heading">References</div>
-  <div style="font-size:.72rem;color:var(--muted);line-height:2;padding-bottom:.5rem;">
-    <div>
-      <span style="color:var(--muted);margin-right:.5rem;">1.</span>
-      Scoring rules based on:
-      <a href="https://rubl.com/rules/cribbage-scoring-chart.html" target="_blank"
-           style="color:var(--gold);text-decoration:none;">
-           Cribbage Scoring Chart
-        </a>
-        - Rubl.com Games (2004-2022).
-      </div>
-      <div>
-        <span style="color:var(--muted);margin-right:.5rem;">2.</span>
-        Hand score distribution data from:
-        <a href="https://web.archive.org/web/20180116232822/http://web.engr.illinois.edu/~lumetta/humor/cribbage.html" target="_blank"
-        style="color:var(--gold);text-decoration:none;">
-        Amusing Cribbage Facts
-      </a>
-      — Lumetta, S. S. (2007).
-    </div>
-  </div>
-
-  </div><!-- /page-body -->
-
-  <!-- Floating tooltip — positioned by JS on mousemove -->
-  <div class="tooltip" id="tooltip"></div>
-  <!-- Score breakdown tooltip — triggered by hovering the hand score pill -->
-  <div class="score-tip" id="score-tip"></div>
 
 
   <script>
-    // ═══════════════════════════════════════════════════════════════════════
-    //  CONSTANTS
-    // ═══════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
+    //  STATE
+    // ═══════════════════════════════════════════════════════════
 
-    const CAITLIN   = 'Caitlin';
-    const OPPONENTS = ['Sarah', 'James', 'Colban', 'Darren'];
+    let mode         = 'peggedPoints';
+    let round        = 1;
+    let runningTotal = 0;
 
-    // Peg colour (used on the board) and light variant (used for text labels)
-    // for each player.
-    const PCOL = {
-      Caitlin: { peg: '#c0392b', light: '#e85d4a' },
-      Sarah:   { peg: '#6113a5', light: '#a855f7' },
-      Colban:  { peg: '#9b4f7a', light: '#d47ab5' },
-      James:   { peg: '#185fa5', light: '#3a8fd4' },
-      Darren:  { peg: '#0e7c55', light: '#10b981' },
+    // Holds all card slots and point values for the current round
+    let play = {
+      cc:'XX', d1:'XX', d2:'XX', d3:'XX', d4:'XX',
+      p1a:'XX', p2a:'XX', p3a:'XX', p4a:'XX', p5a:'XX', p6a:'XX', p7a:'XX',
+      p1b:'XX', p2b:'XX', p3b:'XX', p4b:'XX', p5b:'XX', p6b:'XX', p7b:'XX',
+      handPointsa:0, peggedPointsa:0, cribPointsa:0, EORScorea:0,
+      handPointsb:0, peggedPointsb:0, cribPointsb:0, EORScoreb:0,
     };
 
-    const FONT = 'IBM Plex Mono, monospace';
-
-    // Ordinal suffix: 1→"1st", 2→"2nd", 3→"3rd", 4→"4th" …
-    function ordinal(n) {
-      const s = ['th','st','nd','rd'];
-      const v = n % 100;
-      return n + (s[(v - 20) % 10] || s[v] || s[0]);
-    }
-
-    // Map CSV suit codes → Unicode suit symbols
-    const SUIT = { H: '♥', D: '♦', C: '♣', S: '♠' };
-
-    // Suits that render in red
-    const RED = new Set(['H', 'D']);
-
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  HEATMAP COLOUR SCALE
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /**
-     * Returns a diverging D3 colour scale for a given opponent.
-     * Negative values (opponent leading) → opponent's peg colour.
-     * Zero → near-black neutral.
-     * Positive values (Caitlin leading) → deep red.
-     *
-     * @param {string} opp  - Opponent name key in PCOL
-     * @param {number} max  - Maximum absolute score difference (sets domain)
-     */
-    function makeScale(opp, max) {
-      return d3.scaleDiverging()
-        .domain([-max, 0, max])
-        .interpolator(
-          d3.interpolateRgbBasis([
-            (PCOL[opp] || PCOL.Colban).peg,  // opponent leading
-            '#1a1814',                         // tied / neutral
-            '#8B1A10',                         // Caitlin leading
-          ])
-        );
-    }
-
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  CRIBBAGE BOARD — geometry constants
-    // ═══════════════════════════════════════════════════════════════════════
-
-    // Internal SVG coordinate space for the board.
-    // The viewBox maps this to the actual rendered size.
-    const BVW = 680, BVH = 380;   // board viewBox dimensions
-    const PX  = 52,  PY  = 10;   // padding
-
-    const bW = BVW - PX * 2;   // usable board width
-    const bH = BVH - PY * 2;   // usable board height
-    const LS = bH / 3;         // vertical lane spacing (3 horizontal tracks)
-
-    // Y coordinates of the three track centre-lines
-    const YT = PY + LS * 0.5;  // top straight    (holes 1–35, going right)
-    const YB = PY + LS * 1.5;  // bottom straight (holes 46–80, going left)
-    const YM = PY + LS * 1;    // middle straight (holes 86–121, going right)
-
-    const XL = PX;           // left edge of the straights
-    const XR = PX + bW;      // right edge of the straights
-
-    const RB  = LS / 2;      // radius of the big right-end U-turn
-    const RS  = LS / 4;      // radius of the small left-end U-turn
-    const SEP = 15;           // lateral offset between the two player lanes
-    const HR  = 4.5;          // hole rim radius (px)
-    const PR  = 7.0;          // peg radius (px)
-
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  CRIBBAGE BOARD — hole position calculation
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /**
-     * Builds the array of {x, y} hole positions for one player's lane.
-     * The track follows this path:
-     *   Holes  1–35 : top straight, left → right
-     *   Holes 36–45 : big U-turn around the right end (10 holes)
-     *   Holes 46–80 : bottom straight, right → left
-     *   Holes 81–85 : small U-turn around the left end (5 holes)
-     *   Holes 86–121: middle straight, left → right
-     *
-     * @param {number} v - Vertical lane offset (+/- SEP/2) to separate
-     *                     the two player tracks
-     * @returns {Array<{x: number, y: number}>} 121 hole positions
-     */
-    function buildTrack(v) {
-      // Straight segment: n evenly-spaced points from (x0,y) to (x1,y)
-      const straight = (x0, x1, y, n) =>
-        Array.from({ length: n }, (_, i) => ({
-          x: x0 + (x1 - x0) * (i + 0.5) / n,
-          y,
-        }));
-
-      // Arc segment: n evenly-spaced points along a circular arc.
-      // (cx,cy) = centre, r = base radius, ro = radial offset (the lane offset),
-      // a0/a1 = start/end angle in radians.
-      const arc = (cx, cy, r, a0, a1, n, ro) => {
-        const R = r + ro;
-        return Array.from({ length: n }, (_, i) => {
-          const aa = a0 + (a1 - a0) * (i + 0.5) / n;
-          return { x: cx + Math.cos(aa) * R, y: cy + Math.sin(aa) * R };
-        });
-      };
-
-      return [
-        ...straight(XL, XR, YT + v, 35),                                     // holes  1–35
-        ...arc(XR, (YT + YB) / 2, RB, -Math.PI / 2, Math.PI / 2, 10, v),    // holes 36–45
-        ...straight(XR, XL, YB + v, 35),                                     // holes 46–80
-        ...arc(XL, (YB + YM) / 2, RS, Math.PI / 2, 3 * Math.PI / 2, 5, v),  // holes 81–85
-        ...straight(XL, XR, YM + v, 36),                                     // holes 86–121
-      ];
-    }
-
-    // Pre-compute hole positions for both player tracks.
-    // p1 is offset above centre, p2 below.
-    const p1Pts = buildTrack(-SEP / 2);
-    const p2Pts = buildTrack(+SEP / 2);
-
-
-    /**
-     * Returns the {x, y} SVG coordinate for a peg at a given score.
-     * Score 0 returns the start position (left of hole 1).
-     *
-     * @param {number} sc   - Score (0–121)
-     * @param {string} lane - 'p1' or 'p2'
-     */
-    function pegPos(sc, lane) {
-      const pts = lane === 'p1' ? p1Pts : p2Pts;
-      const v   = lane === 'p1' ? -SEP / 2 : SEP / 2;
-      if (sc <= 0) return { x: XL - 14, y: YT + v };  // before hole 1
-      return pts[Math.min(Math.round(sc) - 1, pts.length - 1)];
-    }
-
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  CRIBBAGE BOARD — SVG rendering (runs once on page load)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    const bsvg = d3.select('#board-svg');
-
-    // Board outline path — rounded-rectangle shape enclosing all three lanes.
-    const bR  = XR + RB + SEP + 10;   // right cap edge
-    const bT  = YT - SEP - 12;        // top edge
-    const bBt = YM + SEP + 67;        // bottom edge
-    const bRX = RB + SEP + 45;        // corner radius
-
-    bsvg.append('path')
-      .attr('d',
-        `M ${8} ${bT}
-         L ${bR - bRX} ${bT}
-         Q ${bR} ${bT} ${bR} ${bT + bRX}
-         L ${bR} ${bBt - bRX}
-         Q ${bR} ${bBt} ${bR - bRX} ${bBt}
-         L ${8} ${bBt}
-         Q ${8 - 12} ${bBt} ${8 - 12} ${bBt - 12}
-         L ${8 - 12} ${bT + 12}
-         Q ${8 - 12} ${bT} ${8} ${bT} Z`
-      )
-      .attr('fill', '#2c2010')
-      .attr('stroke', '#1c1408')
-      .attr('stroke-width', 2);
-
-    /**
-     * Builds an SVG arc path string from angle a0 to a1
-     * around centre (cx, cy) with radius r.
-     */
-    const arcPath = (cx, cy, r, a0, a1) => {
-      const x0 = cx + Math.cos(a0) * r, y0 = cy + Math.sin(a0) * r;
-      const x1 = cx + Math.cos(a1) * r, y1 = cy + Math.sin(a1) * r;
-      const largeArc = Math.abs(a1 - a0) > Math.PI ? 1 : 0;
-      const sweep    = a1 > a0 ? 1 : 0;
-      return `M ${x0} ${y0} A ${r} ${r} 0 ${largeArc} ${sweep} ${x1} ${y1}`;
-    };
-
-    // Draw the guide lines (track channels) for both player lanes.
-    const gd = bsvg.append('g')
-      .attr('stroke', '#3a2e18')
-      .attr('stroke-width', 0.6)
-      .attr('fill', 'none');
-
-    [-SEP / 2, SEP / 2].forEach(v => {
-      // Three horizontal straights
-      gd.append('line').attr('x1', XL).attr('y1', YT + v).attr('x2', XR).attr('y2', YT + v);
-      gd.append('line').attr('x1', XL).attr('y1', YB + v).attr('x2', XR).attr('y2', YB + v);
-      gd.append('line').attr('x1', XL).attr('y1', YM + v).attr('x2', XR).attr('y2', YM + v);
-      // Two U-turn arcs
-      gd.append('path').attr('d', arcPath(XR, (YT + YB) / 2, RB + v, -Math.PI / 2, Math.PI / 2));
-      gd.append('path').attr('d', arcPath(XL, (YB + YM) / 2, RS + v, Math.PI / 2, 3 * Math.PI / 2));
-    });
-
-    // Draw the holes for both player tracks.
-    // Each hole is a small dark circle with a lighter rim ring.
-    [p1Pts, p2Pts].forEach(pts => {
-      const g = bsvg.append('g');
-      // Outer rim
-      g.selectAll('.rim').data(pts).join('circle')
-        .attr('class', 'rim')
-        .attr('cx', d => d.x).attr('cy', d => d.y)
-        .attr('r', HR + 1.4)
-        .attr('fill', '#5a4020');
-      // Inner hole
-      g.selectAll('.h').data(pts).join('circle')
-        .attr('class', 'h')
-        .attr('cx', d => d.x).attr('cy', d => d.y)
-        .attr('r', HR)
-        .attr('fill', '#140e04');
-    });
-
-    // Draw score number labels at every 5th hole along the p1 track.
-    [5, 10, 15, 20, 25, 30, 35, 50, 55, 60, 65, 70, 75, 80, 90, 95, 100, 105, 110, 115, 120, 121]
-      .forEach(n => {
-        if (n < 1 || n > 121) return;
-        const p = p1Pts[n - 1];
-        if (!p) return;
-        // Offset label above the top straight, below the bottom straight,
-        // and above the middle straight.
-        const dy = n <= 35  ? -(HR + 5.5)
-                 : n <= 80  ? (HR - 15)
-                 : -(HR + 5.5);
-        bsvg.append('text')
-          .attr('x', p.x).attr('y', p.y + dy)
-          .attr('text-anchor', 'middle')
-          .attr('dominant-baseline', 'middle')
-          .attr('fill', '#f0d880')
-          .attr('font-size', 7)
-          .attr('font-family', FONT)
-          .text(n);
-      });
-
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  CRIBBAGE BOARD — peg elements (updated dynamically)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    // Two main pegs (one per player)
-    const peg1 = bsvg.append('circle').attr('r', PR).attr('stroke', 'rgba(0,0,0,.3)').attr('stroke-width', 1);
-    const peg2 = bsvg.append('circle').attr('r', PR).attr('stroke', 'rgba(0,0,0,.3)').attr('stroke-width', 1);
-
-    // Specular highlight overlays — small bright circles to give pegs a 3-D look
-    const sh1 = bsvg.append('circle').attr('r', PR * 0.27).attr('fill', 'rgba(255,255,255,.36)').attr('pointer-events', 'none');
-    const sh2 = bsvg.append('circle').attr('r', PR * 0.27).attr('fill', 'rgba(255,255,255,.36)').attr('pointer-events', 'none');
-
-    // Player initial labels rendered on top of each peg
-    const lb1 = bsvg.append('text')
-      .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
-      .attr('fill', '#fff').attr('font-size', 6.5).attr('font-weight', 'bold')
-      .attr('font-family', FONT).attr('pointer-events', 'none');
-    const lb2 = bsvg.append('text')
-      .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
-      .attr('fill', '#fff').attr('font-size', 6.5).attr('font-weight', 'bold')
-      .attr('font-family', FONT).attr('pointer-events', 'none');
-
-
-    /**
-     * Updates the fill colour of both pegs and the colour dots in the score bar.
-     *
-     * @param {string} c1 - Hex colour for player 1
-     * @param {string} c2 - Hex colour for player 2
-     */
-    function setPegColors(c1, c2) {
-      peg1.attr('fill', c1);
-      peg2.attr('fill', c2);
-      document.getElementById('dot1').style.background = c1;
-      document.getElementById('dot2').style.background = c2;
-    }
-
-
-    /**
-     * Moves both pegs (and their highlights + labels) to the positions
-     * corresponding to the given scores.
-     *
-     * @param {number}  s1   - Player 1 score
-     * @param {number}  s2   - Player 2 score
-     * @param {boolean} anim - Whether to animate the transition
-     * @param {string}  i1   - Player 1 label text (usually first initial)
-     * @param {string}  i2   - Player 2 label text
-     */
-    function placePegs(s1, s2, anim, i1, i2) {
-      const pp1 = pegPos(s1, 'p1');
-      const pp2 = pegPos(s2, 'p2');
-      const dur = 240;  // animation duration in ms
-
-      // Helper: set cx/cy on a circle, optionally animated
-      const upd = (sel, x, y) => anim
-        ? sel.transition().duration(dur).ease(d3.easeCubicInOut).attr('cx', x).attr('cy', y)
-        : sel.attr('cx', x).attr('cy', y);
-
-      upd(peg1, pp1.x, pp1.y);
-      upd(peg2, pp2.x, pp2.y);
-      upd(sh1,  pp1.x - PR * 0.25, pp1.y - PR * 0.25);  // highlight offset upper-left
-      upd(sh2,  pp2.x - PR * 0.25, pp2.y - PR * 0.25);
-
-      // Helper: set x/y on a text element, optionally animated
-      const updT = (sel, x, y) => anim
-        ? sel.transition().duration(dur).ease(d3.easeCubicInOut).attr('x', x).attr('y', y)
-        : sel.attr('x', x).attr('y', y);
-
-      updT(lb1, pp1.x, pp1.y + 0.5);
-      updT(lb2, pp2.x, pp2.y + 0.5);
-
-      if (i1 !== undefined) lb1.text(i1);
-      if (i2 !== undefined) lb2.text(i2);
-    }
-
-    // Initialise both pegs at the start position with placeholder colours
-    placePegs(0, 0, false, 'C', '?');
-    setPegColors(PCOL.Caitlin.peg, '#555');
-
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  PLAYING CARDS
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /**
-     * Parses a card string from the CSV (e.g. "AH", "10S", "--").
-     * Returns null for empty / no-play entries.
-     *
-     * @param {string} s - Raw CSV card string
-     * @returns {{ rank: string, suit: string, red: boolean } | null}
-     */
-    function parseCard(s) {
-      if (!s) return null;
-      s = s.trim();
-      // Reject placeholder values written by the collect page
-      if (s === '--' || s === 'XX' || s === '') return null;
-      // Must end in a valid suit letter
-      const suit = s.slice(-1).toUpperCase();
-      if (!['H','D','C','S'].includes(suit)) return null;
-      const rank = s.slice(0, -1).toUpperCase();
-      // Valid ranks: A 2-9 10 J Q K
-      if (!['A','2','3','4','5','6','7','8','9','10','J','Q','K'].includes(rank)) return null;
-      return { rank, suit, red: suit === 'H' || suit === 'D' };
-    }
-
-    /**
-     * Shared helper used by renderCards, computeAccuracy, the heatmap
-     * pre-computation, and the heatmap — all go through here
-     * so card parsing is identical everywhere.
-     *
-     * Given a raw CSV row, returns the player's kept hand (first 4 valid
-     * cards from p1-p7) and the cut card. Returns null if data is incomplete.
-     */
-    function extractHandAndCut(row) {
-      if (!row) return null;
-      const cards = ['p1','p2','p3','p4','p5','p6','p7']
-        .map(f => parseCard(row[f]))
-        .filter(Boolean);
-      const cut = parseCard(row.cc);
-      const hand = cards.slice(0, 4);
-      if (hand.length < 4 || !cut) return null;
-      return { hand, cut };
-    }
-
-
-    /**
-     * Renders the round breakdown into #cards-content.
-     * Shows: cut card, both players' hands + score bars, crib discards.
-     *
-     * Dealer logic:
-     *   - p1 (the player who appears first in the data) deals on odd rounds
-     *   - p2 deals on even rounds
-     *   - The dealer earns the crib points and their crib discards are shown
-     *     inside their own column, directly under their score bars.
-     */
-    function renderCards(rd, game) {
-      const el = document.getElementById('cards-content');
-
-      if (!rd || !game) {
-        el.innerHTML = `<div class="rd-empty">Hover or click a round to see the breakdown</div>`;
-        return;
-      }
-
-      const rawRows = game._raw.filter(r => +r.Round === rd.round);
-      const byP     = Object.fromEntries(rawRows.map(r => [r.Name, r]));
-      const r1      = byP[game.p1name];
-      const r2      = byP[game.p2name];
-
-      const c1     = (PCOL[game.p1name] || PCOL.Caitlin).peg;
-      const c1lite = (PCOL[game.p1name] || PCOL.Caitlin).light;
-      const c2     = (PCOL[game.p2name] || PCOL.Colban).peg;
-      const c2lite = (PCOL[game.p2name] || PCOL.Colban).light;
-
-      const handCards = row => row
-        ? ['p1','p2','p3','p4','p5','p6','p7'].map(f => parseCard(row[f])).filter(Boolean)
-        : [];
-      const cribCards = row => row
-        ? [parseCard(row.d1), parseCard(row.d2)].filter(Boolean)
-        : [];
-      const cutCard = r1 ? parseCard(r1.cc) : r2 ? parseCard(r2.cc) : null;
-
-      const h1 = handCards(r1);
-      const h2 = handCards(r2);
-      const d1 = cribCards(r1);
-      const d2 = cribCards(r2);
-
-      // Score the hand using the shared helper — same path as all other scorers
-      const hc1 = extractHandAndCut(r1);
-      const hc2 = extractHandAndCut(r2);
-      const scored1 = hc1 ? scoreHand(hc1.hand, hc1.cut) : null;
-      const scored2 = hc2 ? scoreHand(hc2.hand, hc2.cut) : null;
-
-      const peg1   = rd.p1pegged, hand1 = rd.p1hand, crib1 = rd.p1crib;
-      const peg2   = rd.p2pegged, hand2 = rd.p2hand, crib2 = rd.p2crib;
-      const total1 = peg1 + hand1 + crib1;
-      const total2 = peg2 + hand2 + crib2;
-      const barMax = Math.max(total1, total2, 1);
-
-      // Determine who dealt first in this game by reading round 1's crib points,
-      // which always scores at least something. That establishes the alternating
-      // pattern: if p1 dealt round 1 (odd), p1 deals all odd rounds; if p2 dealt
-      // round 1, p2 deals all odd rounds (i.e. p1 deals even rounds).
-      const round1 = game.rounds.find(r => r.round === 1);
-      const p1DealtFirst = round1
-        ? (round1.p1crib > 0 ? true : round1.p2crib > 0 ? false : true)
-        : true;
-      const p1IsDealer = (rd.round % 2 === 1) === p1DealtFirst;
-
-      function card(c, extra = '', outlineColor = '') {
-        if (!c) return '';
-        const outline = outlineColor ? `style="box-shadow:0 0 0 2px ${outlineColor}"` : '';
-        return `<div class="card ${c.red ? 'red' : 'black'} ${extra}" ${outline}>
-          <span class="cr">${c.rank}</span>
-          <span class="cs">${SUIT[c.suit]}</span>
-        </div>`;
-      }
-
-      function handPill(recorded, scored, color, pillId) {
-        const pct = Math.round((recorded / barMax) * 100);
-        const hasMiscount = scored && scored.total !== recorded;
-
-        // Serialise breakdown for the hover tooltip on the pill
-        const tipData = scored ? JSON.stringify({
-          fifteens: scored.fifteens,
-          pairs:    scored.pairs,
-          runs:     scored.runs,
-          flush:    scored.flush,
-          nob:      scored.nob,
-          calc:     scored.total,
-          recorded,
-          color,
-        }) : null;
-
-        if (recorded <= 0 && !hasMiscount) return `
-          <div class="sc-pill sc-pill--zero">
-            <span class="sc-pill-label">hand</span>
-            <div class="sc-pill-bar"><div class="sc-pill-fill" style="width:0%"></div></div>
-            <span class="sc-pill-val" style="color:var(--muted)">0</span>
-          </div>`;
-
-        return `
-          <div class="sc-pill ${hasMiscount ? 'sc-pill--miscount' : ''}"
-               style="--pill-color:${color}; cursor:${tipData ? 'pointer' : 'default'};"
-               ${tipData ? `data-tip='${tipData}' id="${pillId}"` : ''}>
-            <span class="sc-pill-label">hand</span>
-            <div class="sc-pill-bar"><div class="sc-pill-fill" style="width:${pct}%"></div></div>
-            <span class="sc-pill-val">${recorded}</span>
-          </div>`;
-      }
-
-      function scorePill(label, value, color) {
-        const pct = Math.round((value / barMax) * 100);
-        if (value <= 0) return `
-          <div class="sc-pill sc-pill--zero">
-            <span class="sc-pill-label">${label}</span>
-            <div class="sc-pill-bar"><div class="sc-pill-fill" style="width:0%"></div></div>
-            <span class="sc-pill-val" style="color:var(--muted)">0</span>
-          </div>`;
-        return `
-          <div class="sc-pill" style="--pill-color:${color};">
-            <span class="sc-pill-label">${label}</span>
-            <div class="sc-pill-bar"><div class="sc-pill-fill" style="width:${pct}%"></div></div>
-            <span class="sc-pill-val">${value}</span>
-          </div>`;
-      }
-
-      function totalBadge(total, color) {
-        return `<div class="sc-total" style="border-color:${color};color:${color};">${total} pts</div>`;
-      }
-
-      function cribSection(dealerColor) {
-        return `
-          <div class="rd-section-label rd-crib-label">
-            crib
-          </div>
-          <div class="rd-cards">
-            ${d1.map(c => card(c, 'card--crib', c1)).join('')}
-            ${d2.map(c => card(c, 'card--crib', c2)).join('')}
-            ${!d1.length && !d2.length ? '<span class="rd-dash">—</span>' : ''}
-          </div>`;
-      }
-
-      function playerColumn(name, colorPeg, colorLite, h, peg, hand, crib, total, isDealer, scored, pillId) {
-        // Miscount verdict shown inline below the cards
-        const hasMiscount = scored && scored.total !== hand;
-        const diff = hasMiscount ? hand - scored.total : 0;
-        const diffColor   = diff > 0 ? '#db9f90' : '#88aacc';
-        const diffLabel   = diff > 0 ? `+${diff} over` : `${diff} under`;
-
-        let verdictHtml = '';
-        if (hasMiscount) {
-          const parts = [];
-          if (scored.fifteens) parts.push(`${scored.fifteens} from fifteens`);
-          if (scored.pairs)    parts.push(`${scored.pairs} from pairs`);
-          if (scored.runs)     parts.push(`${scored.runs} from runs`);
-          if (scored.flush)    parts.push(`${scored.flush} flush`);
-          if (scored.nob)      parts.push(`${scored.nob} nob`);
-          if (!parts.length)   parts.push('no scoring combinations');
-
-          verdictHtml = `
-            <div class="mc-verdict mc-verdict--inline">
-              <div class="mc-diff-row">
-                <span class="mc-recorded">Recorded <strong style="color:var(--text)">${hand}</strong></span>
-                <span class="mc-arrow">→</span>
-                <span>Should be <strong style="color:${diffColor}">${scored.total}</strong></span>
-                <span style="font-size:.65rem;color:${diffColor};margin-left:.2rem">(${diffLabel})</span>
-              </div>
-              <div class="mc-breakdown">
-                ${parts.join(' · ')} = <span>${scored.total}</span>
-              </div>
-            </div>`;
-        }
-
-        return `
-          <div class="rd-player">
-            <div class="rd-player-name-row">
-              <span class="rd-player-name" style="color:${colorLite}">${name}</span>
-              <span class="rd-player-total" style="color:${colorPeg}">${total} pts</span>
-            </div>
-            <div class="rd-scores">
-              ${scorePill('peg',  peg,  colorPeg)}
-              ${handPill(hand, scored, colorPeg, pillId)}
-              ${crib > 0 ? scorePill('crib', crib, colorPeg) : ''}
-            </div>
-            <div class="rd-section-label">hand + cut</div>
-            <div class="rd-cards">
-              ${h.slice(0,4).map(c => card(c)).join('')}
-              ${cutCard ? card(cutCard, 'card--cut-mini') : ''}
-            </div>
-            ${h.length > 4 ? `
-            <div class="rd-section-label">played</div>
-            <div class="rd-cards rd-cards--played">
-              ${h.slice(4).map((c,i) => `<div class="rd-play-slot">
-                <span class="rd-play-num">${i+1}</span>${card(c)}
-              </div>`).join('')}
-            </div>` : ''}
-            ${verdictHtml}
-            ${isDealer ? cribSection(colorPeg) : ''}
-          </div>`;
-      }
-
-      el.innerHTML = `
-        <div class="rd-wrap">
-          <div class="rd-players">
-            ${playerColumn(game.p1name, c1, c1lite, h1, peg1, hand1, crib1, total1, p1IsDealer, scored1, 'pill-p1')}
-            <div class="rd-divider"></div>
-            ${playerColumn(game.p2name, c2, c2lite, h2, peg2, hand2, crib2, total2, !p1IsDealer, scored2, 'pill-p2')}
-          </div>
-        </div>
-      `;
-
-      // Attach hover listeners for the score breakdown tooltip
-      const tip = document.getElementById('score-tip');
-      el.querySelectorAll('[data-tip]').forEach(elem => {
-        elem.addEventListener('mouseenter', e => {
-          const d = JSON.parse(elem.dataset.tip);
-          const hasMiscount = d.calc !== d.recorded;
-          const diffLabel = d.recorded - d.calc;
-
-          tip.innerHTML = `
-            <div class="score-tip-title">Hand breakdown</div>
-            ${d.fifteens ? `<div class="score-tip-row"><span class="score-tip-key">Fifteens</span><span>${d.fifteens}</span></div>` : ''}
-            ${d.pairs     ? `<div class="score-tip-row"><span class="score-tip-key">Pairs</span><span>${d.pairs}</span></div>` : ''}
-            ${d.runs      ? `<div class="score-tip-row"><span class="score-tip-key">Runs</span><span>${d.runs}</span></div>` : ''}
-            ${d.flush     ? `<div class="score-tip-row"><span class="score-tip-key">Flush</span><span>${d.flush}</span></div>` : ''}
-            ${d.nob       ? `<div class="score-tip-row"><span class="score-tip-key">Nob</span><span>${d.nob}</span></div>` : ''}
-            ${(!d.fifteens && !d.pairs && !d.runs && !d.flush && !d.nob)
-              ? `<div class="score-tip-row"><span class="score-tip-key">No scoring combos</span><span>0</span></div>` : ''}
-            <div class="score-tip-row total"><span class="score-tip-key">Calculated</span><span style="color:${d.color}">${d.calc}</span></div>
-            ${hasMiscount ? `<div class="score-tip-row mismatch">
-              <span class="score-tip-key">Recorded</span>
-              <span>${d.recorded} (${diffLabel > 0 ? '+' : ''}${diffLabel})</span>
-            </div>` : ''}
-          `;
-          tip.classList.add('vis');
-        });
-        elem.addEventListener('mousemove', e => {
-          tip.style.left = (e.clientX + 14) + 'px';
-          tip.style.top  = (e.clientY - 10) + 'px';
-        });
-        elem.addEventListener('mouseleave', () => tip.classList.remove('vis'));
-      });
-    }
-
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  HAND SCORER — calculates the correct point value of a cribbage hand
-    //  given 4 hand cards + 1 cut card, following official rules.
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /**
-     * Returns the pip value of a card for counting towards 15s and 31.
-     * Face cards = 10, Ace = 1, others = face value.
-     */
-    function pipVal(rank) {
-      if (['J','Q','K'].includes(rank)) return 10;
-      if (rank === 'A') return 1;
-      return parseInt(rank, 10);
-    }
-
-    /**
-     * Returns the rank order value for run detection.
-     * A=1, 2-9 face value, 10/J/Q/K = 10/11/12/13.
-     */
-    function rankOrder(rank) {
-      if (rank === 'A') return 1;
-      if (rank === 'J') return 11;
-      if (rank === 'Q') return 12;
-      if (rank === 'K') return 13;
-      return parseInt(rank, 10);
-    }
-
-    /**
-     * Scores a cribbage hand: 4 hand cards + 1 cut card.
-     * Returns { fifteens, pairs, runs, flush, nob, total }.
-     *
-     * @param {object[]} hand - Array of 4 card objects { rank, suit, red }
-     * @param {object}   cut  - Cut card object
-     * @param {boolean}  isCrib - Whether this is the crib (flush needs all 5)
-     */
-    function scoreHand(hand, cut, isCrib = false) {
-      if (!hand || hand.length < 4 || !cut) return null;
-
-      const five = [...hand, cut];
-
-      // ── Fifteens ──────────────────────────────────────────────────────────
-      let fifteens = 0;
-      // All subsets of size 2–5
-      for (let mask = 1; mask < (1 << 5); mask++) {
-        const subset = five.filter((_, i) => mask & (1 << i));
-        if (subset.length >= 2 && subset.reduce((s, c) => s + pipVal(c.rank), 0) === 15) {
-          fifteens += 2;
-        }
-      }
-
-      // ── Pairs ─────────────────────────────────────────────────────────────
-      let pairs = 0;
-      for (let i = 0; i < 5; i++) {
-        for (let j = i + 1; j < 5; j++) {
-          if (five[i].rank === five[j].rank) pairs += 2;
-        }
-      }
-
-      // ── Runs ─────────────────────────────────────────────────────────────
-      // Find the longest run(s). Use subset enumeration: for each subset
-      // of size >= 3, check if it forms a consecutive sequence.
-      let runs = 0;
-      let bestRunLen = 0;
-      for (let mask = 1; mask < (1 << 5); mask++) {
-        const subset = five.filter((_, i) => mask & (1 << i));
-        if (subset.length < 3) continue;
-        const orders = subset.map(c => rankOrder(c.rank)).sort((a, b) => a - b);
-        const isRun = orders.every((v, i) => i === 0 || v === orders[i - 1] + 1);
-        if (isRun) {
-          if (subset.length > bestRunLen) { bestRunLen = subset.length; runs = 0; }
-          if (subset.length === bestRunLen) runs += subset.length;
-        }
-      }
-
-      // ── Flush ─────────────────────────────────────────────────────────────
-      // Standard rules: 4 hand cards same suit = 4 pts (hand only, not crib);
-      //                 all 5 same suit = 5 pts.
-      // House rule:     any 3 hand cards + cut card all same suit = 4 pts.
-      let flush = 0;
-      const handSuits = hand.map(c => c.suit);
-      const allHandSame = handSuits.every(s => s === handSuits[0]);
-
-      if (allHandSame && cut.suit === handSuits[0]) {
-        flush = 5;  // all 5 match — best possible
-      } else if (allHandSame && !isCrib) {
-        flush = 4;  // 4-card hand flush (standard)
-      } else if (!isCrib) {
-        // House rule: check if any 3 hand cards share a suit with the cut card
-        const suitCounts = {};
-        handSuits.forEach(s => { suitCounts[s] = (suitCounts[s] || 0) + 1; });
-        if ((suitCounts[cut.suit] || 0) >= 3) {
-          flush = 4;  // 3 hand cards + cut card all same suit
-        }
-      }
-
-      // ── Nob ───────────────────────────────────────────────────────────────
-      let nob = 0;
-      if (hand.some(c => c.rank === 'J' && c.suit === cut.suit)) nob = 1;
-
-      const total = fifteens + pairs + runs + flush + nob;
-      return { fifteens, pairs, runs, flush, nob, total };
-    }
-
-    /**
-     * For all rounds across all games, compute the theoretical hand score
-     * from the card data and compare it to the recorded handPoints.
-     * Returns per-player accuracy stats.
-     *
-     * A "round" is excluded from accuracy if card data is missing/incomplete.
-     */
-    function computeAccuracy(games) {
-      const records = [];
-
-      games.forEach(game => {
-        game._raw && game.rounds.forEach(rd => {
-          const rawRows = game._raw.filter(r => +r.Round === rd.round);
-          const byP = Object.fromEntries(rawRows.map(r => [r.Name, r]));
-
-          [
-            [game.p1name, byP[game.p1name], rd.p1hand],
-            [game.p2name, byP[game.p2name], rd.p2hand],
-          ].forEach(([name, row, recorded]) => {
-            const hc = extractHandAndCut(row);
-            if (!hc) return;
-
-            const scored = scoreHand(hc.hand, hc.cut);
-            if (!scored) return;
-
-            records.push({
-              player:     name,
-              recorded:   recorded || 0,
-              calculated: scored.total,
-              diff:       (recorded || 0) - scored.total,
-              gameNum:    game.gameNum,
-              date:       game.date,
-              round:      rd.round,
-            });
-          });
-        });
-      });
-
-      // Aggregate per player — also attach the raw per-round records for the scatter
-      const players = [...new Set(records.map(r => r.player))];
-      return players.map(player => {
-        const recs = records.filter(r => r.player === player);
-        const avgDiff = d3.mean(recs, r => r.diff) || 0;
-        const pct = recs.length
-          ? (recs.filter(r => r.diff === 0).length / recs.length) * 100
-          : 0;
-        const overCount  = recs.filter(r => r.diff > 0).length;
-        const underCount = recs.filter(r => r.diff < 0).length;
-        return { player, avgDiff, pct, n: recs.length, overCount, underCount, records: recs };
-      });
-    }
-
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  SHARED CHART HELPERS
-    // ═══════════════════════════════════════════════════════════════════════
-
-    function clearChart(id) {
-      d3.select('#' + id).selectAll('*').remove();
-    }
-
-    // Helper: returns light colour for text, peg colour for fills
-    function playerLight(name) {
-      return (PCOL[name] || PCOL.Caitlin).light;
-    }
-    function playerPeg(name) {
-      return (PCOL[name] || PCOL.Caitlin).peg;
-    }
-
-    // Fixed internal viewBox dimensions for all trend charts
-    const VW = 260, VH = 170, VML = 28, VMR = 8, VMT = 14, VMB = 28;
-    const ViW = VW - VML - VMR, ViH = VH - VMT - VMB;
-
-    function trendSvg(id) {
-      return d3.select('#' + id)
-        .attr('viewBox', `0 0 ${VW} ${VH}`)
-        .attr('preserveAspectRatio', 'xMidYMid meet')
-        .attr('width', '100%')
-        .attr('height', null);
-    }
-
-    function axisStyle(ax, isLeft = false) {
-      ax.select('.domain').remove();
-      if (isLeft) {
-        ax.selectAll('.tick line').attr('stroke', '#2e2a22').attr('stroke-dasharray', '2,2');
-      }
-      ax.selectAll('text').attr('fill', '#7a7060').attr('font-size', 7).attr('font-family', FONT);
-    }
-
-    function drawBars(g, data, x, y, H, labelFn) {
-      data.forEach(d => {
-        if (d.val <= 0) return;
-        const by = y(d.val), bh = H - by;
-        g.append('rect')
-          .attr('x', d.x).attr('y', by)
-          .attr('width', d.bw).attr('height', Math.max(bh, 0))
-          .attr('fill', d.col).attr('rx', 2).attr('opacity', 0.85);
-        g.append('text')
-          .attr('x', d.x + d.bw / 2).attr('y', by - 2)
-          .attr('text-anchor', 'middle')
-          .attr('fill', d.col).attr('font-size', 6).attr('font-family', FONT)
-          .text(labelFn ? labelFn(d.val) : Math.round(d.val * 10) / 10);
-      });
-    }
-
-    // All unique players who appear in the dataset (for consistent ordering)
-    function allPlayers(games) {
-      const seen = new Set();
-      const order = [];
-      games.forEach(g => {
-        [g.p1name, g.p2name].forEach(n => { if (!seen.has(n)) { seen.add(n); order.push(n); } });
-      });
-      return order;
-    }
-
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  TREND CHART 1 — Win / loss by player
-    // ═══════════════════════════════════════════════════════════════════════
-
-    function renderBar3(games) {
-      clearChart('bar3');
-      const svg = trendSvg('bar3');
-      const g = svg.append('g').attr('transform', `translate(${VML},${VMT})`);
-
-      // Collect wins/losses for every player in every game they played
-      const players = allPlayers(games);
-      const data = players.map(player => {
-        const asP1 = games.filter(gm => gm.p1name === player);
-        const asP2 = games.filter(gm => gm.p2name === player);
-        const wins = [
-          ...asP1.filter(gm => { const l = gm.rounds[gm.rounds.length-1]; return l && l.s1 >= 121; }),
-          ...asP2.filter(gm => { const l = gm.rounds[gm.rounds.length-1]; return l && l.s2 >= 121; }),
-        ].length;
-        const total = asP1.length + asP2.length;
-        return { player, wins, losses: total - wins, total };
-      }).filter(d => d.total > 0);
-
-      const maxT = d3.max(data, d => d.total) || 1;
-      const x  = d3.scaleBand().domain(data.map(d => d.player)).range([0, ViW]).padding(0.28);
-      const xi = d3.scaleBand().domain(['w', 'l']).range([0, x.bandwidth()]).padding(0.06);
-      const y  = d3.scaleLinear().domain([0, maxT]).range([ViH, 0]);
-
-      const xAxis = g.append('g').attr('transform', `translate(0,${ViH})`)
-        .call(d3.axisBottom(x).tickSize(0))
-        .call(ax => axisStyle(ax));
-      xAxis.selectAll('text').each(function(d) {
-        d3.select(this).attr('fill', playerLight(d));
-      });
-
-      g.append('g')
-        .call(d3.axisLeft(y).ticks(Math.min(maxT, 6)).tickFormat(d => Number.isInteger(d) ? d : '').tickSize(-ViW))
-        .call(ax => axisStyle(ax, true));
-
-      data.forEach(d => {
-        const fill  = playerPeg(d.player);
-        const label = playerLight(d.player);
-        [[d.wins, 'w', 1], [d.losses, 'l', 0.3]].forEach(([val, key, op]) => {
-          if (val <= 0) return;
-          const bx = x(d.player) + xi(key), bw = xi.bandwidth();
-          const by = y(val), bh = ViH - by;
-          g.append('rect').attr('x', bx).attr('y', by)
-            .attr('width', bw).attr('height', Math.max(bh, 0))
-            .attr('fill', fill).attr('rx', 2).attr('opacity', op);
-          g.append('text').attr('x', bx + bw/2).attr('y', by - 2)
-            .attr('text-anchor', 'middle').attr('fill', label)
-            .attr('font-size', 6).attr('font-family', FONT).text(val);
-        });
-      });
-      [['Wins', 1], ['Losses', 0.3]].forEach(([lbl, op], i) => {
-        g.append('rect').attr('x', i * 38).attr('y', ViH + 14).attr('width', 5).attr('height', 5).attr('fill', '#888').attr('opacity', op).attr('rx', 1);
-        g.append('text').attr('x', i * 38 + 7).attr('y', ViH + 18.5).attr('fill', '#7a7060').attr('font-size', 6).attr('font-family', FONT).text(lbl);
-      });
-    }
-
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  TREND CHART 2 — Average points by type per player
-    // ═══════════════════════════════════════════════════════════════════════
-
-    function renderBarAvg(games) {
-      clearChart('bar-avg');
-      const svg = trendSvg('bar-avg');
-      const g = svg.append('g').attr('transform', `translate(${VML},${VMT})`);
-
-      const players = allPlayers(games);
-
-      // Average peg, hand, crib per round per player
-      function avgFor(player, field) {
-        const vals = games.flatMap(gm => {
-          const isP1 = gm.p1name === player;
-          const isP2 = gm.p2name === player;
-          if (!isP1 && !isP2) return [];
-          return gm.rounds.map(r => isP1 ? r[field + '1'] : r[field + '2']).filter(v => v != null);
-        });
-        return d3.mean(vals) || 0;
-      }
-
-      const types = [
-        { key: 'peg',  field: 'p1pegged'.replace('p1',''), label: 'Peg',  col: '#c8973a' },
-        { key: 'hand', field: 'hand',  label: 'Hand', col: '#5a9e7a' },
-        { key: 'crib', field: 'crib',  label: 'Crib', col: '#7B6FBE' },
-      ];
-
-      // Build grouped band: outer = type, inner = player
-      const cats = types.map(t => t.label);
-      const x0 = d3.scaleBand().domain(cats).range([0, ViW]).padding(0.22);
-      const xi = d3.scaleBand().domain(players).range([0, x0.bandwidth()]).padding(0.06);
-
-      const allVals = types.flatMap(t =>
-        players.map(p => avgFor(p, t.key === 'peg' ? 'p' : '') )
-      );
-
-      // Compute actual averages
-      const dataset = types.map(t => ({
-        ...t,
-        vals: players.map(p => ({
-          player: p,
-          val: t.key === 'peg'
-            ? d3.mean(games.flatMap(gm => {
-                const isP1 = gm.p1name === p, isP2 = gm.p2name === p;
-                if (!isP1 && !isP2) return [];
-                return gm.rounds.map(r => isP1 ? r.p1pegged : r.p2pegged).filter(v => v != null);
-              })) || 0
-            : t.key === 'hand'
-            ? d3.mean(games.flatMap(gm => {
-                const isP1 = gm.p1name === p, isP2 = gm.p2name === p;
-                if (!isP1 && !isP2) return [];
-                return gm.rounds.map(r => isP1 ? r.p1hand : r.p2hand).filter(v => v != null);
-              })) || 0
-            : d3.mean(games.flatMap(gm => {
-                const isP1 = gm.p1name === p, isP2 = gm.p2name === p;
-                if (!isP1 && !isP2) return [];
-                return gm.rounds.map(r => isP1 ? r.p1crib : r.p2crib).filter(v => v != null);
-              })) || 0,
-        })),
-      }));
-
-      const maxV = d3.max(dataset.flatMap(t => t.vals.map(v => v.val))) || 1;
-      const y = d3.scaleLinear().domain([0, maxV * 1.15]).range([ViH, 0]);
-
-      g.append('g').attr('transform', `translate(0,${ViH})`)
-        .call(d3.axisBottom(x0).tickSize(0))
-        .call(ax => axisStyle(ax));
-      g.append('g')
-        .call(d3.axisLeft(y).ticks(4).tickSize(-ViW))
-        .call(ax => axisStyle(ax, true));
-
-      dataset.forEach(t => {
-        t.vals.forEach(v => {
-          if (v.val <= 0) return;
-          const col = playerPeg(v.player);
-          const lbl = playerLight(v.player);
-          const bx = x0(t.label) + xi(v.player), bw = xi.bandwidth();
-          const by = y(v.val), bh = ViH - by;
-          g.append('rect').attr('x', bx).attr('y', by)
-            .attr('width', bw).attr('height', Math.max(bh, 0))
-            .attr('fill', col).attr('rx', 2).attr('opacity', 0.85);
-          g.append('text').attr('x', bx + bw/2).attr('y', by - 2)
-            .attr('text-anchor', 'middle').attr('fill', lbl)
-            .attr('font-size', 5).attr('font-family', FONT)
-            .text(Math.round(v.val * 10) / 10);
-        });
-      });
-
-    }
-
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  TREND CHART 3 — Best single round per player (peg / hand / crib)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    function renderBarMax(games) {
-      clearChart('bar-max');
-      const svg = trendSvg('bar-max');
-      const g = svg.append('g').attr('transform', `translate(${VML},${VMT})`);
-
-      const players = allPlayers(games);
-
-      const data = players.map(player => {
-        const rounds = games.flatMap(gm => {
-          const isP1 = gm.p1name === player, isP2 = gm.p2name === player;
-          if (!isP1 && !isP2) return [];
-          return gm.rounds.map(r => ({
-            peg:  isP1 ? r.p1pegged : r.p2pegged,
-            hand: isP1 ? r.p1hand   : r.p2hand,
-            crib: isP1 ? r.p1crib   : r.p2crib,
-            total: (isP1 ? r.p1pegged : r.p2pegged)
-                 + (isP1 ? r.p1hand   : r.p2hand)
-                 + (isP1 ? r.p1crib   : r.p2crib),
-          }));
-        });
-        const best = rounds.reduce((b, r) => r.total > b.total ? r : b, { peg:0, hand:0, crib:0, total:0 });
-        return { player, ...best };
-      }).filter(d => d.total > 0);
-
-      const x = d3.scaleBand().domain(players).range([0, ViW]).padding(0.28);
-      const maxV = d3.max(data, d => d.total) || 1;
-      const y = d3.scaleLinear().domain([0, maxV * 1.15]).range([ViH, 0]);
-
-      const xAxisM = g.append('g').attr('transform', `translate(0,${ViH})`)
-        .call(d3.axisBottom(x).tickSize(0))
-        .call(ax => axisStyle(ax));
-      xAxisM.selectAll('text').each(function(d) {
-        d3.select(this).attr('fill', playerLight(d));
-      });
-      g.append('g')
-        .call(d3.axisLeft(y).ticks(4).tickSize(-ViW))
-        .call(ax => axisStyle(ax, true));
-
-      // Stacked bars: peg (bottom) → hand → crib (top)
-      data.forEach(d => {
-        const fill = playerPeg(d.player);
-        const lbl  = playerLight(d.player);
-        const bx   = x(d.player), bw = x.bandwidth();
-        let yOff   = ViH;
-
-        [['peg', d.peg, 0.5], ['hand', d.hand, 0.75], ['crib', d.crib, 1]].forEach(([seg, val, op]) => {
-          if (!val) return;
-          const bh = ViH - y(val);
-          g.append('rect').attr('x', bx).attr('y', yOff - bh)
-            .attr('width', bw).attr('height', bh)
-            .attr('fill', fill).attr('rx', seg === 'crib' ? 2 : 0).attr('opacity', op);
-          if (bh > 8) {
-            g.append('text').attr('x', bx + bw/2).attr('y', yOff - bh/2)
-              .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
-              .attr('fill', 'rgba(255,255,255,.7)').attr('font-size', 6).attr('font-family', FONT)
-              .text(val);
-          }
-          yOff -= bh;
-        });
-
-        // Total label above bar — use light colour
-        g.append('text').attr('x', bx + bw/2).attr('y', y(d.total) - 3)
-          .attr('text-anchor', 'middle').attr('fill', lbl)
-          .attr('font-size', 6.5).attr('font-weight', '500').attr('font-family', FONT)
-          .text(d.total);
-      });
-
-      // Legend
-      [['Peg', 0.5], ['Hand', 0.75], ['Crib', 1]].forEach(([lbl, op], i) => {
-        g.append('rect').attr('x', i * 38).attr('y', ViH + 14).attr('width', 5).attr('height', 5).attr('fill', '#888').attr('opacity', op).attr('rx', 1);
-        g.append('text').attr('x', i * 38 + 7).attr('y', ViH + 18.5).attr('fill', '#7a7060').attr('font-size', 6).attr('font-family', FONT).text(lbl);
-      });
-    }
-
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  TREND CHART 4 — Hand counting accuracy (beeswarm)
-    //
-    //  Y-axis: error = recorded − calculated.
-    //    0  = counted correctly (the cluster you want to see)
-    //    +N = over-counted by N
-    //    -N = under-counted by N
-    //
-    //  Each dot is one scored round. Dots are packed outward from centre
-    //  using a simple beeswarm collision pass, so no dots overlap and density
-    //  is visible as width. A mean diamond and IQR box are drawn per player.
-    // ═══════════════════════════════════════════════════════════════════════
-
-    function renderBarAcc(games) {
-      clearChart('bar-acc');
-      const note = document.getElementById('bar-acc-note');
-
-      const accuracy = computeAccuracy(games);
-
-      if (!accuracy.length) {
-        note.textContent = 'Not enough card data to compute accuracy.';
-        return;
-      }
-
-      const W = 320, H = 360, ML = 26, MR = 8, MT = 12, MB = 30;
-      const iW = W - ML - MR, iH = H - MT - MB;
-
-      const svg = d3.select('#bar-acc')
-        .attr('viewBox', `0 0 ${W} ${H}`)
-        .attr('preserveAspectRatio', 'xMidYMid meet')
-        .attr('width', '100%')
-        .attr('height', null);
-
-      const g = svg.append('g').attr('transform', `translate(${ML},${MT})`);
-
-      const players    = accuracy.map(a => a.player);
-      const allDiffs   = accuracy.flatMap(a => a.records.map(r => r.diff));
-      const maxAbsDiff = Math.max(d3.max(allDiffs.map(Math.abs)) || 0, 1);
-
-      const x = d3.scaleBand().domain(players).range([0, iW]).padding(0.25);
-      // Extra padding above/below so integer rows are well separated
-      const yExt = maxAbsDiff + 1.2;
-      const y    = d3.scaleLinear().domain([-yExt, yExt]).range([iH, 0]);
-
-      const DOT_R = 2.8;  // slightly larger dots to fill the extra space
-
-      // ── Axes ──────────────────────────────────────────────────────────────
-      g.append('g').attr('transform', `translate(0,${iH})`)
-        .call(d3.axisBottom(x).tickSize(0))
-        .call(ax => {
-          axisStyle(ax);
-          ax.selectAll('text').each(function(d) {
-            d3.select(this).attr('fill', playerLight(d)).attr('font-size', 7);
-          });
-        });
-
-      const yTicks = d3.range(-maxAbsDiff, maxAbsDiff + 1).filter(Number.isInteger);
-      g.append('g')
-        .call(d3.axisLeft(y)
-          .tickValues(yTicks)
-          .tickSize(-iW)
-          .tickFormat(d => d > 0 ? `+${d}` : `${d}`))
-        .call(ax => {
-          ax.select('.domain').remove();
-          ax.selectAll('.tick line')
-            .attr('stroke', d => d === 0 ? '#4a4030' : '#2e2a22')
-            .attr('stroke-dasharray', d => d === 0 ? null : '2,2')
-            .attr('stroke-width', d => d === 0 ? 1.0 : 0.8)
-            .attr('opacity', d => d === 0 ? 0.4 : 1);
-          ax.selectAll('text')
-            .attr('fill', d => d === 0 ? '#9a8a70' : '#7a7060')
-            .attr('font-size', 6.5).attr('font-family', FONT);
-        });
-
-      // ── Per-player beeswarm (miscounts only) ─────────────────────────────
-      accuracy.forEach(a => {
-        const col   = (PCOL[a.player] || PCOL.Caitlin).peg;
-        const light = (PCOL[a.player] || PCOL.Caitlin).light;
-        const cx      = x(a.player) + x.bandwidth() / 2;
-        const bw      = x.bandwidth();
-        const halfMax = bw * 0.46;
-
-        const miscounts = a.records.filter(r => r.diff !== 0);
-
-        // Deterministic pseudo-random helper seeded by player + diff + index
-        const prng = (seed) => {
-          let s = seed ^ 0xdeadbeef;
-          s = Math.imul(s ^ (s >>> 16), 0x45d9f3b);
-          s = Math.imul(s ^ (s >>> 16), 0x45d9f3b);
-          return ((s ^ (s >>> 16)) >>> 0) / 0xffffffff;
-        };
-
-        // Shuffle within each diff row for less order-dependent spread
-        const byDiff = d3.group(miscounts, r => r.diff);
-        const allSorted = [];
-        [...byDiff.keys()].sort((a, b) => a - b).forEach(diff => {
-          const recs = [...byDiff.get(diff)];
-          for (let i = recs.length - 1; i > 0; i--) {
-            const seed = diff * 31 + i * 17 + a.player.charCodeAt(0);
-            const j = Math.floor(prng(seed) * (i + 1));
-            [recs[i], recs[j]] = [recs[j], recs[i]];
-          }
-          allSorted.push(...recs);
-        });
-
-        // Pre-assign horizontal slots per diff row.
-        // Sort every dot in the row by its shuffle order, then assign:
-        //   index 0 → 0 (centre)
-        //   index 1 → -step  (left)
-        //   index 2 → +step  (right)
-        //   index 3 → -2step
-        //   index 4 → +2step  …
-        // This guarantees symmetric growth with no collision logic needed.
-        const rowH = Math.abs(y(0) - y(1));
-        const vJitterMax = rowH * 0.28;
-        const step = DOT_R * 1.3;
-
-        // Group allSorted by diff to assign slots within each row
-        const byDiffFinal = d3.group(allSorted, r => r.diff);
-
-        byDiffFinal.forEach((recs, diff) => {
-          const baseCy = y(diff);
-
-          recs.forEach((r, rowIdx) => {
-            // Slot index → offset: 0→0, 1→-step, 2→+step, 3→-2step, 4→+2step …
-            const slotNum  = Math.floor((rowIdx + 1) / 2);
-            const sign     = rowIdx % 2 === 0 ? -1 : 1;   // 0→special-cased below
-            const offset   = rowIdx === 0 ? 0 : sign * slotNum * step;
-            const clipped  = Math.max(-halfMax, Math.min(halfMax, offset));
-
-            // Vertical jitter
-            const vSeed   = diff * 97 + rowIdx * 53 + a.player.charCodeAt(0);
-            const vJitter = (prng(vSeed) * 2 - 1) * vJitterMax;
-            const cy      = baseCy + vJitter;
-
-            const circle = g.append('circle')
-              .attr('cx', cx + clipped).attr('cy', cy)
-              .attr('r', DOT_R)
-              .attr('fill', col).attr('opacity', 0.82)
-              .attr('stroke-width', 0)
-              .style('cursor', 'pointer');
-
-            const tip = document.getElementById('tooltip');
-            const diffLabel = r.diff > 0 ? `+${r.diff} over` : `${r.diff} under`;
-            const node = circle.node();
-            node.addEventListener('mouseenter', () => {
-              circle.attr('opacity', 1).attr('stroke', '#e8dfc8').attr('stroke-width', 1);
-              tip.innerHTML = `
-                <div class="tth">${ordinal(r.gameNum)} game · Round ${r.round}</div>
-                <div>Recorded <strong>${r.recorded}</strong> · Calculated <strong>${r.calculated}</strong></div>
-                <div style="color:${col};margin-top:2px;">${diffLabel}</div>`;
-              tip.classList.add('vis');
-            });
-            node.addEventListener('mousemove', e => {
-              tip.style.left = (e.clientX + 14) + 'px';
-              tip.style.top  = (e.clientY - 10) + 'px';
-            });
-            node.addEventListener('mouseleave', () => {
-              circle.attr('opacity', 0.82).attr('stroke-width', 0);
-              tip.classList.remove('vis');
-            });
-          });
-        });
-
-        // ── % exact label at the zero line ────────────────────────────────
-        g.append('text')
-          .attr('x', cx).attr('y', y(0))
-          .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
-          .attr('fill', light).attr('font-size', 10).attr('font-weight', '400')
-          .attr('font-family', FONT)
-          .text(`${Math.round(a.pct)}%`);
-
-        // ── Stats under player name label ─────────────────────────────────
-        const avgLabel = a.avgDiff > 0 ? `avg +${Math.round(a.avgDiff * 10) / 10}`
-          : a.avgDiff < 0 ? `avg ${Math.round(a.avgDiff * 10) / 10}`
-          : 'avg 0';
-
-        g.append('text')
-          .attr('x', cx).attr('y', iH + 17)
-          .attr('text-anchor', 'middle')
-          .attr('fill', '#7a7060').attr('font-size', 9).attr('font-family', FONT)
-          .text(avgLabel);
-      });
-
-      note.innerHTML = '';
-    }
-
-
-     // ═══════════════════════════════════════════════════════════════
-    //  HAND SCORE DISTRIBUTION
-    //  Theoretical counts from Wikipedia: Cribbage statistics
-    //  (12,994,800 total possible hands, random discard assumption)
-    //  Overlaid with recorded handPoints from edited.csv
-    // ═══════════════════════════════════════════════════════════════
-
-    // Exact counts per score 0–29 from Wikipedia
-    const WIKI_COUNTS = {
-       0:1009008,  1:99792,   2:2813796, 3:505008,  4:2855676,
-       5:697508,   6:1800268, 7:751324,  8:1137236, 9:361224,
-      10:388740,  11:51680,  12:317340, 13:19656,  14:90100,
-      15:9168,    16:58248,  17:11196,  18:2708,   19:0,
-      20:8068,    21:2496,   22:444,    23:356,    24:3680,
-      25:0,       26:0,      27:0,      28:76,     29:4,
-    };
-    const WIKI_TOTAL   = 12994800;
-    // Scores impossible in standard cribbage (0 hands in the table)
-    const IMPOSSIBLE   = new Set([19, 25, 26, 27]);
-
-    // ── CSV card parser ──────────────────────────────────────────────
-    function parseCsvCard(s) {
-      if (!s) return null;
-      s = s.trim();
-      if (s === '--' || s === 'XX' || s === '') return null;
-      const suit = s.slice(-1).toUpperCase();
-      if (!['H','D','C','S'].includes(suit)) return null;
-      const rank = s.slice(0,-1).toUpperCase();
-      if (!['A','2','3','4','5','6','7','8','9','10','J','Q','K'].includes(rank)) return null;
-      return { r: rank, s: suit };
-    }
-
-    // ── Derive dist data from allGames (called after data loads) ────────
-    // Uses the same dealer logic as renderCards: round 1 crib points
-    // determine who dealt first, then alternate every round.
-    // Hand: every row contributes one hand score (0 if blank/missing).
-    // Crib: exactly one per round — the dealer's recorded cribPoints
-    //       (0 if they scored nothing, blank rows skipped entirely).
-    function buildDistData(games) {
-      const handScores = {}, cribScores = {};
-      let handN = 0, cribN = 0;
-
-      games.forEach(game => {
-        // Determine who dealt round 1 from crib points
-        const round1 = game.rounds.find(r => r.round === 1);
-        const p1DealtFirst = round1
-          ? (round1.p1crib > 0 ? true : round1.p2crib > 0 ? false : true)
-          : true;
-
-        game.rounds.forEach(rd => {
-          // ── Hand scores (one per player per round, 0 if blank) ──────
-          [rd.p1hand, rd.p2hand].forEach(hp => {
-            const s = Math.round(hp);
-            if (s >= 0 && s <= 29) {
-              handScores[s] = (handScores[s] || 0) + 1;
-              handN++;
-            }
-          });
-
-          // ── Crib score (dealer only, include zeros) ─────────────────
-          const p1IsDealer = (rd.round % 2 === 1) === p1DealtFirst;
-          // Use raw rows to get the actual recorded cribPoints string
-          // so we can distinguish "blank/missing" (non-dealer, skip)
-          // from "0" (dealer scored nothing, include).
-          const rawRows = game._raw ? game._raw.filter(r => +r.Round === rd.round) : [];
-          const byP = Object.fromEntries(rawRows.map(r => [r.Name, r]));
-          const dealerRow = byP[p1IsDealer ? game.p1name : game.p2name];
-
-          if (dealerRow) {
-            const raw = dealerRow.cribPoints;
-            // Only include if the cell is present (even if 0); skip truly blank rows
-            if (raw !== undefined && raw !== null && raw.trim() !== '') {
-              const cs = Math.round(+raw);
-              if (cs >= 0 && cs <= 29) {
-                cribScores[cs] = (cribScores[cs] || 0) + 1;
-                cribN++;
-              }
-            }
-          }
-        });
-      });
-
-      return { handScores, handN, cribScores, cribN };
-    }
-
-    // ── Chart: score distribution (shared renderer) ───────────────────
-    // elId: SVG element id | realS: score→count | realN: total | realColor: bar colour
-    function renderDistChart(elId, realS, realN, realColor) {
-      const el  = document.getElementById(elId);
-      const W   = el.parentElement.clientWidth || 700;
-      const H   = 160;
-      const ML=34, MR=10, MT=10, MB=20;
-      const iW  = W-ML-MR, iH = H-MT-MB;
-      el.setAttribute('viewBox', `0 0 ${W} ${H}`);
-      el.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-
-      const scores   = d3.range(0, 30);
-      const theorPct = scores.map(s => WIKI_COUNTS[s] / WIKI_TOTAL * 100);
-      const realPct  = scores.map(s => realN ? (realS[s]||0) / realN * 100 : 0);
-      const maxPct   = Math.max(d3.max(theorPct), d3.max(realPct), 1);
-
-      const x = d3.scaleBand().domain(scores).range([0, iW]).padding(0.08);
-      const y = d3.scaleLinear().domain([0, maxPct * 1.12]).range([iH, 0]);
-
-      const svg = d3.select(el);
-      svg.selectAll('*').remove();
-      const g = svg.append('g').attr('transform', `translate(${ML},${MT})`);
-
-      // Y axis + gridlines
-      g.append('g')
-        .call(d3.axisLeft(y).ticks(4).tickSize(-iW).tickFormat(d => d.toFixed(0)+'%'))
-        .call(ax => {
-          ax.select('.domain').remove();
-          ax.selectAll('.tick line').attr('stroke','#2e2a22').attr('stroke-dasharray','2,2');
-          ax.selectAll('text').attr('fill','#7a7060').attr('font-size',6.5).attr('font-family',FONT);
-        });
-
-      // Impossible score backgrounds
-      scores.forEach(s => {
-        if (!IMPOSSIBLE.has(s)) return;
-        g.append('rect')
-          .attr('x', x(s)).attr('y', 0)
-          .attr('width', x.bandwidth()).attr('height', iH)
-          .attr('fill', '#2d2b24').attr('rx', 1);
-        g.append('text')
-          .attr('x', x(s) + x.bandwidth()/2).attr('y', 4)
-          .attr('text-anchor','middle').attr('dominant-baseline','hanging')
-          .attr('fill','#4a4030').attr('font-size',7).attr('font-family',FONT)
-          .text('✕');
-      });
-
-      // Gold baseline (full column width, behind)
-      scores.forEach((s, i) => {
-        if (IMPOSSIBLE.has(s) || !theorPct[i]) return;
-        g.append('rect')
-          .attr('x', x(s)).attr('y', y(theorPct[i]))
-          .attr('width', x.bandwidth()).attr('height', Math.max(iH - y(theorPct[i]), 0))
-          .attr('fill','#c8973a').attr('opacity', 0.5).attr('rx', 1);
-      });
-
-      // Real series (narrower, centred over the gold bar)
-      if (realN > 0) {
-        const rw = x.bandwidth() * 0.45;
-        const rx = s => x(s) + (x.bandwidth() - rw) / 2;
-        scores.forEach((s, i) => {
-          const pct = realPct[i];
-          if (!pct) return;
-          const fill = IMPOSSIBLE.has(s) ? '#ff4444' : realColor;
-          g.append('rect')
-            .attr('x', rx(s)).attr('y', y(pct))
-            .attr('width', rw).attr('height', Math.max(iH - y(pct), 0))
-            .attr('fill', fill).attr('opacity', IMPOSSIBLE.has(s) ? 1 : 0.88).attr('rx', 1);
-        });
-      }
-
-      // X axis
-      g.append('g').attr('transform', `translate(0,${iH})`)
-        .call(d3.axisBottom(x).tickValues(d3.range(0,30)).tickSize(0))
-        .call(ax => {
-          ax.select('.domain').remove();
-          ax.selectAll('text')
-            .attr('fill', d => IMPOSSIBLE.has(d) ? '#4a4030' : '#7a7060')
-            .attr('font-size', 7).attr('font-family', FONT);
-        });
-    }
-
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  APPLICATION STATE
-    // ═══════════════════════════════════════════════════════════════════════
-
-    let allGames     = [];    // all parsed game objects
-    let activeFilter = null;  // opponent name string, or null for "all games"
-    let selectedCell = null;  // { gameDate, round } of the clicked heatmap cell, or null
-    let sortOrder    = 'gameNum'; // current heatmap row sort: gameNum | rounds | diff | opponent
-
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  DATA LOADING
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /**
-     * Load and parse the CSV, then render the dashboard.
-     *
-     * Expected CSV columns:
-     *   Name, gameDate, Round, d1, d2, cc, p1-p7 (played cards),
-     *   peggedPoints, handPoints, cribPoints, EORScore
-     */
-    d3.csv('edited.csv').then(raw => {
-      // Group all rows by gameDate — each unique date is one game session
-      const grouped = d3.groups(raw, d => d.gameDate);
-
-      allGames = grouped.map(([date, rows], idx) => {
-        const names  = [...new Set(rows.map(d => d.Name))];
-        const p1name = CAITLIN;
-        const p2name = names.find(p => p !== CAITLIN) || names[1] || 'Unknown';
-        const maxRound = d3.max(rows, d => +d.Round);
-        const gameNum  = idx + 1;  // 1-based ordinal game number
-
-        // Parse a numeric field, returning 0 for blank/missing values
-        const pv = v => v && v.trim() !== '' ? +v : 0;
-
-        const rounds = d3.range(1, maxRound + 1).map(r => {
-          const rr  = rows.filter(d => +d.Round === r);
-          const byP = Object.fromEntries(rr.map(d => [d.Name, d]));
-          const r1  = byP[p1name];
-          const r2  = byP[p2name];
-
-          return {
-            round:     r,
-            s1:        r1 ? (+r1.EORScore || 0) : null,
-            s2:        r2 ? (+r2.EORScore || 0) : null,
-            p1pegged:  r1 ? pv(r1.peggedPoints) : 0,
-            p2pegged:  r2 ? pv(r2.peggedPoints) : 0,
-            p1hand:    r1 ? pv(r1.handPoints)   : 0,
-            p2hand:    r2 ? pv(r2.handPoints)   : 0,
-            p1crib:    r1 ? pv(r1.cribPoints)   : 0,
-            p2crib:    r2 ? pv(r2.cribPoints)   : 0,
-          };
-        });
-
-        return { date, gameNum, p1name, p2name, rounds, maxRound, _raw: rows };
-      });
-
-      buildPills();
-      buildSortBar();
-      render();
-    });
-
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  SORT BAR
-    // ═══════════════════════════════════════════════════════════════════════
-
-    const SORT_OPTIONS = [
-      { key: 'gameNum',  label: 'Game #' },
-      { key: 'rounds',   label: 'Rounds' },
-      { key: 'diff',     label: 'Margin' },
-      { key: 'opponent', label: 'Opponent' },
+    // Card slot order for odd rounds (Player A deals first)
+    const cardOrder1 = [
+      'd1','d2','d3','d4','cc',
+      'p1a','p1b','p2a','p2b','p3a','p3b',
+      'p4a','p4b','p5a','p5b','p6a','p6b','p7a','p7b',
     ];
 
-    function buildSortBar() {
-      const bar = document.getElementById('sort-bar');
-      bar.innerHTML = '';
-      SORT_OPTIONS.forEach(opt => {
-        const el = document.createElement('span');
-        el.className = 'sort-pill' + (opt.key === sortOrder ? ' active' : '');
-        el.textContent = opt.label;
-        el.addEventListener('click', () => {
-          if (sortOrder === opt.key) return;
-          sortOrder = opt.key;
-          selectedCell = null;
-          bar.querySelectorAll('.sort-pill').forEach(p =>
-            p.classList.toggle('active', p.textContent === opt.label)
-          );
-          render();
-        });
-        bar.appendChild(el);
-      });
-    }
+    // Card slot order for even rounds (Player B deals first)
+    const cardOrder2 = [
+      'd1','d2','d3','d4','cc',
+      'p1b','p1a','p2b','p2a','p3b','p3a',
+      'p4b','p4a','p5b','p5a','p6b','p6a','p7b','p7a',
+    ];
 
-    /**
-     * Populates the .filter-bar with one pill per opponent who appears in
-     * the data, plus an "All" pill that clears the filter.
-     */
-    function buildPills() {
-      const bar = document.getElementById('filter-bar');
+    let games    = [];
+    let gameDate = new Date();
 
-      const mk = (label, opp, col) => {
-        const p = document.createElement('div');
-        p.className  = 'pill' + (opp === null ? ' active' : '');
-        p.dataset.opp = opp === null ? '__all__' : opp;
-        p.innerHTML  = `<span class="pdot" style="background:${col}"></span>${label}`;
+    let game = {
+      gameDate: gameDate,
+      pNamea:   'Player 1',
+      pNameb:   'Player 2',
+    };
 
-        p.addEventListener('click', () => {
-          activeFilter = opp;
-          selectedCell = null;  // clear any selected heatmap cell on filter change
-          document.querySelectorAll('.pill').forEach(el =>
-            el.classList.toggle('active', el.dataset.opp === (opp === null ? '__all__' : opp))
-          );
-          render();
-        });
+    let rounds = [];
 
-        bar.appendChild(p);
-      };
+    // Colours used to highlight the next expected slot and filled slots
+    const nextCardColor   = 'var(--next-card)';
+    const playedCardColor = 'var(--played-card)';
 
-      mk('All', null, '#5a5040');
-      OPPONENTS.forEach(opp => {
-        if (allGames.some(g => g.p2name === opp)) {
-          mk(opp, opp, (PCOL[opp] || PCOL.Colban).peg);
-        }
-      });
+    // The queue of slots to fill — starts as cardOrder1
+    let next = [...cardOrder1];
+
+
+    // ═══════════════════════════════════════════════════════════
+    //  GAME SETUP
+    // ═══════════════════════════════════════════════════════════
+
+    function enterName() {
+      game.pNamea = document.getElementById('pNamea').value.trim() || 'Player 1';
+      game.pNameb = document.getElementById('pNameb').value.trim() || 'Player 2';
+      document.getElementById('nameEntry').style.display   = 'none';
+      document.getElementById('roundCards').style.display  = 'block';
+      document.getElementById('playeraName').textContent   = game.pNamea;
+      document.getElementById('playerbName').textContent   = game.pNameb;
+      // Highlight the first expected slot
+      document.getElementById(next[0]).style.borderColor = nextCardColor;
     }
 
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  RENDER HELPERS
-    // ═══════════════════════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════
+    //  SCORING MODE
+    // ═══════════════════════════════════════════════════════════
 
-    /** Returns the subset of allGames matching the active opponent filter. */
-    function filteredGames() {
-      return activeFilter
-        ? allGames.filter(g => g.p2name === activeFilter)
-        : allGames;
+    function setMode(thisMode) {
+      // Re-enable the previously active mode buttons for both players
+      document.getElementById(mode + 'A').disabled = false;
+      document.getElementById(mode + 'B').disabled = false;
+      mode = thisMode;
+      // Disable the newly active mode buttons
+      document.getElementById(thisMode + 'A').disabled = true;
+      document.getElementById(thisMode + 'B').disabled = true;
     }
 
-    /**
-     * Returns filtered games sorted according to sortOrder.
-     * gameNum    — chronological (default)
-     * rounds     — most rounds first
-     * diff       — largest absolute final score gap first
-     * opponent   — alphabetical by opponent name
-     */
-    function sortedGames() {
-      const games = filteredGames();
-      switch (sortOrder) {
-        case 'rounds':
-          return [...games].sort((a, b) => b.maxRound - a.maxRound);
-        case 'diff': {
-          const finalDiff = g => {
-            const last = g.rounds[g.rounds.length - 1];
-            return last && last.s1 !== null && last.s2 !== null
-              ? Math.abs(last.s1 - last.s2) : 0;
-          };
-          return [...games].sort((a, b) => b.maxRound - a.maxRound)  // secondary
-            .sort((a, b) => finalDiff(b) - finalDiff(a));
-        }
-        case 'opponent':
-          return [...games].sort((a, b) => a.p2name.localeCompare(b.p2name));
-        default: // 'gameNum'
-          return [...games].sort((a, b) => a.gameNum - b.gameNum);
+
+    // ═══════════════════════════════════════════════════════════
+    //  POINT ENTRY
+    // ═══════════════════════════════════════════════════════════
+
+    function add(player, amount) {
+      const id = mode + player;
+      play[id] += amount;
+      document.getElementById(id).textContent = play[id];
+
+      // Stop adding to the total once a player has won (121)
+      if (play['EORScore' + player] === 120 && amount !== 1) return;
+
+      if (play.EORScorea < 121 && play.EORScoreb < 121) {
+        play['EORScore' + player] += amount;
+        document.getElementById('point' + player).textContent = play['EORScore' + player];
       }
     }
 
+    function zero(player) {
+      const id = mode + player;
+      // Subtract the current mode's points from the running EOR total
+      play['EORScore' + player] -= play[id];
+      play[id] = 0;
+      document.getElementById(id).textContent = 0;
+      document.getElementById('point' + player).textContent = play['EORScore' + player];
+    }
 
-    /**
-     * Full re-render: heatmap, win/loss chart, and board reset.
-     * Called when the filter changes or on initial load.
-     */
-    function render() {
-      const games = sortedGames();
-      renderHeatmap(games);
 
-      // Trend charts always show all games so overall patterns are visible
-      renderBar3(allGames);
-      renderBarAvg(allGames);
-      renderBarMax(allGames);
-      renderBarAcc(allGames);
+    // ═══════════════════════════════════════════════════════════
+    //  ROUND MANAGEMENT
+    // ═══════════════════════════════════════════════════════════
 
-      const { handScores, handN, cribScores, cribN } = buildDistData(allGames);
-      renderDistChart('dist-hand', handScores, handN, '#e5dad9');
-      renderDistChart('dist-crib', cribScores, cribN, '#e5dad9');
+    function newRound() {
+      // Record both players' data for this round
+      rounds.push([
+        game.pNamea, game.gameDate, round,
+        play.d1, play.d2, play.cc,
+        play.p1a, play.p2a, play.p3a, play.p4a, play.p5a, play.p6a, play.p7a,
+        play.peggedPointsa, play.handPointsa, play.cribPointsa, play.EORScorea,
+      ]);
+      rounds.push([
+        game.pNameb, game.gameDate, round,
+        play.d3, play.d4, play.cc,
+        play.p1b, play.p2b, play.p3b, play.p4b, play.p5b, play.p6b, play.p7b,
+        play.peggedPointsb, play.handPointsb, play.cribPointsb, play.EORScoreb,
+      ]);
+      round++;
+      resetPlay();
+    }
 
-      const first = games[0];
-      if (first) {
-        const last = first.rounds[first.rounds.length - 1];
-        setPegColors(
-          (PCOL[first.p1name] || PCOL.Caitlin).peg,
-          (PCOL[first.p2name] || PCOL.Colban).peg
-        );
-        placePegs(last.s1 ?? 0, last.s2 ?? 0, false, first.p1name[0], first.p2name[0]);
-        document.getElementById('p1-label').textContent = first.p1name;
-        document.getElementById('p2-label').textContent = first.p2name;
-        document.getElementById('p1-score').textContent = last.s1 ?? 0;
-        document.getElementById('p2-score').textContent = last.s2 ?? 0;
-        document.getElementById('r-detail').textContent = '·';
-        document.getElementById('game-label').textContent = '';
-        document.getElementById('p1-detail').textContent = '·';
-        renderLegend(activeFilter || first.p2name, games);
-        document.getElementById('leg-l').textContent = activeFilter || first.p2name;
+    function resetPlay() {
+      // Reset all card slots and point values, preserving cumulative EOR scores
+      const keys = Object.keys(play);
+      keys.forEach((k, i) => {
+        // Preserve EORScorea (index 20) and EORScoreb (index 24)
+        if (k === 'EORScorea' || k === 'EORScoreb') return;
+        play[k] = (typeof play[k] === 'number') ? 0 : 'XX';
+      });
+
+      // Re-enable all deck buttons
+      document.querySelectorAll('.button_deck').forEach(b => b.disabled = false);
+
+      // Reset play slot buttons
+      document.querySelectorAll('[name="played"]').forEach(b => {
+        b.disabled = true;
+        b.textContent = b.id;
+        b.style.borderColor = '';
+      });
+
+      // Reset next_button slots
+      document.querySelectorAll('.next_button').forEach(b => {
+        b.disabled = true;
+        b.textContent = b.getAttribute('name') || b.id;
+        b.style.borderColor = '';
+      });
+
+      // Reset point labels
+      document.querySelectorAll('[name="pointlable"]').forEach(b => b.textContent = '0');
+
+      // Rebuild the next queue for the new round
+      next = round % 2 === 0 ? [...cardOrder2] : [...cardOrder1];
+
+      runningTotal = 0;
+      document.getElementById('runningTotal').textContent = 0;
+
+      // Highlight the first expected slot of the new round
+      if (next[0]) document.getElementById(next[0]).style.borderColor = nextCardColor;
+    }
+
+    function endGame() {
+      newRound();
+      games.push({ ...game });
+      game.gameDate = new Date();
+    }
+
+
+    // ═══════════════════════════════════════════════════════════
+    //  CARD ENTRY
+    // ═══════════════════════════════════════════════════════════
+
+    function addCard(card) {
+      const slotId   = next.shift();
+      const cardElem = document.getElementById(card);
+
+      // Update running total for play cards (not crib/cut)
+      if (!['d1','d2','d3','d4','cc'].includes(slotId)) {
+        runningTotal += Number(cardElem.getAttribute('name'));
+        document.getElementById('runningTotal').textContent = runningTotal;
       }
 
-      renderCards(null, null);
+      // Fill the slot
+      const slotElem = document.getElementById(slotId);
+      slotElem.style.borderColor = playedCardColor;
+      slotElem.setAttribute('alt', card);
+      slotElem.innerHTML = cardElem.innerHTML;
+      slotElem.disabled  = false;
+
+      // Disable the card in the deck
+      cardElem.disabled = true;
+
+      play[slotId] = card;
+
+      // Highlight the next expected slot
+      if (next[0]) document.getElementById(next[0]).style.borderColor = nextCardColor;
     }
 
-
-    /**
-     * Updates all views to reflect a newly hovered or clicked round cell.
-     * Called on heatmap hover (if no cell is selected) and on click.
-     *
-     * @param {object}  game - Game that contains the round
-     * @param {object}  rd   - Round data object
-     * @param {boolean} anim - Whether to animate the peg movement
-     */
-    function activateCell(game, rd, anim) {
-      setPegColors(
-        (PCOL[game.p1name] || PCOL.Caitlin).peg,
-        (PCOL[game.p2name] || PCOL.Colban).peg
-      );
-      placePegs(rd.s1, rd.s2, anim, game.p1name[0], game.p2name[0]);
-
-      document.getElementById('p1-label').textContent = game.p1name;
-      document.getElementById('p2-label').textContent = game.p2name;
-      document.getElementById('p1-score').textContent = rd.s1;
-      document.getElementById('p2-score').textContent = rd.s2;
-      document.getElementById('game-label').textContent = `Game ${game.gameNum} ·`;
-      document.getElementById('r-detail').textContent = `Round ${rd.round} · `;
-
-      renderCards(rd, game);
+    function addGo(msg) {
+      const slotId  = next.shift();
+      play[slotId]  = msg;
+      const slotElem = document.getElementById(slotId);
+      slotElem.style.borderColor = playedCardColor;
+      slotElem.setAttribute('alt', msg);
+      slotElem.innerHTML = '–';
+      slotElem.disabled  = false;
+      if (next[0]) document.getElementById(next[0]).style.borderColor = nextCardColor;
     }
 
+    function removeCard(slotId) {
+      const slotElem = document.getElementById(slotId);
+      const card     = slotElem.getAttribute('alt');
+      const cardElem = document.getElementById(card);
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  HEATMAP
-    // ═══════════════════════════════════════════════════════════════════════
+      // Restore slot to "next expected" state
+      slotElem.style.borderColor = nextCardColor;
+      next.unshift(slotId);
+      slotElem.setAttribute('alt', slotId);
+      slotElem.textContent = slotId;
+      slotElem.disabled    = true;
 
-    /**
-     * Renders the game heatmap into #heatmap-svg.
-     *
-     * Rows = games (date + time label on the left).
-     * Columns = rounds (numbered header across the top).
-     * Cell colour = score difference that round, using makeScale().
-     * Cell text = +/- numeric difference.
-     * Click to select/deselect; hover previews the round without locking.
-     *
-     * @param {object[]} games - Array of game objects to display
-     */
-    function renderHeatmap(games) {
-      const svg = d3.select('#heatmap-svg');
-      svg.selectAll('*').remove();
+      // Re-enable the card in the deck
+      if (cardElem) cardElem.disabled = false;
 
-      if (!games.length) {
-        svg.append('text')
-          .attr('x', 12).attr('y', 26)
-          .attr('fill', '#5a5040').attr('font-size', 10).attr('font-family', FONT)
-          .text('No games.');
-        return;
-      }
+      play[slotId] = 'XX';
 
-      // Layout constants
-      const FIXED_H   = 500;
-      const maxR      = d3.max(games, g => g.maxRound);
-      const LEFT      = 20;
-      const TOP       = 36;
-      const BOT       = 10;
+      // The slot that was previously "next" is no longer next
+      if (next[1]) document.getElementById(next[1]).style.borderColor = playedCardColor;
 
-      // Measure the available pixel width of the SVG's parent so we can
-      // scale CELL_W to fill it exactly, then use a viewBox so the SVG
-      // always stretches to 100% width regardless of panel size.
-      const panelW    = document.getElementById('heatmap-svg').parentElement.clientWidth || 400;
-      const availW    = panelW - LEFT;
-      const COL_W     = Math.max(Math.floor(availW / maxR), 12);
-      const CELL_W    = COL_W - 3;
-
-      const availH    = FIXED_H - TOP - BOT;
-      const CELL_H    = Math.floor((availH - games.length * 3) / games.length);
-      const ROW_H     = CELL_H + 3;
-
-      const totalW    = LEFT + maxR * COL_W;
-      const totalH    = TOP + games.length * ROW_H + BOT;
-
-      svg
-        .attr('viewBox', `0 0 ${totalW} ${Math.max(totalH, FIXED_H)}`)
-        .attr('preserveAspectRatio', 'xMinYMin meet')
-        .attr('width', '100%')
-        .attr('height', null);
-
-      // Max absolute score difference — used to normalise the colour scale
-      const globalMax = d3.max(
-        games.flatMap(g => g.rounds.map(r =>
-          r.s1 !== null && r.s2 !== null ? Math.abs(r.s1 - r.s2) : 0
-        ))
-      ) || 1;
-
-      // ── Pre-compute which (gameDate, round) pairs have a miscount ──────────
-      // Returns a Set of "date|round" strings for O(1) lookup during cell render.
-      const miscountKeys = new Set();
-      games.forEach(game => {
-        if (!game._raw) return;
-        game.rounds.forEach(rd => {
-          const rawRows = game._raw.filter(r => +r.Round === rd.round);
-          const byP = Object.fromEntries(rawRows.map(r => [r.Name, r]));
-          const hasMiscount = [
-            [byP[game.p1name], rd.p1hand],
-            [byP[game.p2name], rd.p2hand],
-          ].some(([row, recorded]) => {
-            const hc = extractHandAndCut(row);
-            if (!hc) return false;
-            const sc = scoreHand(hc.hand, hc.cut);
-            return sc && sc.total !== (recorded || 0);
-          });
-          if (hasMiscount) miscountKeys.add(`${game.date}|${rd.round}`);
-        });
-      });
-
-      // Column headers: round numbers
-      d3.range(1, maxR + 1).forEach(r => {
-        svg.append('text')
-          .attr('x', LEFT + (r - 1) * COL_W + CELL_W / 2)
-          .attr('y', TOP - 10)
-          .attr('text-anchor', 'middle')
-          .attr('fill', '#5a5040').attr('font-size', 10).attr('font-family', FONT)
-          .text(r);
-      });
-
-      svg.append('text')
-        .attr('x', LEFT + (maxR / 2) * COL_W).attr('y', TOP - 22)
-        .attr('text-anchor', 'middle')
-        .attr('fill', '#3a3020').attr('font-size', 12).attr('font-family', FONT)
-        .attr('letter-spacing', 2)
-        .text('ROUND');
-
-      const tip = document.getElementById('tooltip');
-
-      // Render one row per game
-      games.forEach((game, gi) => {
-        const gy      = TOP + gi * ROW_H;
-        const oppCol  = (PCOL[game.p2name] || PCOL.Colban).light;
-        const cScale  = makeScale(game.p2name, globalMax);
-        const ds      = new Date(game.date).toLocaleDateString('en-CA',  { month: 'short', day: 'numeric', year: '2-digit' });
-        const ts      = new Date(game.date).toLocaleTimeString('en-CA',  { hour: '2-digit', minute: '2-digit' });
-
-        // Invisible background rect that highlights the whole row on hover
-        const rowBg = svg.append('rect')
-          .attr('x', 0).attr('y', gy - 1)
-          .attr('width', totalW).attr('height', CELL_H + 2)
-          .attr('fill', 'transparent').attr('rx', 3)
-          .style('transition', 'fill .1s');
-
-        // Game number label (ordinal, left of cells)
-        svg.append('text')
-          .attr('x', LEFT - 4).attr('y', gy + CELL_H / 2 + 1)
-          .attr('text-anchor', 'end').attr('dominant-baseline', 'middle')
-          .attr('fill', oppCol).attr('font-size', 8).attr('font-family', FONT)
-          .text(game.gameNum);
-
-        // Render each round cell in this row
-        game.rounds.forEach(rd => {
-          const cx    = LEFT + (rd.round - 1) * COL_W;
-          const diff  = (rd.s1 !== null && rd.s2 !== null) ? (rd.s1 - rd.s2) : null;
-          const fill  = diff !== null ? cScale(diff) : '#1a1814';
-          const isSel = selectedCell
-            && selectedCell.gameDate === game.date
-            && selectedCell.round   === rd.round;
-
-          const cell = svg.append('rect')
-            .attr('x', cx).attr('y', gy)
-            .attr('width', CELL_W).attr('height', CELL_H).attr('rx', 3)
-            .attr('fill', fill)
-            .attr('stroke', isSel ? '#c8973a' : '#0f0e0c')
-            .attr('stroke-width', isSel ? 2 : 1.5)
-            .attr('cursor', diff !== null ? 'pointer' : 'default');
-
-          if (diff !== null) {
-            // Score diff label inside the cell
-            svg.append('text')
-              .attr('x', cx + CELL_W / 2).attr('y', gy + CELL_H / 2 + 1)
-              .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
-              .attr('fill', `rgba(255,255,255,${Math.abs(diff) > globalMax * 0.25 ? 0.58 : 0.22})`)
-              .attr('font-size', Math.min(CELL_H * 0.38, 10)).attr('font-family', FONT)
-              .attr('pointer-events', 'none')
-              .text(diff > 0 ? `+${diff}` : diff);
-
-            // ── Miscount hazard sign ───────────────────────────────────────
-            if (miscountKeys.has(`${game.date}|${rd.round}`)) {
-              svg.append('text')
-                .attr('x', cx + CELL_W - 3)
-                .attr('y', gy + 3)
-                .attr('text-anchor', 'end')
-                .attr('dominant-baseline', 'hanging')
-                .attr('font-size', Math.min(CELL_H * 0.48, 12))
-                .attr('font-family', FONT)
-                .attr('fill', '#d4a030')
-                .attr('pointer-events', 'none')
-                .attr('opacity', 0.95)
-                .text('⚠');
-            }
-
-            const node = cell.node();
-
-            // Hover: highlight row + show tooltip; preview round if nothing is selected
-            node.addEventListener('mouseenter', () => {
-              rowBg.attr('fill', 'rgba(255,255,255,.05)');
-              cell.attr('stroke', '#c8973a').attr('stroke-width', 2);
-              if (!selectedCell) activateCell(game, rd, true);
-
-              //const c2l = (PCOL[game.p2name] || PCOL.Colban).light;
-              //const hasMC = miscountKeys.has(`${game.date}|${rd.round}`);
-              //tip.innerHTML = `
-              //  <div class="tth">Round ${rd.round}</div>
-              //  <div class="tth">${ds}</div>
-              //  <div class="tth">${ts}</div>
-              //  ${hasMC ? `<div style="color:#d4a030;margin-top:3px;font-size:.85em">⚠ hand miscount this round</div>` : ''}`;
-              //tip.classList.add('vis');
-            });
-
-            // Track tooltip position with mouse
-            node.addEventListener('mousemove', e => {
-              tip.style.left = (e.clientX + 14) + 'px';
-              tip.style.top  = (e.clientY - 10) + 'px';
-            });
-
-            // Mouse leave: restore previous selection state
-            node.addEventListener('mouseleave', () => {
-              rowBg.attr('fill', 'transparent');
-              const iS = selectedCell
-                && selectedCell.gameDate === game.date
-                && selectedCell.round   === rd.round;
-              cell.attr('stroke', iS ? '#c8973a' : '#0f0e0c').attr('stroke-width', iS ? 2 : 1.5);
-              tip.classList.remove('vis');
-
-              // If a cell is selected, snap back to showing that round
-              if (selectedCell) {
-                const sg = allGames.find(g => g.date === selectedCell.gameDate);
-                const sr = sg && sg.rounds.find(r => r.round === selectedCell.round);
-                if (sg && sr) activateCell(sg, sr, false);
-              }
-            });
-
-            // Click: toggle selection on this cell
-            node.addEventListener('click', () => {
-              const iS = selectedCell
-                && selectedCell.gameDate === game.date
-                && selectedCell.round   === rd.round;
-
-              if (iS) {
-                selectedCell = null;
-              } else {
-                selectedCell = { gameDate: game.date, round: rd.round };
-                activateCell(game, rd, true);
-              }
-              renderHeatmap(sortedGames());
-            });
-          }
-        });
-
-        // Winner star — shown after the last round cell of the winning game
-        const last = game.rounds[game.rounds.length - 1];
-        if (last && last.s1 !== null && last.s2 !== null) {
-          const winner = last.s1 >= 121 ? game.p1name : last.s2 >= 121 ? game.p2name : null;
-          if (winner) {
-            const wc = winner === game.p1name
-              ? (PCOL[game.p1name] || PCOL.Caitlin).light
-              : (PCOL[game.p2name] || PCOL.Colban).light;
-            svg.append('text')
-              .attr('x', LEFT + game.maxRound * COL_W + 5)
-              .attr('y', gy + CELL_H / 2 + 1)
-              .attr('dominant-baseline', 'middle')
-              .attr('fill', wc).attr('font-size', 10).attr('font-family', FONT)
-              .text('★');
-          }
-        }
-      });
-    }
-
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  HEATMAP LEGEND
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /**
-     * Draws a horizontal colour gradient on the legend <canvas>.
-     * Left = opponent leading, right = Caitlin leading.
-     *
-     * @param {string}   opp   - Opponent name (used to pick the colour scale)
-     * @param {object[]} games - Current game set (used to compute max diff)
-     */
-    function renderLegend(opp, games) {
-      const gmax = d3.max(
-        games.flatMap(g => g.rounds.map(r =>
-          r.s1 !== null && r.s2 !== null ? Math.abs(r.s1 - r.s2) : 0
-        ))
-      ) || 1;
-
-      const scale = makeScale(opp, gmax);
-      const lc    = document.getElementById('legend-canvas');
-      lc.width    = 90;
-      lc.height   = 7;
-
-      const lctx = lc.getContext('2d');
-      for (let i = 0; i < 90; i++) {
-        // Map pixel position to the [-gmax, gmax] domain
-        lctx.fillStyle = scale((i / 89) * 2 * gmax - gmax);
-        lctx.fillRect(i, 0, 1, 7);
+      // Subtract from running total for play cards
+      if (!['d1','d2','d3','d4','cc'].includes(slotId) && cardElem) {
+        runningTotal -= Number(cardElem.getAttribute('name'));
+        document.getElementById('runningTotal').textContent = runningTotal;
       }
     }
 
+    function endPlay() {
+      addGo('–');
+      addGo('–');
+      runningTotal = 0;
+      document.getElementById('runningTotal').textContent = 0;
+    }
+
+
+    // ═══════════════════════════════════════════════════════════
+    //  DOWNLOAD
+    // ═══════════════════════════════════════════════════════════
+
+    function download() {
+      // Build CSV with header row
+      const header = 'Name,gameDate,Round,d1,d2,cc,p1,p2,p3,p4,p5,p6,p7,peggedPoints,handPoints,cribPoints,EORScore';
+      const rows   = rounds.map(r => r.join(',')).join('\n');
+      const csv    = header + '\n' + rows;
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.setAttribute('download', 'cribbage_game.csv');
+      a.href = url;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
   </script>
+
 </body>
 </html>
