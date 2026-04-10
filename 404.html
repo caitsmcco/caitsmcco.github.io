@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 — Cribbage</title>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:     #222f1e;
+      --bg2:    #151a14;
+      --bg3:    #232018;
+      --border: #2e2a22;
+      --text:   #e8dfc8;
+      --muted:  #a99f8d;
+      --gold:   #c8973a;
+      --gap:    1rem;
+      --page:   1.25rem;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Nav ── */
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      padding: .6rem var(--page);
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+
+    .nav-brand {
+      font-family: 'Playfair Display', serif;
+      color: var(--gold);
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-decoration: none;
+    }
+
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: .78rem;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      transition: color .15s;
+    }
+
+    nav a:hover { color: var(--text); }
+
+    /* ── Main content ── */
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: var(--page);
+      padding-bottom: 120px; /* leave space for the worker image */
+    }
+
+    .error-code {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(5rem, 18vw, 10rem);
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: .04em;
+      line-height: 1;
+      opacity: 0.18;
+      user-select: none;
+    }
+
+    .error-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.4rem, 4vw, 2.2rem);
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: .02em;
+      margin-top: -.5rem;
+      margin-bottom: .6rem;
+    }
+
+    .error-sub {
+      font-size: .8rem;
+      color: var(--muted);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      line-height: 1.8;
+      margin-bottom: 2rem;
+    }
+
+    /* ── Countdown + redirect ── */
+    .redirect-line {
+      font-size: .75rem;
+      color: var(--muted);
+      letter-spacing: .04em;
+      margin-bottom: 1.2rem;
+    }
+
+    .redirect-line strong {
+      color: var(--gold);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      background: transparent;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .78rem;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: .5rem 1.1rem;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+
+    .btn:hover {
+      background: var(--gold);
+      color: var(--bg2);
+    }
+
+    /* ── Construction worker image ── */
+    .worker-wrap {
+      position: fixed;
+      bottom: 0;
+      left: var(--page);
+      width: clamp(120px, 16vw, 200px);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .worker-wrap img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    /* Placeholder shown when no image is set */
+    .worker-placeholder {
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      border: 1px dashed var(--border);
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--border);
+      font-size: .6rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      text-align: center;
+      padding: .5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a class="nav-brand" href="/data/crib/">Cribbage</a>
+    <a href="/data/crib/">Dashboard</a>
+    <a href="/data/crib/about/">About Cribbage</a>
+    <a href="/data/crib/collect/">Collect Data</a>
+  </nav>
+
+  <div class="content">
+    <div class="error-code">404</div>
+    <div class="error-title">Page not found.</div>
+    <div class="error-sub">
+      Looks like this card isn't in the deck.<br>
+      The page you're looking for doesn't exist or has been moved.
+    </div>
+    <div class="redirect-line">
+      Redirecting to the dashboard in <strong id="countdown">10</strong>s
+    </div>
+    <a class="btn" href="/data/crib/">
+      ← Back to Dashboard
+    </a>
+  </div>
+
+  <!-- Construction worker — replace src with your image path -->
+  <div class="worker-wrap">
+    <img src="worker.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+    <div class="worker-placeholder" style="display:none;">your image<br>here</div>
+  </div>
+
+  <script>
+    let t = 60;
+    const el = document.getElementById('countdown');
+    const timer = setInterval(() => {
+      t--;
+      el.textContent = t;
+      if (t <= 0) {
+        clearInterval(timer);
+        window.location.href = '/data/crib/';
+      }
+    }, 1000);
+  </script>
+
+</body>
+</html>

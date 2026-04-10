@@ -1880,7 +1880,7 @@
      *   Name, gameDate, Round, d1, d2, cc, p1-p7 (played cards),
      *   peggedPoints, handPoints, cribPoints, EORScore
      */
-    d3.csv('edited.csv').then(raw => {
+    d3.csv('../edited.csv').then(raw => {
       // Group all rows by gameDate — each unique date is one game session
       const grouped = d3.groups(raw, d => d.gameDate);
 

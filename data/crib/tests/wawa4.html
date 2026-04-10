@@ -821,7 +821,7 @@ function renderRadar(games){
 
 let allGames=[],activeFilter=null,selectedCell=null;
 
-d3.csv('edited.csv').then(raw=>{
+d3.csv('../edited.csv').then(raw=>{
   const grouped=d3.groups(raw,d=>d.gameDate);
   allGames=grouped.map(([date,rows])=>{
     const names=[...new Set(rows.map(d=>d.Name))];
