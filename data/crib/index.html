@@ -536,8 +536,9 @@
         <div class="sort-bar" id="sort-bar"></div>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;gap:.5rem;">
-        <span style="display:flex;align-items:center;gap:5px;font-size:.62rem;color:var(--gold);white-space:nowrap;flex-shrink:0;">
-          ⚠ hand miscount
+        <span style="display:flex;align-items:center;gap:.6rem;font-size:.62rem;white-space:nowrap;flex-shrink:0;">
+          <span style="color:#ffd16e;">⚠ hand miscount</span>
+          <span style="color:#ffd16e;">✦ crib miscount</span>
         </span>
         <div class="filter-bar" id="filter-bar"></div>
       </div>
@@ -2812,12 +2813,15 @@
 
       // ── Pre-compute which (gameDate, round) pairs have a miscount ──────────
       // Returns a Set of "date|round" strings for O(1) lookup during cell render.
-      const miscountKeys = new Set();
+      const miscountKeys     = new Set();
+      const cribMiscountKeys = new Set();
       games.forEach(game => {
         if (!game._raw) return;
         game.rounds.forEach(rd => {
           const rawRows = game._raw.filter(r => +r.Round === rd.round);
           const byP = Object.fromEntries(rawRows.map(r => [r.Name, r]));
+
+          // Hand miscount: either player's hand scored incorrectly
           const hasMiscount = [
             [byP[game.p1name], rd.p1hand],
             [byP[game.p2name], rd.p2hand],
@@ -2828,6 +2832,30 @@
             return sc && sc.total !== (recorded || 0);
           });
           if (hasMiscount) miscountKeys.add(`${game.date}|${rd.round}`);
+
+          // Crib miscount: dealer's crib scored incorrectly
+          const round1 = game.rounds.find(r => r.round === 1);
+          const p1DealtFirst = round1
+            ? (round1.p1crib > 0 ? true : round1.p2crib > 0 ? false : true)
+            : true;
+          const p1IsDealer   = (rd.round % 2 === 1) === p1DealtFirst;
+          const dealerName   = p1IsDealer ? game.p1name : game.p2name;
+          const dealerRow    = byP[dealerName];
+          const ndRow        = byP[p1IsDealer ? game.p2name : game.p1name];
+          const recordedCrib = p1IsDealer ? rd.p1crib : rd.p2crib;
+
+          if (recordedCrib > 0 && dealerRow) {
+            const d1 = [parseCard(dealerRow.d1), parseCard(dealerRow.d2)].filter(Boolean);
+            const d2 = ndRow ? [parseCard(ndRow.d1), parseCard(ndRow.d2)].filter(Boolean) : [];
+            const cut = parseCard(dealerRow.cc);
+            const cribFour = [...d1, ...d2];
+            if (cribFour.length === 4 && cut) {
+              const sc = scoreHand(cribFour, cut, true);
+              if (sc && sc.total !== recordedCrib) {
+                cribMiscountKeys.add(`${game.date}|${rd.round}`);
+              }
+            }
+          }
         });
       });
 
@@ -2899,7 +2927,7 @@
               .attr('pointer-events', 'none')
               .text(diff > 0 ? `+${diff}` : diff);
 
-            // ── Miscount hazard sign ───────────────────────────────────────
+            // ── Hand miscount hazard — top-right ──────────────────────────
             if (miscountKeys.has(`${game.date}|${rd.round}`)) {
               svg.append('text')
                 .attr('x', cx + CELL_W - 3)
@@ -2912,6 +2940,21 @@
                 .attr('pointer-events', 'none')
                 .attr('opacity', 1)
                 .text('⚠');
+            }
+
+            // ── Crib miscount hazard — bottom-left ────────────────────────
+            if (cribMiscountKeys.has(`${game.date}|${rd.round}`)) {
+              svg.append('text')
+                .attr('x', cx + 3)
+                .attr('y', gy + CELL_H - 2)
+                .attr('text-anchor', 'start')
+                .attr('dominant-baseline', 'auto')
+                .attr('font-size', Math.min(CELL_H * 0.42, 10))
+                .attr('font-family', FONT)
+                .attr('fill', '#ffd16e')
+                .attr('pointer-events', 'none')
+                .attr('opacity', 1)
+                .text('✦');
             }
 
             const node = cell.node();
