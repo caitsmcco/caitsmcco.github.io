@@ -318,6 +318,15 @@
       opacity: 0.55;
       width: 100%;
     }
+    .rd-play-seq-title {
+      font-size: .42rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 3px;
+      white-space: nowrap;
+    }
     .rd-play-seq {
       display: flex;
       flex-direction: column;
@@ -536,9 +545,8 @@
         <div class="sort-bar" id="sort-bar"></div>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;gap:.5rem;">
-        <span style="display:flex;align-items:center;gap:.6rem;font-size:.62rem;white-space:nowrap;flex-shrink:0;">
-          <span style="color:#ffd16e;">⚠ hand miscount</span>
-          <span style="color:#ffd16e;">✦ crib miscount</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:.62rem;color:var(--gold);white-space:nowrap;flex-shrink:0;">
+          ⚠ miscount(s)
         </span>
         <div class="filter-bar" id="filter-bar"></div>
       </div>
@@ -1370,6 +1378,7 @@
         if (!items.length) return '';
 
         return `<div class="rd-play-seq-wrap">
+            <div class="rd-play-seq-title">Play order</div>
             <div class="rd-play-seq">${items.join('')}</div>
           </div>`;
       }
@@ -2012,14 +2021,14 @@
 
       const players    = accuracy.map(a => a.player);
       const allDiffs   = accuracy.flatMap(a => a.records.map(r => r.diff));
-      const maxAbsDiff = Math.max(d3.max(allDiffs.map(Math.abs)) || 0, 1);
 
       const x = d3.scaleBand().domain(players).range([0, iW]).padding(0.25);
-      // Extra padding above/below so integer rows are well separated
-      const yExt = maxAbsDiff + 1.2;
+      // Fixed ±6 axis so hand and crib charts are directly comparable
+      const FIXED_EXT = 6;
+      const yExt = FIXED_EXT + 0.8;
       const y    = d3.scaleLinear().domain([-yExt, yExt]).range([iH, 0]);
 
-      const DOT_R = 2.8;  // slightly larger dots to fill the extra space
+      const DOT_R = 2.8;
 
       // ── Axes ──────────────────────────────────────────────────────────────
       g.append('g').attr('transform', `translate(0,${iH})`)
@@ -2031,7 +2040,7 @@
           });
         });
 
-      const yTicks = d3.range(-maxAbsDiff, maxAbsDiff + 1).filter(Number.isInteger);
+      const yTicks = d3.range(-FIXED_EXT, FIXED_EXT + 1).filter(Number.isInteger);
       g.append('g')
         .call(d3.axisLeft(y)
           .tickValues(yTicks)
@@ -2193,10 +2202,10 @@
 
       const players    = accuracy.map(a => a.player);
       const allDiffs   = accuracy.flatMap(a => a.records.map(r => r.diff));
-      const maxAbsDiff = Math.max(d3.max(allDiffs.map(Math.abs)) || 0, 1);
 
       const x = d3.scaleBand().domain(players).range([0, iW]).padding(0.25);
-      const yExt = maxAbsDiff + 1.2;
+      const FIXED_EXT = 6;
+      const yExt = FIXED_EXT + 0.8;
       const y    = d3.scaleLinear().domain([-yExt, yExt]).range([iH, 0]);
       const DOT_R = 2.8;
 
@@ -2209,7 +2218,7 @@
           });
         });
 
-      const yTicks = d3.range(-maxAbsDiff, maxAbsDiff + 1).filter(Number.isInteger);
+      const yTicks = d3.range(-FIXED_EXT, FIXED_EXT + 1).filter(Number.isInteger);
       g.append('g')
         .call(d3.axisLeft(y).tickValues(yTicks).tickSize(-iW).tickFormat(d => d > 0 ? `+${d}` : `${d}`))
         .call(ax => {
@@ -2813,8 +2822,7 @@
 
       // ── Pre-compute which (gameDate, round) pairs have a miscount ──────────
       // Returns a Set of "date|round" strings for O(1) lookup during cell render.
-      const miscountKeys     = new Set();
-      const cribMiscountKeys = new Set();
+      const miscountKeys = new Set();
       games.forEach(game => {
         if (!game._raw) return;
         game.rounds.forEach(rd => {
@@ -2822,7 +2830,7 @@
           const byP = Object.fromEntries(rawRows.map(r => [r.Name, r]));
 
           // Hand miscount: either player's hand scored incorrectly
-          const hasMiscount = [
+          const hasHandMiscount = [
             [byP[game.p1name], rd.p1hand],
             [byP[game.p2name], rd.p2hand],
           ].some(([row, recorded]) => {
@@ -2831,7 +2839,6 @@
             const sc = scoreHand(hc.hand, hc.cut);
             return sc && sc.total !== (recorded || 0);
           });
-          if (hasMiscount) miscountKeys.add(`${game.date}|${rd.round}`);
 
           // Crib miscount: dealer's crib scored incorrectly
           const round1 = game.rounds.find(r => r.round === 1);
@@ -2839,11 +2846,10 @@
             ? (round1.p1crib > 0 ? true : round1.p2crib > 0 ? false : true)
             : true;
           const p1IsDealer   = (rd.round % 2 === 1) === p1DealtFirst;
-          const dealerName   = p1IsDealer ? game.p1name : game.p2name;
-          const dealerRow    = byP[dealerName];
+          const dealerRow    = byP[p1IsDealer ? game.p1name : game.p2name];
           const ndRow        = byP[p1IsDealer ? game.p2name : game.p1name];
           const recordedCrib = p1IsDealer ? rd.p1crib : rd.p2crib;
-
+          let hasCribMiscount = false;
           if (recordedCrib > 0 && dealerRow) {
             const d1 = [parseCard(dealerRow.d1), parseCard(dealerRow.d2)].filter(Boolean);
             const d2 = ndRow ? [parseCard(ndRow.d1), parseCard(ndRow.d2)].filter(Boolean) : [];
@@ -2851,11 +2857,11 @@
             const cribFour = [...d1, ...d2];
             if (cribFour.length === 4 && cut) {
               const sc = scoreHand(cribFour, cut, true);
-              if (sc && sc.total !== recordedCrib) {
-                cribMiscountKeys.add(`${game.date}|${rd.round}`);
-              }
+              hasCribMiscount = sc && sc.total !== recordedCrib;
             }
           }
+
+          if (hasHandMiscount || hasCribMiscount) miscountKeys.add(`${game.date}|${rd.round}`);
         });
       });
 
@@ -2927,7 +2933,7 @@
               .attr('pointer-events', 'none')
               .text(diff > 0 ? `+${diff}` : diff);
 
-            // ── Hand miscount hazard — top-right ──────────────────────────
+            // ── Miscount hazard sign ───────────────────────────────────────
             if (miscountKeys.has(`${game.date}|${rd.round}`)) {
               svg.append('text')
                 .attr('x', cx + CELL_W - 3)
@@ -2940,21 +2946,6 @@
                 .attr('pointer-events', 'none')
                 .attr('opacity', 1)
                 .text('⚠');
-            }
-
-            // ── Crib miscount hazard — bottom-left ────────────────────────
-            if (cribMiscountKeys.has(`${game.date}|${rd.round}`)) {
-              svg.append('text')
-                .attr('x', cx + 3)
-                .attr('y', gy + CELL_H - 2)
-                .attr('text-anchor', 'start')
-                .attr('dominant-baseline', 'auto')
-                .attr('font-size', Math.min(CELL_H * 0.42, 10))
-                .attr('font-family', FONT)
-                .attr('fill', '#ffd16e')
-                .attr('pointer-events', 'none')
-                .attr('opacity', 1)
-                .text('✦');
             }
 
             const node = cell.node();
